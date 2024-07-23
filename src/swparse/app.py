@@ -7,7 +7,7 @@ import filetype
 from litestar_saq import QueueConfig, SAQConfig, SAQPlugin
 from s3fs import S3FileSystem
 from saq import Queue
-from litestar.openapi.plugins import StoplightRenderPlugin
+from litestar.openapi.plugins import StoplightRenderPlugin,ScalarRenderPlugin,RapidocRenderPlugin,YamlRenderPlugin
 
 from litestar import Controller, Litestar, get, post , Request
 from litestar.params import Body
@@ -114,12 +114,12 @@ saq = SAQPlugin(
 app = Litestar(
     route_handlers=[SWParse],
     plugins=[saq],
-    render_plugins=[StoplightRenderPlugin()],
     openapi_config=OpenAPIConfig(
         title="SWParse API",
         description="Skyward's Image Reconising Multi Document Parser for RAG",
         version="0.1.0",
         path="/docs",
+        render_plugins=[ScalarRenderPlugin()],
     ),
 )
 
