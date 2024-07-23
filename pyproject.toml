@@ -1,0 +1,37 @@
+[project]
+name = "SWParse"
+version = "0.1.0"
+description = "SWParse - Generate LLM Compatible input for LLMs from many type of files."
+authors = [{ name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech" }]
+dependencies = [
+    "setuptools>=70.3.0",
+    "pip>=24.1.2",
+    "premailer>=3.10.0",
+    "openpyxl>=3.1.5",
+    "pymupdf>=1.24.7",
+    "pdf4llm>=0.0.9",
+    "litestar[full]>=2.9.1",
+    "litestar-saq>=0.1.21",
+    "s3fs>=2024.6.1",
+    "filetype>=1.2.0",
+]
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "Business" }     
+
+[project.scripts]
+app = "litestar.__main__:run_cli"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build]
+dev-mode-dirs = ["src/"]
+packages = ["src/swparse"]
+
+[tool.pdm]
+distribution = true
