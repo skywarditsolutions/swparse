@@ -66,7 +66,7 @@ services:
     restart: always
     image: minio/mc:latest
     volumes:
-      - ./config:/root/.mc
+      - config:/root/.mc
     depends_on:
       - minio
 
@@ -78,3 +78,4 @@ services:
       "
 volumes:
   cache-data: {}
+  config: {}
