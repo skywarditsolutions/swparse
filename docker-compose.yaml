@@ -10,6 +10,8 @@ services:
     env_file:
       - .env
   worker:
+    build:
+      context: .\
     image: swparse:latest
     command: litestar --app-dir /project/src/swparse workers run
     restart: always
