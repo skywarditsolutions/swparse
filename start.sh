@@ -1,4 +1,5 @@
 #!/bin/bash
+source .env
 if [ ! -d "./data/" ]; then mkdir -p ./data/; fi
 if [ ! -d "./data/$MINIO_BUCKET" ]; then mkdir -p ./data/$MINIO_BUCKET; fi
 docker-compose pull

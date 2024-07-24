@@ -50,6 +50,7 @@ queue = Queue.from_url("redis://localhost", name="swparse")
 
 
 class SWParse(Controller):
+    tags = ["Skyward Parse"]
     path = "/api/parsing/"
     @post(path="upload")
     async def upload_and_que(

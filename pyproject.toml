@@ -1,7 +1,7 @@
 [project]
 name = "SWParse"
 version = "0.1.0"
-description = "SWParse - Generate LLM Compatible input for LLMs from many type of files."
+description = "SWParse - Parse and Generate LLM Compatible output from many type of files."
 authors = [{ name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech" }]
 dependencies = [
     "setuptools>=70.3.0",
