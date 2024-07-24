@@ -7,7 +7,7 @@ import filetype
 from litestar_saq import QueueConfig, SAQConfig, SAQPlugin
 from s3fs import S3FileSystem
 from saq import Queue
-from litestar.openapi.plugins import StoplightRenderPlugin,ScalarRenderPlugin,RapidocRenderPlugin,YamlRenderPlugin
+from litestar.openapi.plugins import  SwaggerRenderPlugin,StoplightRenderPlugin,ScalarRenderPlugin,RapidocRenderPlugin,YamlRenderPlugin
 
 from litestar import Controller, Litestar, get, post , Request
 from litestar.params import Body
@@ -46,7 +46,7 @@ logger = getLogger(__name__)
 BUCKET = "swparse"
 MINIO_ROOT_USER="admin"
 MINIO_ROOT_PASSWORD="0xc0d3skyward"  
-queue = Queue.from_url("redis://localhost", name="swparse")     
+queue = Queue.from_url("redis://cache", name="swparse")     
 
 
 class SWParse(Controller):
@@ -61,7 +61,7 @@ class SWParse(Controller):
         filename = data.filename
         s3 = S3FileSystem(
             # asynchronous=True,
-            endpoint_url="http://localhost:9000/",
+            endpoint_url="http://minio:9000/",
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False
@@ -99,7 +99,7 @@ class SWParse(Controller):
 
 saq = SAQPlugin(
     config=SAQConfig(
-        redis_url="redis://localhost:6379/0",
+        redis_url="redis://cache:6379/0",
         web_enabled=True,
         use_server_lifespan=False,
         queue_configs=[
@@ -120,7 +120,7 @@ app = Litestar(
         description="Skyward's Image Reconising Multi Document Parser for RAG",
         version="0.1.0",
         path="/docs",
-        render_plugins=[ScalarRenderPlugin()],
+        render_plugins=[RapidocRenderPlugin()],
     ),
 )
 

@@ -19,7 +19,7 @@ MINIO_ROOT_PASSWORD = "0xc0d3skyward"
 async def parse_mu_s3   (ctx: Context, *, s3_url: str, ext: str) -> str:
     s3 = S3FileSystem(
         # asynchronous=True,
-        endpoint_url="http://localhost:9000/",
+        endpoint_url="http://minio:9000/",
         key=MINIO_ROOT_USER,
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False
