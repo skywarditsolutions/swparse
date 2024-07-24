@@ -13,14 +13,14 @@ dependencies = [
     "litestar[full]>=2.9.1",
     "litestar-saq>=0.1.21",
     "s3fs>=2024.6.1",
-    "filetype>=1.2.0",
+    "filetype>=1.2.0",  
 ]
 requires-python = ">=3.12"
 readme = "README.md"
 license = { text = "Business" }     
 
 [project.scripts]
-app = "litestar.__main__:run_cli"
+swparse = "swparse.__main__:run_cli"
 
 [build-system]
 build-backend = "hatchling.build"
