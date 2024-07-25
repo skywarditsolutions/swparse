@@ -10,6 +10,9 @@ from swparse.settings import storage
 if TYPE_CHECKING:
     from saq.types import Context
 import pypdfium2 as pdfium
+import pypdfium2.raw as pdfium_c
+import pypdfium2.internal as pdfium_i
+
 logger = getLogger(__name__)
 BUCKET = storage.BUCKET
 MINIO_ROOT_USER = storage.ROOT_USER
@@ -60,7 +63,7 @@ async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str
     )
 
     with s3.open(s3_url,mode="rb") as doc:
-        pil_image = Image.open(doc.read()).convert("RGB")
+        pil_image = Image.open(doc).convert("RGB")
     pdf = pdfium.PdfDocument.new()
 
     image = pdfium.PdfImage.new(pdf)
@@ -73,10 +76,13 @@ async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str
     page = pdf.new_page(width, height)
     page.insert_obj(image)
     page.gen_content()
-    output= io.BytesIO()
-    pdf.save(output)
-    markdown = pdf_markdown(output.read())
+
+    with s3.open(f"{s3_url}.pdf","wb") as output:
+        pdf.save(output)
+    with s3.open(f"{s3_url}.pdf","rb") as input:
+        markdown = pdf_markdown(input)
+
     logger.error("parse_image_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
-    return markdown
+    return markdown[0]

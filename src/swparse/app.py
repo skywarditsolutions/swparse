@@ -83,10 +83,10 @@ class SWParse(Controller):
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue("parse_pdf_markdown_s3", s3_url=s3_url)
         elif data.content_type.split("/")[0].lower()=="image":
-            job = await queue.enqueue("parse_mu_s3", s3_url=s3_url , ext = data.content_type  )
+            job = await queue.enqueue("parse_image_markdown_s3", s3_url=s3_url , ext = data.content_type  )
         else:
             job = await queue.enqueue(
-                "parse_image_markdown_s3", s3_url=s3_url, ext=data.content_type
+                "parse_mu_s3", s3_url=s3_url, ext=data.content_type
             )
         return {"id": job.id, "status": Status[job.status]}
 
@@ -125,7 +125,8 @@ saq = SAQPlugin(
                 name="swparse",
                 tasks=[
                     parse_mu_s3,
-                    parse_pdf_markdown_s3
+                    parse_pdf_markdown_s3,
+                    parse_image_markdown_s3
                 ],
             ),
         ],

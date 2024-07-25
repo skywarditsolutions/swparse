@@ -24,6 +24,13 @@ services:
       - swparse
       - minio
       - redis
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
   redis:
     image: valkey/valkey:latest
     ports:

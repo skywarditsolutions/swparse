@@ -20,8 +20,8 @@ version = importlib.metadata.version(DEFAULT_MODULE_NAME)
 
 
 def env_prefixed_model_config(env_prefix):
-    mode = os.environ["MODE"]
-    if mode.lower() == "dev":
+    mode = os.environ.get("MODE")
+    if mode and mode.lower() == "dev":
         env_file = ".env.dev"
     else:
         env_file = ".env"
