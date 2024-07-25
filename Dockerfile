@@ -12,10 +12,12 @@ COPY src/ /project/src
 
 # install dependencies and project into the local packages directory
 WORKDIR /project
+
 RUN pdm install --check --prod --no-editable
 
 # run stage
 FROM python:$PYTHON_BASE
+RUN apt-get update && apt-get install -y libgl-dev
 
 # retrieve packages from build stage
 COPY --from=builder /project/.venv/ /project/.venv

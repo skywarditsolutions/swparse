@@ -13,7 +13,11 @@ dependencies = [
     "litestar[full]>=2.9.1",
     "litestar-saq>=0.1.21",
     "s3fs>=2024.6.1",
-    "filetype>=1.2.0",  
+    "filetype>=1.2.0",
+    "surya-ocr>=0.4.15",
+    "streamlit>=1.36.0",
+    "marker-pdf>=0.2.16",
+    "pillow>=10.4.0",
 ]
 requires-python = ">=3.12"
 readme = "README.md"

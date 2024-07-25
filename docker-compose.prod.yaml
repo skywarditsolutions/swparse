@@ -9,6 +9,9 @@ services:
       - "80:8000"
     env_file:
       - .env
+    depends_on:
+      - minio
+      - redis
   worker:
     build:
       context: .
@@ -19,11 +22,13 @@ services:
       - .env
     depends_on:
       - swparse
-  cache:
+      - minio
+      - redis
+  redis:
     image: valkey/valkey:latest
     ports:
       - "6379:6379"
-    hostname: cache
+    hostname: redis
     command: redis-server --appendonly yes
     volumes:
       - cache-data:/data
