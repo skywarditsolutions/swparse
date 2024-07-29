@@ -31,7 +31,6 @@ services:
     image: minio/minio:latest
     volumes:
       - ./data:/data
-
     ports:
       - "9000:9000"
       - "9090:9001"

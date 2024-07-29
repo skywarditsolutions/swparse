@@ -31,6 +31,8 @@ services:
       - swparse
       - minio
       - redis
+    volumes:
+      - ./data:/data
   redis:
     image: valkey/valkey:latest
     ports:

@@ -12,6 +12,8 @@ services:
     depends_on:
       - minio
       - redis
+    volumes:
+      - ./data:/data
   worker:
     build:
       context: .
