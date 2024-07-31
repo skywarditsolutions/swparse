@@ -10,3 +10,4 @@ mc='docker exec -it minio-client mc'
 # $mc admin user add minio/ $MINIO_CONSOLE_USER $MINIO_CONSOLE_PASSWORD
 # $mc admin policy add minio/ consoleAdmin /root/.mc/admin.json
 # $mc admin policy set minio consoleAdmin user=$MINIO_CONSOLE_USER
+    
