@@ -22,7 +22,7 @@ class Status(enum.StrEnum):
     new = "PENDING"
     queued = "PENDING"
     active = "PENDING"
-    complete = "COMPLETED"
+    complete = "SUCCESS"
 
 @dataclass
 class JobMetadata:
@@ -53,9 +53,9 @@ from litestar.enums import RequestEncodingType  # noqa: E402
 logger = getLogger(__name__)
 
 
-BUCKET = "swparse"
-MINIO_ROOT_USER="admin"
-MINIO_ROOT_PASSWORD="0xc0d3skyward"  
+BUCKET = storage.BUCKET
+MINIO_ROOT_USER= storage.ROOT_USER
+MINIO_ROOT_PASSWORD=storage.ROOT_PASSWORD  
 queue = Queue.from_url(worker.REDIS_HOST, name="swparse")     
 
 
