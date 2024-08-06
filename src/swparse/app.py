@@ -9,7 +9,7 @@ from litestar.openapi.plugins import  RapidocRenderPlugin
 
 from litestar import Controller, Litestar, get, post
 from litestar.params import Body
-from swparse.tasks import parse_mu_s3,parse_pdf_markdown_s3,parse_image_markdown_s3
+from swparse.tasks import parse_mu_s3,parse_pdf_markdown_s3,parse_image_markdown_s3,parse_pdf_page_markdown_s3
 from dataclasses import dataclass
 from litestar.openapi.config import OpenAPIConfig
 from swparse.settings import worker,storage
@@ -63,7 +63,7 @@ class SWParse(Controller):
     tags = ["Skyward Parse"]
     path = "/api/parsing/"
     @post(path="upload")
-    async def upload_and_que(
+    async def upload_and_parse_que(
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
@@ -87,6 +87,31 @@ class SWParse(Controller):
         else:
             job = await queue.enqueue(
                 "parse_mu_s3", s3_url=s3_url, ext=data.content_type
+            )
+        return {"id": job.id, "status": Status[job.status]}
+    @post(path="upload/page/{page:int}")
+    async def upload_parse_page_que(
+        self,
+        data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
+        page:int = 1,
+    ) -> JobStatus:
+        page += 1
+        content = await data.read()
+        filename = data.filename
+        s3 = S3FileSystem(
+            # asynchronous=True,
+            endpoint_url=storage.ENPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False
+        )
+        
+        s3_url = f"{BUCKET}/{filename}"
+        with s3.open(s3_url, "wb") as f:
+            f.write(content)
+        if data.content_type in ["application/pdf"]:
+            job = await queue.enqueue(
+                "parse_pdf_page_markdown_s3", s3_url=s3_url, page=page
             )
         return {"id": job.id, "status": Status[job.status]}
 
@@ -126,7 +151,8 @@ saq = SAQPlugin(
                 tasks=[
                     parse_mu_s3,
                     parse_pdf_markdown_s3,
-                    parse_image_markdown_s3
+                    parse_image_markdown_s3,
+                    parse_pdf_page_markdown_s3,
                 ],
             ),
         ],

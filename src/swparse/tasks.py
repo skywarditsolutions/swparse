@@ -1,5 +1,4 @@
 from __future__ import annotations
-import io
 from logging import getLogger
 from typing import TYPE_CHECKING
 import pymupdf4llm
@@ -10,9 +9,6 @@ from swparse.settings import storage
 if TYPE_CHECKING:
     from saq.types import Context
 import pypdfium2 as pdfium
-import pypdfium2.raw as pdfium_c
-import pypdfium2.internal as pdfium_i
-
 logger = getLogger(__name__)
 BUCKET = storage.BUCKET
 MINIO_ROOT_USER = storage.ROOT_USER
@@ -47,6 +43,22 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
 
     with s3.open(s3_url,mode="rb") as doc:
         markdown,doc_images,out_meta = pdf_markdown(doc.read())
+    logger.error("parse_pdf_markdown_s3")
+    logger.error(s3_url)
+    logger.error(markdown)
+    return markdown
+async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str,page:int) -> str:
+    from swparse.convert import pdf_markdown
+    s3 = S3FileSystem(
+        # asynchronous=True,
+        endpoint_url=storage.ENPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False
+    )
+
+    with s3.open(s3_url,mode="rb") as doc:
+        markdown,doc_images,out_meta = pdf_markdown(doc.read(),start_page=page,max_pages=1)
     logger.error("parse_pdf_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
