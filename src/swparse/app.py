@@ -95,7 +95,9 @@ class SWParse(Controller):
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
         page:int = 1,
     ) -> JobStatus:
-        page += 1
+        page -= 1
+        if page < 0 :
+            page = 0
         content = await data.read()
         filename = data.filename
         s3 = S3FileSystem(
