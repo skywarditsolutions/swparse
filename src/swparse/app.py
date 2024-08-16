@@ -95,6 +95,11 @@ class SWParse(Controller):
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
         page:int = 1,
     ) -> JobStatus:
+        """
+        Parse docs by page. 
+        - page:int  : Page number , stats at 1.
+        - upload: File Input
+        """
         page -= 1
         if page < 0 :
             page = 0
@@ -149,6 +154,7 @@ saq = SAQPlugin(
         use_server_lifespan=False,
         queue_configs=[
             QueueConfig(
+                timers={"sweep":999999},
                 name="swparse",
                 tasks=[
                     parse_mu_s3,
@@ -158,6 +164,7 @@ saq = SAQPlugin(
                 ],
             ),
         ],
+        
     ),
 )
 app = Litestar(
