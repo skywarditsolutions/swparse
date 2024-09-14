@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:da4b727e35844e51eb680f14eec742ac5df383c8097c2405c41098de062fdd11"
+content_hash = "sha256:cea3d54734ab157cfaa5e7df1e6c80f9c5d36b472a6c0bddf2d90170cceda9bd"
 
 [[package]]
 name = "advanced-alchemy"
@@ -335,6 +335,17 @@ dependencies = [
 files = [
     {file = "click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28"},
     {file = "click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de"},
+]
+
+[[package]]
+name = "cobble"
+version = "0.1.4"
+requires_python = ">=3.5"
+summary = "Create data objects"
+groups = ["default"]
+files = [
+    {file = "cobble-0.1.4-py3-none-any.whl", hash = "sha256:36c91b1655e599fd428e2b95fdd5f0da1ca2e9f1abb0bc871dec21a0e78a2b44"},
+    {file = "cobble-0.1.4.tar.gz", hash = "sha256:de38be1539992c8a06e569630717c485a5f91be2192c461ea2b220607dfa78aa"},
 ]
 
 [[package]]
@@ -1157,6 +1168,20 @@ dependencies = [
 files = [
     {file = "Mako-1.3.5-py3-none-any.whl", hash = "sha256:260f1dbc3a519453a9c856dedfe4beb4e50bd5a26d96386cb6c80856556bb91a"},
     {file = "Mako-1.3.5.tar.gz", hash = "sha256:48dbc20568c1d276a2698b36d968fa76161bf127194907ea6fc594fa81f943bc"},
+]
+
+[[package]]
+name = "mammoth"
+version = "1.8.0"
+requires_python = ">=3.7"
+summary = "Convert Word documents from docx to simple and clean HTML and Markdown"
+groups = ["default"]
+dependencies = [
+    "cobble<0.2,>=0.1.3",
+]
+files = [
+    {file = "mammoth-1.8.0-py2.py3-none-any.whl", hash = "sha256:b2abf2340809b13a903c8b65a27846466290b869f0dd56e4a1e3072c4be1ea86"},
+    {file = "mammoth-1.8.0.tar.gz", hash = "sha256:7e8aa7db53f4aa7e9620b22bf8b716f1a16c84e969de1a0b1f920c756184e3d8"},
 ]
 
 [[package]]

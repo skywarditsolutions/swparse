@@ -19,6 +19,7 @@ dependencies = [
     "marker-pdf>=0.2.16",
     "pillow>=10.4.0",
     "llama-parse>=0.4.9",
+    "mammoth>=1.8.0",
 ]
 requires-python = ">=3.12"
 readme = "README.md"

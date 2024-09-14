@@ -1,4 +1,3 @@
-#!/bin/bash
 export MODE="dev"
 source .env.dev
 if [ ! -d "./data/" ]; then mkdir -p ./data/; fi

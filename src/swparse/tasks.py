@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 BUCKET = storage.BUCKET
 MINIO_ROOT_USER = storage.ROOT_USER
 MINIO_ROOT_PASSWORD = storage.ROOT_PASSWORD
-
+import mimetypes
 async def parse_mu_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
     s3 = S3FileSystem(
         # asynchronous=True,
@@ -24,8 +24,9 @@ async def parse_mu_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
     )
 
     with s3.open(s3_url) as doc:
+        
         markdown = pymupdf4llm.to_markdown(
-            pymupdf.open(ext,doc.read(),filetype=ext)
+            pymupdf.open(mimetypes.guess_extension(ext), doc.read())
         )
     logger.error("parse_mu_s3")
     logger.error(s3_url)
@@ -42,7 +43,7 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     )
 
     with s3.open(s3_url,mode="rb") as doc:
-        markdown,doc_images,out_meta = pdf_markdown(doc.read())
+        markdown, doc_images, out_meta = pdf_markdown(doc.read(), max_pages=20)
     logger.error("parse_pdf_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
