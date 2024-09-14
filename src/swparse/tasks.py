@@ -23,11 +23,14 @@ async def parse_mu_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
         use_ssl=False
     )
 
-    with s3.open(s3_url) as doc:
         
-        markdown = pymupdf4llm.to_markdown(
-            pymupdf.open(mimetypes.guess_extension(ext), doc.read())
-        )
+    with s3.open(s3_url) as doc:
+        try:
+            markdown = pymupdf4llm.to_markdown(
+                pymupdf.open(mimetypes.guess_extension(ext), doc.read())
+            )
+        except:
+            markdown = ""
     logger.error("parse_mu_s3")
     logger.error(s3_url)
     logger.error(markdown)
