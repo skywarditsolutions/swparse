@@ -121,3 +121,24 @@ The SWParse  system is a smart document parser that integrates well with LLamaI
   * XlsX to HTML conversion , planned to use for esay sub-table extraction
 * Unstructured.io
   * Untested, could be useful for more structure extraction.
+
+## APP Backend - Demo User Facing application
+
+* User Registartion
+* User Login (OAuth)
+* Per-User Upload
+* Directory Listing
+* Uploaded files List
+* Extracted result files list
+* Search engine Indexer of Markdown results
+* Search engine
+
+
+## APP Frontend UI
+
+* Login
+* Upload Documents
+* Uploaded File list 
+* Download Markdown
+* Download HTML
+* Preview / Reader for those docs
