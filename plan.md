@@ -17,7 +17,7 @@ The SWParse  system is a smart document parser that integrates well with LLamaI
       * Extract Sub tables
     * PPT/PPTX/RTF
     * All Regular Text Files
-    * As many Image fiels as possibe
+    * As many Image fields as possibe
 
 
 
@@ -27,7 +27,7 @@ The SWParse  system is a smart document parser that integrates well with LLamaI
     * Marker
 * Caching to avoid re-processing the same document multiple times
   * Auto Cached to S3 or S3 compatible object store
-  * Detect if document is already extracted and cache.
+  * Detect if document is already extracted and cached.
 * Page separation and target page extraction
 * Fast Detection of Tables from Documents and Extraction of them. 
 * Asynchronous processing for efficient processing of multiple files
@@ -47,6 +47,7 @@ The SWParse  system is a smart document parser that integrates well with LLamaI
     * Lllama3.2 Vision
     * CogVLM or MiniCPM
   * Features from Sensible.so
+  * Ability to handle natural language instructions.
 
 
 
@@ -69,12 +70,14 @@ The SWParse  system is a smart document parser that integrates well with LLamaI
 * Natural Language based Document Section Search.
 * Multi file support:
   * PDF,DOC,DOCX,XLS,XLSX,PPT,PPTX,HTML,CSV
+* * Targeted Page Range Extraction ( from - to)
+* * Smart page detection and extraction , based on natural language instructions.
+  * Integration with SkywardGPT would be great
 * Custom Field base Query and JSON Extraction.
 * VLLM based Extraction
 * Plain Text Extraction
 * Caching of results (uploads are already cached , Results may or may not need caching - determine base upon option? )
-* Targeted Page Range Extraction ( from - to)
-* Smart page detection and extraction , based on keyword or phrase?
+
 * Advanced Extraction
   * Ablility to Query document by giving fields to extract
     * Input : List of fields , like SensibleML
@@ -86,12 +89,11 @@ The SWParse  system is a smart document parser that integrates well with LLamaI
 
 ## Planned Non-Functional Reqs:
 
-
-
-* Terraform + Github CI/CD
 * Observbility
 * API Examples
 * Notebook Examples
+* Encrypted docker images for delivery
+* CI/CD
 
 
 
