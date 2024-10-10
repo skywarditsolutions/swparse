@@ -1,51 +1,95 @@
 from __future__ import annotations
 from logging import getLogger
-from typing import TYPE_CHECKING
-import pymupdf4llm
+import io
 import pymupdf
+import mimetypes
+import pymupdf4llm
 from PIL import Image
+import pypdfium2 as pdfium
 from s3fs import S3FileSystem
 from swparse.settings import storage
+from xlsx2html import xlsx2html
+from html2text import html2text
+import mammoth
+from markdownify import markdownify as md
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from saq.types import Context
-import pypdfium2 as pdfium
+
 logger = getLogger(__name__)
 BUCKET = storage.BUCKET
 MINIO_ROOT_USER = storage.ROOT_USER
 MINIO_ROOT_PASSWORD = storage.ROOT_PASSWORD
-import mimetypes
+
+
+async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
+
+    s3 = S3FileSystem(
+        # asynchronous=True,
+        endpoint_url=storage.ENPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
+    logger.error("READ Content")
+    try:
+        with s3.open(s3_url, mode="rb") as doc:
+            xlsx_file = io.BytesIO(doc.read())
+            out_file = io.StringIO()
+
+            default_langs = "en"
+            xlsx2html(xlsx_file, out_file, locale=default_langs)
+            out_file.seek(0)
+            result_html = out_file.read()
+            markdown = html2text(result_html)
+
+    except FileNotFoundError:
+        logger.error(f"File not found in {s3_url}")
+        markdown = ""
+    except Exception as e:
+        logger.error(f"Error while parsing document: {e}")
+        markdown = ""
+
+    logger.error(s3_url)
+    logger.error("parse_plain_text_markdown_s3")
+    return markdown
+
+
 async def parse_mu_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=storage.ENPOINT_URL,
         key=MINIO_ROOT_USER,
         secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False
+        use_ssl=False,
     )
 
-        
     with s3.open(s3_url) as doc:
         try:
             markdown = pymupdf4llm.to_markdown(
                 pymupdf.open(mimetypes.guess_extension(ext), doc.read())
             )
-        except:
+        except Exception as e:
+            logger.error(f"Error: {e}")
             markdown = ""
     logger.error("parse_mu_s3")
     logger.error(s3_url)
     logger.error(markdown)
     return markdown
+
+
 async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     from swparse.convert import pdf_markdown
+
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=storage.ENPOINT_URL,
         key=MINIO_ROOT_USER,
         secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False
+        use_ssl=False,
     )
 
-    with s3.open(s3_url,mode="rb") as doc:
+    with s3.open(s3_url, mode="rb") as doc:
         markdown, doc_images, out_meta = pdf_markdown(doc.read(), max_pages=20)
     logger.error("parse_pdf_markdown_s3")
     logger.error(s3_url)
@@ -54,8 +98,7 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
 
 
 async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) -> str:
-    import mammoth
-    from markdownify import markdownify as md
+
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=storage.ENPOINT_URL,
@@ -74,14 +117,16 @@ async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     return markdown
 
 
-async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str,page:int) -> str:
+
+
+async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str, page: int) -> str:
     from swparse.convert import pdf_markdown
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=storage.ENPOINT_URL,
         key=MINIO_ROOT_USER,
         secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False
+        use_ssl=False,
     )
 
     with s3.open(s3_url,mode="rb") as doc:
@@ -91,17 +136,19 @@ async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str,page:int) -> s
     logger.error(markdown)
     return markdown
 
+
 async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
     from swparse.convert import pdf_markdown
+
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=storage.ENPOINT_URL,
         key=MINIO_ROOT_USER,
         secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False   
+        use_ssl=False,
     )
 
-    with s3.open(s3_url,mode="rb") as doc:
+    with s3.open(s3_url, mode="rb") as doc:
         pil_image = Image.open(doc).convert("RGB")
     pdf = pdfium.PdfDocument.new()
 
@@ -115,11 +162,11 @@ async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str
     page = pdf.new_page(width, height)
     page.insert_obj(image)
     page.gen_content()
-
-    with s3.open(f"{s3_url}.pdf","wb") as output:
+    s3_url = f"{s3_url}.pdf"
+    with s3.open(s3_url, "wb") as output:
         pdf.save(output)
-    with s3.open(f"{s3_url}.pdf","rb") as input:
-        markdown = pdf_markdown(input)
+    with s3.open(s3_url, "rb") as input_byte:
+        markdown = pdf_markdown(input_byte)
 
     logger.error("parse_image_markdown_s3")
     logger.error(s3_url)
