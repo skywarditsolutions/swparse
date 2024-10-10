@@ -12,7 +12,6 @@ from marker.ocr.recognition import run_ocr
 from marker.pdf.extract_text import get_text_blocks
 from marker.cleaners.headers import filter_header_footer, filter_common_titles
 from marker.equations.equations import replace_equations
-from marker.pdf.utils import find_filetype
 from marker.postprocessors.editor import edit_full_text
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.bullets import replace_bullets
@@ -29,17 +28,18 @@ import os
 import pathlib
 import ctypes
 import typing
+import pandas
 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
-model_lst=load_all_models()
+model_lst = load_all_models()
 
 
 def pdf_markdown(
     input: str | pathlib.Path | bytes | ctypes.Array | typing.BinaryIO,
-    max_pages: int = None,
-    start_page: int = None,
+    max_pages: int | None = None,
+    start_page: int | None = None,
     metadata: Optional[Dict] = None,
     langs: Optional[List[str]] = None,
     batch_multiplier: int = 1,
@@ -47,7 +47,7 @@ def pdf_markdown(
     # Set language needed for OCR
     if langs is None:
         langs = [settings.DEFAULT_LANG]
-
+    # print("work")
     if metadata:
         langs = metadata.get("languages", langs)
     langs = replace_langs_with_codes(langs)
@@ -60,7 +60,6 @@ def pdf_markdown(
         "languages": langs,
         "filetype": "application/pdf",
     }
-
 
     # Get initial text blocks from the pdf
     doc = pdfium.PdfDocument(input)
@@ -165,3 +164,24 @@ def pdf_markdown(
     doc_images = images_to_dict(pages)
 
     return full_text, doc_images, out_meta
+
+
+def convert_xlsx_csv(
+    input: str | pathlib.Path | bytes | ctypes.Array | typing.BinaryIO,
+) -> str:
+    try:
+        if hasattr(input, "read"):
+
+            xlsx_data = pandas.read_excel(input)
+        else:
+
+            with open(input, "rb") as f:
+                xlsx_data = pandas.read_excel(f)
+
+        csv_data = xlsx_data.to_csv(index=True)
+
+        return csv_data
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return ""
