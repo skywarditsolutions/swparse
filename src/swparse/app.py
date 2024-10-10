@@ -15,6 +15,7 @@ from swparse.tasks import (
     parse_pdf_markdown_s3,
     parse_image_markdown_s3,
     parse_pdf_page_markdown_s3,
+    parse_docx_markdown_s3
 )
 from dataclasses import dataclass
 from litestar.openapi.config import OpenAPIConfig
@@ -95,7 +96,9 @@ class SWParse(Controller):
             job = await queue.enqueue(
                 "parse_image_markdown_s3", s3_url=s3_url, ext=data.content_type
             )
-        else:
+        elif data.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            job = await queue.enqueue("parse_docx_markdown_s3", s3_url=s3_url)    
+        else:   
             job = await queue.enqueue(
                 "parse_mu_s3", s3_url=s3_url, ext=data.content_type
             )
@@ -193,6 +196,7 @@ saq = SAQPlugin(
                 tasks=[
                     parse_mu_s3,
                     parse_pdf_markdown_s3,
+                    parse_docx_markdown_s3,
                     parse_image_markdown_s3,
                     parse_pdf_page_markdown_s3,
                 ],  # type: ignore

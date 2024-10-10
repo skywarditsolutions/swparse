@@ -51,6 +51,29 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     logger.error(s3_url)
     logger.error(markdown)
     return markdown
+
+
+async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) -> str:
+    import mammoth
+    from markdownify import markdownify as md
+    s3 = S3FileSystem(
+        # asynchronous=True,
+        endpoint_url=storage.ENPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False
+    )
+    with s3.open(s3_url,mode="rb") as doc:
+        result = mammoth.convert_to_html(doc)   
+        htmlData = result.value
+        markdown = md(htmlData)
+        logger.error("parse_docx_markdown_s3")  
+        logger.error(s3_url)        
+        logger.error(htmlData)
+        logger.error(markdown)                  
+    return markdown
+
+
 async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str,page:int) -> str:
     from swparse.convert import pdf_markdown
     s3 = S3FileSystem(

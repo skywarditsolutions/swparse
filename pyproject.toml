@@ -20,6 +20,8 @@ dependencies = [
     "pillow>=10.4.0",
     "llama-parse>=0.4.9",
     "mammoth>=1.8.0",
+    "html2text>=2024.2.26",
+    "markdownify>=0.13.1",
 ]
 requires-python = ">=3.12"
 readme = "README.md"
