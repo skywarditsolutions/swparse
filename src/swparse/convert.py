@@ -1,6 +1,11 @@
 import pypdfium2 as pdfium  # Needs to be at the top to avoid warnings
 from PIL import Image
-
+import io
+import os
+import pathlib
+import ctypes
+import typing
+import pandas
 from marker.utils import flush_cuda_memory
 from marker.tables.table import format_tables
 from marker.debug.data import dump_bbox_debug_data
@@ -24,12 +29,10 @@ from marker.images.save import images_to_dict
 from marker.models import load_all_models
 from typing import List, Dict, Tuple, Optional
 from marker.settings import settings
-import os
-import pathlib
-import ctypes
-import typing
-import pandas
 
+from logging import getLogger
+
+logger = getLogger(__name__)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
@@ -166,22 +169,26 @@ def pdf_markdown(
     return full_text, doc_images, out_meta
 
 
-def convert_xlsx_csv(
-    input: str | pathlib.Path | bytes | ctypes.Array | typing.BinaryIO,
+async def convert_xlsx_csv(
+    input: str | pathlib.Path | bytes | typing.BinaryIO,
 ) -> str:
     try:
+        if isinstance(input, bytes):
+            input = io.BytesIO(input)
+
         if hasattr(input, "read"):
-
             xlsx_data = pandas.read_excel(input)
-        else:
 
-            with open(input, "rb") as f:
-                xlsx_data = pandas.read_excel(f)
+        elif isinstance(input, str):
+            xlsx_data = input.decode("utf-8")
+
+        else:
+            xlsx_data = await input.read()
 
         csv_data = xlsx_data.to_csv(index=True)
 
         return csv_data
 
     except Exception as e:
-        print(f"Error: {e}")
+        logger.error(f"Error converting XLSX to CSV: {e}")
         return ""

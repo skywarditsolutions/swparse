@@ -16,7 +16,7 @@ from swparse.tasks import (
     parse_image_markdown_s3,
     parse_pdf_page_markdown_s3,
     parse_xlsx_markdown_s3,
-    parse_docx_markdown_s3
+    parse_docx_markdown_s3,
 )
 
 from litestar.openapi.config import OpenAPIConfig
@@ -66,13 +66,19 @@ class SWParse(Controller):
             job = await queue.enqueue(
                 "parse_image_markdown_s3", s3_url=s3_url, ext=data.content_type
             )
-        elif data.content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        elif (
+            data.content_type
+            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ):
             job = await queue.enqueue(
                 "parse_xlsx_markdown_s3", s3_url=s3_url, ext=data.content_type
             )
-        elif data.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-            job = await queue.enqueue("parse_docx_markdown_s3", s3_url=s3_url)    
-        else:   
+        elif (
+            data.content_type
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ):
+            job = await queue.enqueue("parse_docx_markdown_s3", s3_url=s3_url)
+        else:
             job = await queue.enqueue(
                 "parse_mu_s3", s3_url=s3_url, ext=data.content_type
             )
@@ -113,7 +119,7 @@ class SWParse(Controller):
     async def convert_xlsx_to_csv(
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
-    ) -> str:
+    ) -> TextExtractResult:
 
         if (
             data.content_type
@@ -121,7 +127,8 @@ class SWParse(Controller):
         ):
             raise HTTPException(detail="Please upload xlsx file", status_code=400)
         content = await data.read()
-        return convert_xlsx_csv(content)
+        text = await convert_xlsx_csv(content)
+        return TextExtractResult(text=text, status=Status.complete)
 
     @post(path="upload/page/{page:int}")
     async def upload_parse_page_que(
