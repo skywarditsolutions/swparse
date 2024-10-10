@@ -1,0 +1,54 @@
+x-development-volumes: &development-volumes
+  volumes:
+    - ./tests:/workspace/swparse/tests/
+    - ./src:/workspace/swparse/src/
+    - ./Makefile:/workspace/swparse/Makefile
+    - ./pyproject.toml:/workspace/swparse/pyproject.toml
+    - ./pdm.lock:/workspace/swparse/pdm.lock
+    - ./.env.docker.example:/workspace/swparse/.env
+
+services:
+  localmail:
+    image: mailhog/mailhog:v1.0.0
+    ports:
+      - "8025:8025"
+  swparse:
+    build:
+      context: .
+      dockerfile: deploy/docker/dev/Dockerfile
+    ports:
+      - "8000:8000"
+      - "3006:3006"
+    image: swparse:latest-dev
+    tty: true
+    environment:
+      SAQ_USE_SERVER_LIFESPAN: "false"
+    command: litestar run --reload --host 0.0.0.0 --port 8000
+    restart: always
+    <<: *development-volumes
+  worker:
+    image: swparse:latest-dev
+    command: litestar workers run
+    tty: true
+    restart: always
+    <<: *development-volumes
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+
+    env_file:
+      - .env.docker.example
+  migrator:
+    image: swparse:latest-dev
+    command: litestar database upgrade --no-prompt
+    restart: "no"
+    <<: *development-volumes
+    env_file:
+      - .env.docker.example
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy

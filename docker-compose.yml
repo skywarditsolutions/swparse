@@ -1,0 +1,138 @@
+services:
+  cache:
+    image: valkey/valkey:latest
+    ports:
+      - "16379:6379"
+    hostname: cache
+    command: redis-server --appendonly yes
+    volumes:
+      - cache-data:/data
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 1s
+      timeout: 3s
+      retries: 30
+  db:
+    image: postgres:latest
+    ports:
+      - "15432:5432"
+    hostname: db
+    environment:
+      POSTGRES_PASSWORD: "swparse"
+      POSTGRES_USER: "swparse"
+      POSTGRES_DB: "swparse"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    healthcheck:
+      test:
+        - CMD
+        - pg_isready
+        - -U
+        - swparse
+      interval: 2s
+      timeout: 3s
+      retries: 40
+  swparse:
+    build:
+      context: .
+      dockerfile: deploy/docker/run/Dockerfile
+    image: swparse:latest
+    restart: always
+    depends_on:
+      minio:
+        condition: service_started
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      VITE_USE_SERVER_LIFESPAN: "false" # true if ssr or separate service
+      SAQ_USE_SERVER_LIFESPAN: "false"
+    env_file:
+      - .env
+  worker:
+    image: swparse:latest
+    command: litestar workers run
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    env_file:
+      - .env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  migrator:
+    image: swparse:latest
+    restart: "no"
+    command: litestar database upgrade --no-prompt
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+  minio:
+    env_file:
+      - .env
+    image: minio/minio:latest
+    volumes:
+      - ./data:/data
+    ports:
+      - "9100:9000"
+      - "9090:9001"
+    restart: always
+    environment:
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
+      MINIO_BUCKET: "${MINIO_BUCKET}"
+    command: server /data --console-address :9001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  minio-client:
+    env_file:
+      - .env
+    restart: always
+    image: minio/mc:latest
+    volumes:
+      - config:/root/.mc
+    depends_on:
+      - minio
+
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host rm minio;
+      /usr/bin/mc config host add --quiet --api s3v4 minio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; 
+      sleep infinity;
+      "
+volumes:
+  db-data: {}
+  cache-data: {}
+  config: {}
