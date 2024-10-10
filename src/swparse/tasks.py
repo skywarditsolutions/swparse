@@ -1,6 +1,6 @@
 from __future__ import annotations
 from logging import getLogger
-
+import io
 import pymupdf
 import mimetypes
 import pymupdf4llm
@@ -8,9 +8,11 @@ from PIL import Image
 import pypdfium2 as pdfium
 from s3fs import S3FileSystem
 from swparse.settings import storage
-
+from xlsx2html import xlsx2html
+from html2text import html2text
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
     from saq.types import Context
 
@@ -20,8 +22,8 @@ MINIO_ROOT_USER = storage.ROOT_USER
 MINIO_ROOT_PASSWORD = storage.ROOT_PASSWORD
 
 
-async def extract_text_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
-    from swparse.convert import pdf_markdown
+async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
+
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=storage.ENPOINT_URL,
@@ -30,19 +32,22 @@ async def extract_text_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
         use_ssl=False,
     )
     logger.error("READ Content")
-    logger.error(s3_url)
     try:
         with s3.open(s3_url, mode="rb") as doc:
-            content = doc.read()
-            logger.error("Content")
-            logger.error(content)
-            markdown, doc_images, out_meta = pdf_markdown(content, max_pages=20)
+            xlsx_file = io.BytesIO(doc.read())
+            out_file = io.StringIO()
+
+            default_langs = "en"
+            xlsx2html(xlsx_file, out_file, locale=default_langs)
+            out_file.seek(0)
+            result_html = out_file.read()
+            markdown = html2text(result_html)
 
     except FileNotFoundError:
         logger.error(f"File not found in {s3_url}")
         markdown = ""
     except Exception as e:
-        logger.error(f"Error gg while parsing document: {e}")
+        logger.error(f"Error while parsing document: {e}")
         markdown = ""
 
     logger.error(s3_url)

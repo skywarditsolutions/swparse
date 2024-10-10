@@ -15,7 +15,7 @@ from swparse.tasks import (
     parse_pdf_markdown_s3,
     parse_image_markdown_s3,
     parse_pdf_page_markdown_s3,
-    # extract_text_s3,
+    parse_xlsx_markdown_s3,
 )
 
 from litestar.openapi.config import OpenAPIConfig
@@ -65,6 +65,10 @@ class SWParse(Controller):
             job = await queue.enqueue(
                 "parse_image_markdown_s3", s3_url=s3_url, ext=data.content_type
             )
+        elif data.content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+            job = await queue.enqueue(
+                "parse_xlsx_markdown_s3", s3_url=s3_url, ext=data.content_type
+            )
         else:
             job = await queue.enqueue(
                 "parse_mu_s3", s3_url=s3_url, ext=data.content_type
@@ -84,7 +88,8 @@ class SWParse(Controller):
     ) -> TextExtractResult:
         try:
             content_type = data.content_type
-
+            logger.error("Content type")
+            logger.error(content_type.split("/")[0].lower())
             if content_type.split("/")[0].lower() != "text":
                 raise HTTPException(
                     detail="Error: Uploaded file is binary or unsupported text type.",
@@ -199,7 +204,7 @@ saq = SAQPlugin(
                 timers={"sweep": 999999},  # type: ignore
                 name="swparse",
                 tasks=[
-                    # extract_text_s3,
+                    parse_xlsx_markdown_s3,
                     parse_mu_s3,
                     parse_pdf_markdown_s3,
                     parse_image_markdown_s3,

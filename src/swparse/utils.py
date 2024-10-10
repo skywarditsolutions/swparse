@@ -1,6 +1,5 @@
 import pandas
 import io
-from striprtf.striprtf import rtf_to_text
 
 def decode_content(content: bytes) -> str:
     try:
@@ -31,8 +30,5 @@ async def extract_text(content: bytes, content_type: str) -> str:
 
     elif content_type == "text/xml":
         return decoded_content
-    elif content_type == "text/rtf":
-    try:
-        return rtf_to_text(decoded_content)
 
     return decoded_content
