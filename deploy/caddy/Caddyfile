@@ -1,0 +1,9 @@
+:80 {
+	handle /api/*,/schema/*,/health {
+		reverse_proxy swparse:8000
+	}
+
+	handle {
+		reverse_proxy http://localhost:4173
+	}
+}
