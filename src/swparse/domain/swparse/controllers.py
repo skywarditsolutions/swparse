@@ -61,10 +61,9 @@ class ParserController(Controller):
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 Job(
-                    "swparse.domain.swparse.tasks.parse_pdf_markdown_s3",
+                    "parse_pdf_markdown_s3",
                     kwargs={
                         "s3_url": s3_url,
-                        "ext": data.content_type,
                     },
                     timeout=0,
                 ),
@@ -72,7 +71,7 @@ class ParserController(Controller):
         elif data.content_type.split("/")[0].lower() == "image":
             job = await queue.enqueue(
                 Job(
-                    "swparse.domain.swparse.tasks.parse_image_markdown_s3",
+                    "parse_image_markdown_s3",
                     kwargs={
                         "s3_url": s3_url,
                         "ext": data.content_type,
@@ -83,7 +82,7 @@ class ParserController(Controller):
         elif data.content_type.split("/")[0].lower() == "text":
             job = await queue.enqueue(
                 Job(
-                    "swparse.domain.swparse.tasks.extract_text_files",
+                    "extract_text_files",
                     kwargs={
                         "s3_url": s3_url,
                         "ext": data.content_type,
@@ -94,7 +93,7 @@ class ParserController(Controller):
         elif data.content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
             job = await queue.enqueue(
                 Job(
-                    "swparse.domain.swparse.tasks.parse_xlsx_markdown_s3",
+                    "parse_xlsx_markdown_s3",
                     kwargs={
                         "s3_url": s3_url,
                         "ext": data.content_type,
@@ -105,10 +104,9 @@ class ParserController(Controller):
         elif data.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
             job = await queue.enqueue(
                 Job(
-                    "swparse.domain.swparse.tasks.parse_docx_markdown_s3",
+                    "parse_docx_markdown_s3",
                     kwargs={
                         "s3_url": s3_url,
-                        "ext": data.content_type,
                     },
                     timeout=0,
                 ),
@@ -116,7 +114,7 @@ class ParserController(Controller):
         else:
             job = await queue.enqueue(
                 Job(
-                    "swparse.domain.swparse.tasks.extract_string",
+                    "extract_string",
                     kwargs={
                         "s3_url": s3_url,
                         "ext": data.content_type,
@@ -167,7 +165,7 @@ class ParserController(Controller):
             f.write(content)  # type: ignore
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
-                "swparse.domain.swparse.tasks.parse_docx_markdown_s3",
+                "parse_docx_markdown_s3",
                 s3_url=s3_url,
                 page=page,
             )
@@ -180,7 +178,9 @@ class ParserController(Controller):
             return JobStatus(id=job.id, status=Status[job.status])
         raise HTTPException(detail="Unsupported File")
 
-    @get(path="job/{job_id:str}")
+    @get(
+        path="job/{job_id:str}",
+    )
     async def check_status(self, job_id: str) -> JobStatus:
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)
@@ -192,7 +192,9 @@ class ParserController(Controller):
             raise HTTPException(detail="JOB ERROR", status_code=400)
         return JobStatus(id=job.id, status=Status[job.status])
 
-    @get(path="job/{job_id:str}/result/{result_type:str}")
+    @get(
+        path="job/{job_id:str}/result/{result_type:str}",
+    )
     async def get_result(self, job_id: str, result_type: str = "markdown") -> JobResult:
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
 import io
-import mimetypes
 from logging import getLogger
 from typing import TYPE_CHECKING
 
 import mammoth
 import pandas as pd
-import pymupdf
-import pymupdf4llm
 import pypdfium2 as pdfium
 from html2text import html2text
 from markdownify import markdownify as md
@@ -55,7 +52,7 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
         markdown = ""
 
     logger.error(s3_url)
-    logger.error("parse_plain_text_markdown_s3")
+    logger.error("parse_xlsx_markdown_s3")
     return markdown
 
 
@@ -72,9 +69,10 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> str:
     with s3.open(s3_url, mode="rb") as doc:
         byte_string = doc.read()
         try:
-            return byte_string.decode("utf-8")
+            return str(byte_string.decode("utf-8"))
         except UnicodeDecodeError:
-            return byte_string
+            return str(byte_string)
+
 
 async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     s3 = S3FileSystem(
@@ -168,15 +166,13 @@ async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str
     return markdown[0]
 
 
-
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> str:
-
     try:
         s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
         )
         with s3.open(s3_url, mode="rb") as doc:
             content = doc.read()
@@ -198,10 +194,10 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> str:
 
 async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> str:
     s3 = S3FileSystem(
-    endpoint_url=settings.storage.ENDPOINT_URL,
-    key=MINIO_ROOT_USER,
-    secret=MINIO_ROOT_PASSWORD,
-    use_ssl=False,
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
     )
     with s3.open(s3_url, mode="rb") as doc:
         content = doc.read()

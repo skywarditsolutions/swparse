@@ -105,6 +105,7 @@ auth = OAuth2PasswordBearerAuth[User](
         constants.HEALTH_ENDPOINT,
         urls.ACCOUNT_LOGIN,
         urls.ACCOUNT_REGISTER,
+        "^/api/parsing/",
         "^/schema",
         "^/public/",
         "^/saq/static/",

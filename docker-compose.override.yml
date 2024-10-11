@@ -5,7 +5,7 @@ x-development-volumes: &development-volumes
     - ./Makefile:/workspace/swparse/Makefile
     - ./pyproject.toml:/workspace/swparse/pyproject.toml
     - ./pdm.lock:/workspace/swparse/pdm.lock
-    - ./.env.docker.example:/workspace/swparse/.env
+    - ./.env:/workspace/swparse/.env
 
 services:
   localmail:
