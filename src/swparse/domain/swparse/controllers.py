@@ -93,18 +93,38 @@ class ParserController(Controller):
             )
         elif data.content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
             job = await queue.enqueue(
-                "parse_xlsx_markdown_s3",
-                s3_url=s3_url,
-                ext=data.content_type,
+                Job(
+                    "swparse.domain.swparse.tasks.parse_xlsx_markdown_s3",
+                    kwargs={
+                        "s3_url": s3_url,
+                        "ext": data.content_type,
+                    },
+                    timeout=0,
+                ),
             )
         elif data.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-            job = await queue.enqueue("parse_docx_markdown_s3", s3_url=s3_url)
+            job = await queue.enqueue(
+                Job(
+                    "swparse.domain.swparse.tasks.parse_docx_markdown_s3",
+                    kwargs={
+                        "s3_url": s3_url,
+                        "ext": data.content_type,
+                    },
+                    timeout=0,
+                ),
+            )
         else:
             job = await queue.enqueue(
-                "parse_mu_s3",
-                s3_url=s3_url,
-                ext=data.content_type,
+                Job(
+                    "swparse.domain.swparse.tasks.extract_string",
+                    kwargs={
+                        "s3_url": s3_url,
+                        "ext": data.content_type,
+                    },
+                    timeout=0,
+                ),
             )
+
         if not job:
             raise HTTPException(detail="JOB ERROR", status_code=400)
 
@@ -112,7 +132,6 @@ class ParserController(Controller):
             raise HTTPException(detail="JOB ERROR", status_code=400)
 
         return JobStatus(id=job.id, status=Status[job.status])  # type: ignore
-
 
     @post(
         path="upload/page/{page:int}",

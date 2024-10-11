@@ -45,7 +45,7 @@ saq = SAQConfig(
             name="swparse",
             tasks=[
                 "swparse.domain.swparse.tasks.parse_docx_markdown_s3",
-                "swparse.domain.swparse.tasks.parse_mu_s3",
+                "swparse.domain.swparse.tasks.extract_string",
                 "swparse.domain.swparse.tasks.parse_image_markdown_s3",
                 "swparse.domain.swparse.tasks.parse_pdf_markdown_s3",
                 "swparse.domain.swparse.tasks.parse_pdf_page_markdown_s3",

@@ -59,7 +59,7 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
     return markdown
 
 
-async def parse_mu_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
+async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> str:
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -67,20 +67,14 @@ async def parse_mu_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
-
-    with s3.open(s3_url) as doc:
-        try:
-            markdown = pymupdf4llm.to_markdown(
-                pymupdf.open(mimetypes.guess_extension(ext), doc.read()),
-            )
-        except Exception as e:
-            logger.exception(f"Error: {e}")
-            markdown = ""
-    logger.error("parse_mu_s3")
+    logger.error("extract_string")
     logger.error(s3_url)
-    logger.error(markdown)
-    return markdown
-
+    with s3.open(s3_url, mode="rb") as doc:
+        byte_string = doc.read()
+        try:
+            return byte_string.decode("utf-8")
+        except UnicodeDecodeError:
+            return byte_string
 
 async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     s3 = S3FileSystem(
