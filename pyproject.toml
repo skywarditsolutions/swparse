@@ -1,48 +1,35 @@
 [project]
 authors = [{ name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech" }]
-classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Environment :: Web Environment",
-  "License :: OSI Approved :: MIT License",
-  "Natural Language :: English",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python",
-  "Topic :: Internet :: WWW/HTTP",
-  "Topic :: Software Development",
-  "Typing :: Typed",
-]
 dependencies = [
-    "litestar[full]>=2.11",
-    "advanced-alchemy[uuid]>=0.10.0",
-    "asyncpg>=0.28.0",
-    "python-dotenv>=1.0.0",
-    "passlib[argon2]>=1.7.4",
-    "litestar-saq>=0.1.3",
-    "litestar-granian>=0.1.4",
-    "aiosqlite>=0.19.0",
-    "httptools",
-    "setuptools>=70.3.0",
-    "pip>=24.1.2",
-    "premailer>=3.10.0",
-    "openpyxl>=3.1.5",
-    "pymupdf>=1.24.7",
-    "pdf4llm>=0.0.9",
-    "s3fs>=2024.9.0",
-    "filetype>=1.2.0",
-    "surya-ocr>=0.4.15",
-    "streamlit>=1.36.0",
-    "marker-pdf>=0.2.16",
-    "pillow>=10.4.0",
-    "llama-parse>=0.4.9",
-    "mammoth>=1.8.0",
-    "openpyxl>=3.1.5",
-    "xlsx2html>=0.6.1",
-    "html2text>=2024.2.26",
-    "markdownify>=0.13.1",
+  "litestar[full]>=2.11",
+  "advanced-alchemy[uuid]>=0.10.0",
+  "asyncpg>=0.28.0",
+  "python-dotenv>=1.0.0",
+  "passlib[argon2]>=1.7.4",
+  "litestar-saq>=0.1.3",
+  "litestar-granian>=0.1.4",
+  "aiosqlite>=0.19.0",
+  "httptools",
+  "setuptools>=70.3.0",
+  "pip>=24.1.2",
+  "premailer>=3.10.0",
+  "openpyxl>=3.1.5",
+  "pymupdf>=1.24.7",
+  "pdf4llm>=0.0.9",
+  "s3fs>=2024.9.0",
+  "filetype>=1.2.0",
+  "surya-ocr>=0.4.15",
+  "streamlit>=1.36.0",
+  "marker-pdf>=0.2.16",
+  "pillow>=10.4.0",
+  "llama-parse>=0.4.9",
+  "mammoth>=1.8.0",
+  "openpyxl>=3.1.5",
+  "xlsx2html>=0.6.1",
+  "html2text>=2024.2.26",
+  "markdownify>=0.13.1",
 ]
-description = "SWParse: Skyward Multidocumet Parser For RAG"
+description = "SWParse: SkyWard's Smart Multidocument Parser For RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
 license = { text = "BUSINESS" }
 name = "swparse"
@@ -52,9 +39,9 @@ version = "0.2.0"
 
 # [project.urls]
 # Discord = "https://discord.gg/litestar"
-# Homepage = "https://github.com/litestar-org/litestar-fullstack"
-# Issue = "https://github.com/litestar-org/litestar-fullstack/issues/"
-# Source = "https://github.com/litestar-org/litestar-fullstack"
+# Homepage = "https://github.com/skywarditsolutions/skwrdparse"
+# Issue = "https://github.com/skywarditsolutions/skwrdparse/issues/"
+# Source = "https://github.com/skywarditsolutions/skwrdparse"
 
 [project.scripts]
 swparse = "swparse.__main__:run_cli"
@@ -331,25 +318,25 @@ include = ["src/swparse", "tests"]
 [tool.git-cliff.changelog]
 body = """
 {% if version %}\
-    `Release [v{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }} <https://github.com/litestar-org/litestar-fullstack/releases/tag/v{{ version | trim_start_matches(pat="v") }}>`_
+    `Release [v{{ version | trim_start_matches(pat="v") }}] - {{ timestamp | date(format="%Y-%m-%d") }} <https://github.com/skywarditsolutions/skwrdparse/releases/tag/v{{ version | trim_start_matches(pat="v") }}>`_
     ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    * `See All commits in v{{ version | trim_start_matches(pat="v") }} <https://github.com/litestar-org/litestar-fullstack/commits/v{{ version | trim_start_matches(pat="v") }}>`_
+    * `See All commits in v{{ version | trim_start_matches(pat="v") }} <https://github.com/skywarditsolutions/skwrdparse/commits/v{{ version | trim_start_matches(pat="v") }}>`_
 {% else %}\
     [unreleased]
     ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 {% endif %}\
 {% if previous %}\
     {% if previous.commit_id %}
-        `{{ previous.commit_id | truncate(length=7, end="") }} <https://github.com/litestar-org/litestar-fullstack/commit/{{ previous.commit_id }}>`_ ... \
-            `{{ previous.commit_id | truncate(length=7, end="") }} <https://github.com/litestar-org/litestar-fullstack/commit/{{ commit_id }}>`_ \
-            | `See diff for {{ version }} <https://github.com/litestar-org/litestar-fullstack/compare/{{ previous.commit_id }}...{{ commit_id }}>`_
+        `{{ previous.commit_id | truncate(length=7, end="") }} <https://github.com/skywarditsolutions/skwrdparse/commit/{{ previous.commit_id }}>`_ ... \
+            `{{ previous.commit_id | truncate(length=7, end="") }} <https://github.com/skywarditsolutions/skwrdparse/commit/{{ commit_id }}>`_ \
+            | `See diff for {{ version }} <https://github.com/skywarditsolutions/skwrdparse/compare/{{ previous.commit_id }}...{{ commit_id }}>`_
     {% endif %}\
 {% endif %}\
 {% for group, commits in commits | group_by(attribute="group") %}
     {{ group | upper_first }}
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     {% for commit in commits %}
-        * (`{{ commit.id | truncate(length=7, end="") }} <https://github.com/litestar-org/litestar-fullstack/commit/{{ commit.id }}>`_) {% if commit.breaking %}[**breaking**] {% endif %} - {{ commit.message | upper_first }} ({{ commit.author.name }})\
+        * (`{{ commit.id | truncate(length=7, end="") }} <https://github.com/skywarditsolutions/skwrdparse/commit/{{ commit.id }}>`_) {% if commit.breaking %}[**breaking**] {% endif %} - {{ commit.message | upper_first }} ({{ commit.author.name }})\
           {% for footer in commit.footers -%}
             , {{ footer.token }}{{ footer.separator }}{{ footer.value }}\
           {% endfor %}\
@@ -357,7 +344,7 @@ body = """
 {% endfor %}\n
 """
 footer = """
-Litestar Fullstack Changelog
+SWParse Changelog
 """
 header = """
 =========
