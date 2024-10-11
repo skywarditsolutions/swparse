@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 
 
 route_handlers: list[ControllerRouterHandler] = [
+    ParserController,
     AccessController,
     UserController,
     TeamController,
@@ -22,5 +23,4 @@ route_handlers: list[ControllerRouterHandler] = [
     TeamMemberController,
     TagController,
     SystemController,
-    ParserController,
 ]

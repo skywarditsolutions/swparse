@@ -129,7 +129,7 @@ class ParserController(Controller):
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
 
-        return JobStatus(id=job.id, status=Status[job.status])  # type: ignore
+        return JobStatus(id=job.id, status=Status[job.status])
 
     @post(
         path="upload/page/{page:int}",
