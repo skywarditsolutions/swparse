@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeVar
 
 import structlog
-from litestar import Controller, post
+from litestar import Controller, MediaType, get, post
 from litestar.datastructures import UploadFile  # noqa: TCH002
 from litestar.enums import RequestEncodingType  # noqa: TCH002
 from litestar.exceptions import HTTPException
@@ -12,7 +12,7 @@ from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
 
 from swparse.config.app import settings
-from swparse.domain.swparse.schemas import JobStatus
+from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
 
 from .urls import PARSER_BASE
 
@@ -80,6 +80,17 @@ class ParserController(Controller):
                     timeout=0,
                 ),
             )
+        elif data.content_type.split("/")[0].lower() == "text":
+            job = await queue.enqueue(
+                Job(
+                    "swparse.domain.swparse.tasks.extract_text_files",
+                    kwargs={
+                        "s3_url": s3_url,
+                        "ext": data.content_type,
+                    },
+                    timeout=0,
+                ),
+            )
         elif data.content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
             job = await queue.enqueue(
                 "parse_xlsx_markdown_s3",
@@ -102,41 +113,6 @@ class ParserController(Controller):
 
         return JobStatus(id=job.id, status=Status[job.status])  # type: ignore
 
-    @post(path="upload/text")
-    async def extract_text(
-        self,
-        data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
-    ) -> TextExtractResult:
-        try:
-            content_type = data.content_type
-            logger.error("Content type")
-            logger.error(content_type.split("/")[0].lower())
-            if content_type.split("/")[0].lower() != "text":
-                _raise_http_exception(
-                    detail="Error: Uploaded file is binary or unsupported text type.",
-                    status_code=400,
-                )
-
-            content = await data.read()
-
-            extracted_text = await extract_text(content, content_type)
-            return TextExtractResult(text=extracted_text, status=Status.complete)
-
-        except Exception as e:
-            logger.exception(f"Error occur while parsing document: {e}")
-
-            return TextExtractResult(text="", status=Status.failed)
-
-    @post(path="upload/xlsx")
-    async def convert_xlsx_to_csv(
-        self,
-        data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
-    ) -> TextExtractResult:
-        if data.content_type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-            raise HTTPException(detail="Please upload xlsx file", status_code=400)
-        content = await data.read()
-        text = await convert_xlsx_csv(content)
-        return TextExtractResult(text=text, status=Status.complete)
 
     @post(
         path="upload/page/{page:int}",

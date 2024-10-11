@@ -6,6 +6,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 import mammoth
+import pandas as pd
 import pymupdf
 import pymupdf4llm
 import pypdfium2 as pdfium
@@ -16,7 +17,7 @@ from s3fs import S3FileSystem
 from xlsx2html import xlsx2html
 
 from swparse.config.app import settings
-from swparse.domain.swparse.convert import pdf_markdown
+from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -171,3 +172,43 @@ async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str
     logger.error(s3_url)
     logger.error(markdown)
     return markdown[0]
+
+
+
+async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> str:
+
+    try:
+        s3 = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+        )
+        with s3.open(s3_url, mode="rb") as doc:
+            content = doc.read()
+            if isinstance(content, bytes):
+                content = content.decode("utf-8")
+
+            if ext == "text/csv":
+                csv_buffer = io.StringIO(content)
+                df = pd.read_csv(csv_buffer)
+                content = df.to_string(index=False)
+
+            return content
+
+    except Exception as e:
+        logger.exception(f"Error while parsing document: {e}")
+
+        return ""
+
+
+async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> str:
+    s3 = S3FileSystem(
+    endpoint_url=settings.storage.ENDPOINT_URL,
+    key=MINIO_ROOT_USER,
+    secret=MINIO_ROOT_PASSWORD,
+    use_ssl=False,
+    )
+    with s3.open(s3_url, mode="rb") as doc:
+        content = doc.read()
+        return await convert_xlsx_csv(content)
