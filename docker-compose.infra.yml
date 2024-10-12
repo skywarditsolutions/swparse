@@ -49,7 +49,7 @@ services:
       retries: 40
   minio:
     env_file:
-      - .env
+      - .env.infra.example
     image: minio/minio:latest
     volumes:
       - ./data:/data
@@ -69,7 +69,7 @@ services:
       retries: 3
   minio-client:
     env_file:
-      - .env
+      - .env.infra.example
     restart: always
     image: minio/mc:latest
     volumes:
