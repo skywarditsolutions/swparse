@@ -6,6 +6,7 @@ from uuid import UUID  # noqa: TCH003
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from swparse.db.models.team_roles import TeamRoles
 
 if TYPE_CHECKING:

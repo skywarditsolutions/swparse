@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Annotated
 from litestar import Controller, delete, get, patch, post
 from litestar.di import Provide
 from litestar.params import Dependency, Parameter
+
 from swparse.domain.accounts import urls
 from swparse.domain.accounts.dependencies import provide_users_service
 from swparse.domain.accounts.guards import requires_superuser

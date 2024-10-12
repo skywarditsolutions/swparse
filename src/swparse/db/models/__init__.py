@@ -1,3 +1,5 @@
+from .document import Document
+from .extraction import Extraction
 from .oauth_account import UserOauthAccount
 from .role import Role
 from .tag import Tag
@@ -20,4 +22,6 @@ __all__ = (
     "TeamInvitation",
     "TeamMember",
     "TeamRoles",
+    "Document",
+    "Extraction",
 )
