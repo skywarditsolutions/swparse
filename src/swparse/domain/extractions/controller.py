@@ -1,25 +1,21 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
+from typing import Annotated, Literal, TypeVar
+from uuid import UUID
 
 import structlog
+from advanced_alchemy.filters import FilterTypes
+from advanced_alchemy.service import OffsetPagination
 from litestar import Controller, get
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
+from litestar.params import Dependency, Parameter
 
 from swparse.domain.extractions.dependencies import provide_extraction_service
 from swparse.domain.extractions.schemas import Extraction
 from swparse.domain.extractions.services import ExtractionService
 
 from .urls import EXTRACTION_DETAIL, EXTRACTION_LIST
-
-if TYPE_CHECKING:
-    from uuid import UUID
-
-    from advanced_alchemy.filters import FilterTypes
-    from advanced_alchemy.service import OffsetPagination
-    from litestar.params import Dependency, Parameter
-
 
 logger = structlog.get_logger()
 OnlineOffline = TypeVar("OnlineOffline", bound=Literal["online", "offline"])

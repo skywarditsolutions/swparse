@@ -35,7 +35,7 @@ logger = getLogger(__name__)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
-model_lst = load_all_models()
+model_lst: list = []
 
 
 def pdf_markdown(
@@ -46,6 +46,7 @@ def pdf_markdown(
     langs: list[str] | None = None,
     batch_multiplier: int = 1,
 ) -> tuple[str, dict[str, Image.Image], dict]:
+    model_lst.extend(load_all_models())
     # Set language needed for OCR
     if langs is None:
         langs = [settings.DEFAULT_LANG]

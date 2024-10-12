@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import datetime
+from uuid import UUID
 
 from swparse.db.models.file_types import FileTypes
 from swparse.domain.swparse.schemas import Status
 from swparse.lib.schema import CamelizedBaseStruct
-
-if TYPE_CHECKING:
-    from datetime import datetime
-    from uuid import UUID
 
 __all__ = ("Extraction",)
 

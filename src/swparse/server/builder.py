@@ -12,7 +12,7 @@ from litestar.stores.registry import StoreRegistry
 if TYPE_CHECKING:
     from click import Group
     from litestar import Request
-    from litestar.config.swparse import AppConfig
+    from litestar.config.app import AppConfig
     from redis.asyncio import Redis
 
 
