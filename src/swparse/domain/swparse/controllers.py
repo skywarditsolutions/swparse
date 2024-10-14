@@ -10,6 +10,7 @@ from litestar.exceptions import HTTPException
 from litestar.params import Body  # noqa: TCH002
 from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
+from uuid import uuid4
 
 from swparse.config.app import settings
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
@@ -45,8 +46,10 @@ class ParserController(Controller):
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
+        logger.error("hi")
         content = await data.read()
         file_name = data.filename
+        new_uuid = uuid4()
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -54,8 +57,7 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-
-        s3_url = f"{BUCKET}/{file_name}"
+        s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
         with s3.open(s3_url, "wb") as f:
             f.write(content)  # type: ignore
 
@@ -154,6 +156,7 @@ class ParserController(Controller):
         page = max(page, 0)
         content = await data.read()
         filename = data.filename
+        new_uuid = uuid4()
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -162,7 +165,7 @@ class ParserController(Controller):
             use_ssl=False,
         )
 
-        s3_url = f"{BUCKET}/{filename}"
+        s3_url = f"{BUCKET}/{new_uuid}_{filename}"
         with s3.open(s3_url, "wb") as f:
             f.write(content)  # type: ignore
         if data.content_type in ["application/pdf"]:
