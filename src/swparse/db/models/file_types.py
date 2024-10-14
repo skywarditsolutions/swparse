@@ -4,7 +4,7 @@ from enum import Enum
 
 
 class FileTypes(str, Enum):
-    """Valid Values for Extraction."""
+    """Valid Values for Document extraction."""
 
     MARKDOWN = "MARKDOWN"
     TEXT = "TEXT"

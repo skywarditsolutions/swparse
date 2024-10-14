@@ -1,9 +1,9 @@
 # type: ignore
-"""added new models: Extraction and Document.
+"""Add Document model
 
-Revision ID: aec2d89e9634
+Revision ID: 938c1f80c011
 Revises: a22cc7704d14
-Create Date: 2024-10-12 11:13:16.540518+00:00
+Create Date: 2024-10-14 15:23:32.672126+00:00
 
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ sa.EncryptedString = EncryptedString
 sa.EncryptedText = EncryptedText
 
 # revision identifiers, used by Alembic.
-revision = 'aec2d89e9634'
+revision = '938c1f80c011'
 down_revision = 'a22cc7704d14'
 branch_labels = None
 depends_on = None
@@ -55,9 +55,11 @@ def schema_upgrades() -> None:
     sa.Column('id', sa.GUID(length=16), nullable=False),
     sa.Column('file_name', sa.String(), nullable=False),
     sa.Column('file_size', sa.Integer(), nullable=True),
-    sa.Column('file_path', sa.String(length=255), nullable=False),
     sa.Column('user_id', sa.GUID(length=16), nullable=False),
     sa.Column('job_id', sa.String(length=150), nullable=False),
+    sa.Column('file_type', sa.String(length=50), nullable=False),
+    sa.Column('file_path', sa.String(length=255), nullable=False),
+    sa.Column('extracted_file_path', sa.String(length=255), nullable=False),
     sa.Column('sa_orm_sentinel', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTimeUTC(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTimeUTC(timezone=True), nullable=False),
@@ -66,24 +68,7 @@ def schema_upgrades() -> None:
     )
     with op.batch_alter_table('documents', schema=None) as batch_op:
         batch_op.create_index(batch_op.f('ix_documents_file_name'), ['file_name'], unique=True)
-
-    op.create_table('extraction',
-    sa.Column('id', sa.GUID(length=16), nullable=False),
-    sa.Column('file_type', sa.String(length=50), nullable=False),
-    sa.Column('status', sa.String(length=50), nullable=False),
-    sa.Column('extracted_file_url', sa.String(length=255), nullable=False),
-    sa.Column('user_id', sa.GUID(length=16), nullable=False),
-    sa.Column('document_id', sa.GUID(length=16), nullable=False),
-    sa.Column('sa_orm_sentinel', sa.Integer(), nullable=True),
-    sa.Column('created_at', sa.DateTimeUTC(timezone=True), nullable=False),
-    sa.Column('updated_at', sa.DateTimeUTC(timezone=True), nullable=False),
-    sa.ForeignKeyConstraint(['document_id'], ['documents.id'], name=op.f('fk_extraction_document_id_documents'), ondelete='cascade'),
-    sa.ForeignKeyConstraint(['user_id'], ['user_account.id'], name=op.f('fk_extraction_user_id_user_account'), ondelete='cascade'),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_extraction'))
-    )
-    with op.batch_alter_table('extraction', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_extraction_file_type'), ['file_type'], unique=False)
-        batch_op.create_index(batch_op.f('ix_extraction_status'), ['status'], unique=False)
+        batch_op.create_index(batch_op.f('ix_documents_file_type'), ['file_type'], unique=False)
 
     with op.batch_alter_table('role', schema=None) as batch_op:
         batch_op.create_index('ix_role_slug_unique', ['slug'], unique=True)
@@ -141,12 +126,8 @@ def schema_downgrades() -> None:
     with op.batch_alter_table('role', schema=None) as batch_op:
         batch_op.drop_index('ix_role_slug_unique')
 
-    with op.batch_alter_table('extraction', schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f('ix_extraction_status'))
-        batch_op.drop_index(batch_op.f('ix_extraction_file_type'))
-
-    op.drop_table('extraction')
     with op.batch_alter_table('documents', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_documents_file_type'))
         batch_op.drop_index(batch_op.f('ix_documents_file_name'))
 
     op.drop_table('documents')

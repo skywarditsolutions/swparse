@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from swparse.domain.accounts.controllers import AccessController, UserController, UserRoleController
 from swparse.domain.documents.controller import DocumentController
-from swparse.domain.extractions.controller import ExtractionController
 from swparse.domain.swparse.controllers import ParserController
 from swparse.domain.system.controllers import SystemController
 from swparse.domain.tags.controllers import TagController
@@ -24,7 +23,6 @@ route_handlers: list[ControllerRouterHandler] = [
     UserRoleController,
     TeamMemberController,
     DocumentController,
-    ExtractionController,
     TagController,
     SystemController,
 ]
