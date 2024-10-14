@@ -234,6 +234,7 @@ lint.ignore = [
   "PERF203", # ignore for now; investigate
 ]
 lint.select = ["ALL"]
+lint.unfixable = ["F401"]
 # Allow unused variables when underscore-prefixed.
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 src = ["src", "tests/"]
@@ -316,7 +317,25 @@ module = ["swparse.db.migrations.*", "swparse.lib.dto.*"]
 [tool.pyright]
 exclude = ["scripts", "docs"]
 include = ["src/swparse", "tests"]
-
+reportArgumentType = "information"
+reportAssignmentType = "information"
+reportAttributeAccessIssue = "information"
+reportCallIssue = "information"
+reportGeneralTypeIssues = "information"
+reportIncompatibleMethodOverride = "information"
+reportIncompatibleVariableOverride = "information"
+reportMissingImports = "error"
+reportMissingModuleSource = "error"
+reportMissingTypeStubs = "warning"
+reportOperatorIssue = "information"
+reportOptionalCall = "information"
+reportOptionalMemberAccess = "information"
+reportOptionalOperand = "information"
+reportPossiblyUnboundVariable = "warning"
+reportUnknownVariableType = "information"
+reportUnsupportedDunderAll = "information"
+reportUnusedVariable = "warning"
+typeCheckingMode = "strict"
 [tool.git-cliff.changelog]
 
 footer = """

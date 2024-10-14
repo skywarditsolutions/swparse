@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 class Document(UUIDAuditBase):
     __tablename__ = "documents"
-
     file_name: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
     file_size: Mapped[int | None] = mapped_column(nullable=True, default=None)
     file_path: Mapped[str] = mapped_column(String(length=255), nullable=False)
