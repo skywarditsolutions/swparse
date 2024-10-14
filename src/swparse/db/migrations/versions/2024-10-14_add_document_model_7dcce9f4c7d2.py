@@ -1,9 +1,9 @@
 # type: ignore
-"""Add Document model
+"""Add Document Model
 
-Revision ID: 938c1f80c011
+Revision ID: 7dcce9f4c7d2
 Revises: a22cc7704d14
-Create Date: 2024-10-14 15:23:32.672126+00:00
+Create Date: 2024-10-14 16:05:01.662627+00:00
 
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ sa.EncryptedString = EncryptedString
 sa.EncryptedText = EncryptedText
 
 # revision identifiers, used by Alembic.
-revision = '938c1f80c011'
+revision = '7dcce9f4c7d2'
 down_revision = 'a22cc7704d14'
 branch_labels = None
 depends_on = None
@@ -67,7 +67,7 @@ def schema_upgrades() -> None:
     sa.PrimaryKeyConstraint('id', name=op.f('pk_documents'))
     )
     with op.batch_alter_table('documents', schema=None) as batch_op:
-        batch_op.create_index(batch_op.f('ix_documents_file_name'), ['file_name'], unique=True)
+        batch_op.create_index(batch_op.f('ix_documents_file_name'), ['file_name'], unique=False)
         batch_op.create_index(batch_op.f('ix_documents_file_type'), ['file_type'], unique=False)
 
     with op.batch_alter_table('role', schema=None) as batch_op:

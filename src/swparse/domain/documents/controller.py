@@ -14,7 +14,7 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.pagination import OffsetPagination
 from litestar.params import Body
-from litestar.repository.filters import LimitOffset
+from litestar.repository.filters import LimitOffset, CollectionFilter
 from s3fs import S3FileSystem
 
 from swparse.config.app import settings
@@ -25,7 +25,7 @@ from swparse.db.models import User
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
-from swparse.domain.swparse.schemas import JobStatus
+from swparse.domain.swparse.schemas import JobStatus, JobResult
 
 # from swparse.lib.dependencies import provide_limit_offset_pagination
 from . import urls
@@ -60,7 +60,6 @@ class DocumentController(Controller):
     tags = ["Documents"]
     dependencies = {
         "doc_service": Provide(provide_document_service),
-        # "limit_offset": Provide(provide_limit_offset_pagination),
     }
     signature_namespace = {"DocumentService": DocumentService}
 
@@ -72,12 +71,11 @@ class DocumentController(Controller):
         path=urls.DOCUMENT_LIST,
     )
     async def list_documents(
-        self,
-        doc_service: DocumentService,
-        limit_offset: LimitOffset,
+        self, doc_service: DocumentService, limit_offset: LimitOffset, current_user: User
     ) -> OffsetPagination[Document]:
         """List documents."""
-        docs, total = await doc_service.list_and_count(limit_offset)
+        user_id = current_user.id
+        docs, total = await doc_service.list_and_count(CollectionFilter("user_id", values=[user_id]))
         return OffsetPagination[Document](
             items=docs,
             total=total,
@@ -142,57 +140,60 @@ class DocumentController(Controller):
                 file_path=stats.s3_url,
                 user_id=current_user.id,
                 job_id=stats.id,
+                file_type=FileTypes.MARKDOWN,
+                extracted_file_path="",
             ),
         )
 
-    @post(path=urls.DOCUMENT_DETAIL, guards=[requires_active_user], return_dto=WriteDTO)
-    async def update_document(
-        self,
-        doc_service: DocumentService,
-        current_user: User,
-        id: Annotated[
-            UUID,
-            Parameter(
-                title="Document ID",
-                description="The document to retrieve.",
-            ),
-        ],
-    ) -> Document:
-        user_id = current_user.id
+    # @post(path=urls.DOCUMENT_DETAIL, guards=[requires_active_user], return_dto=WriteDTO)
+    # async def update_document(
+    #     self,
+    #     doc_service: DocumentService,
+    #     current_user: User,
+    #     id: Annotated[
+    #         UUID,
+    #         Parameter(
+    #             title="Document ID",
+    #             description="The document to retrieve.",
+    #         ),
+    #     ],
+    # ) -> Document:
+    #     user_id = current_user.id
 
-        default_file_type = FileTypes.MARKDOWN.value
+    #     default_file_type = FileTypes.MARKDOWN.value
 
-        new_uuid = uuid4()
-        file_extension = {"markdown": "md", "csv": "csv", "text": "txt"}
-        s3_url = f"{BUCKET}/{new_uuid}.{file_extension[default_file_type]}"
+    #     new_uuid = uuid4()
+    #     file_extension = {"markdown": "md", "csv": "csv", "text": "txt"}
+    #     s3_url = f"{BUCKET}/{new_uuid}.{file_extension[default_file_type]}"
+    #     # TODO
+    #     # get document by id
+    #     document = None
+    #     new_extraction = {
+    #         "extracted_file_url": s3_url,
+    #         "user_id": user_id,
+    #         "document_id": id,
+    #         "file_type": default_file_type,
+    #     }
+    #     url = f"http://localhost:8000/api/job/{document.job_id}/result/{default_file_type}"
+    #     try:
+    #         async with httpx.AsyncClient() as client:
+    #             response = await client.get(url)
 
-        new_extraction = {
-            "extracted_file_url": s3_url,
-            "user_id": user_id,
-            "document_id": data.document_id,
-            "file_type": default_file_type,
-            "status": Status.complete,
-        }
-        url = f"http://localhost:8000/api/job/{data.job_id}/result/{default_file_type}"
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(url)
+    #             res: JobResult = response.json()
 
-                res: JobResult = response.json()
+    #         s3 = S3FileSystem(
+    #             # asynchronous=True,
+    #             endpoint_url=settings.storage.ENDPOINT_URL,
+    #             key=MINIO_ROOT_USER,
+    #             secret=MINIO_ROOT_PASSWORD,
+    #         )
+    #         with s3.open(s3_url, "wb") as f:
+    #             f.write(res.markdown)
 
-            s3 = S3FileSystem(
-                # asynchronous=True,
-                endpoint_url=settings.storage.ENDPOINT_URL,
-                key=MINIO_ROOT_USER,
-                secret=MINIO_ROOT_PASSWORD,
-            )
-            with s3.open(s3_url, "wb") as f:
-                f.write(res.markdown)
-            db_obj = await extraction_service.create(data=Extraction(**new_extraction))
-        except Exception as e:
-            logger.error(f"Error creating extraction: {e}")
-            raise HTTPException(status_code=500, detail="Markdown retriever failed")
+    #     except Exception as e:
+    #         logger.error(f"Error creating extraction: {e}")
+    #         raise HTTPException(status_code=500, detail="Markdown retriever failed")
 
-        if db_obj is None:
-            raise HTTPException(status_code=400, detail="Extraction creation failed")
-        return db_obj
+    #     if document is None:
+    #         raise HTTPException(status_code=400, detail="Extraction creation failed")
+    #     return document

@@ -11,7 +11,7 @@ from .file_types import FileTypes
 
 class Document(UUIDAuditBase):
     __tablename__ = "documents"
-    file_name: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
+    file_name: Mapped[str] = mapped_column(index=True, nullable=False)
     file_size: Mapped[int | None] = mapped_column(nullable=True, default=None)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user_account.id", ondelete="cascade"), nullable=False)
     job_id: Mapped[str] = mapped_column(String(length=150), nullable=False)
