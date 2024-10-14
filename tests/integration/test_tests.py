@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, cast
 import pytest
 from httpx import AsyncClient
 from litestar import get
-from swparse.config import swparse as config
+
+from swparse.config import app as config
 
 if TYPE_CHECKING:
     from litestar import Litestar

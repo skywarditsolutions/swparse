@@ -34,9 +34,7 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
         use_ssl=False,
     )
     try:
-
         with s3.open(s3_url, mode="rb") as doc:
-
             content = doc.read()
             if isinstance(content, str):
                 content = content.encode()

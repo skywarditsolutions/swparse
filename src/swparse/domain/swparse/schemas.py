@@ -41,6 +41,7 @@ class JobMetadata:
 class JobStatus:
     id: str
     status: Status
+    s3_url: str | None = ""
 
 
 @dataclass

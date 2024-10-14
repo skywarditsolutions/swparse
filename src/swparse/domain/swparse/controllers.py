@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal, TypeVar
+from uuid import uuid4
 
 import structlog
 from litestar import Controller, MediaType, get, post
@@ -10,7 +11,6 @@ from litestar.exceptions import HTTPException
 from litestar.params import Body  # noqa: TCH002
 from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
-from uuid import uuid4
 
 from swparse.config.app import settings
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
@@ -93,8 +93,10 @@ class ParserController(Controller):
                     timeout=0,
                 ),
             )
-        elif data.content_type in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"):
-
+        elif data.content_type in (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+        ):
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_markdown_s3",
@@ -133,7 +135,7 @@ class ParserController(Controller):
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
 
-        return JobStatus(id=job.id, status=Status[job.status])
+        return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
 
     @post(
         path="upload/page/{page:int}",
@@ -180,7 +182,7 @@ class ParserController(Controller):
             if job.status == "failed":
                 raise HTTPException(detail="JOB ERROR", status_code=400)
 
-            return JobStatus(id=job.id, status=Status[job.status])
+            return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
         raise HTTPException(detail="Unsupported File")
 
     @get(

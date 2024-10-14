@@ -342,7 +342,7 @@ class AppSettings:
 
     URL: str = field(default_factory=lambda: os.getenv("APP_URL", "http://localhost:8000"))
     """The frontend base URL"""
-    DEBUG: bool = field(default_factory=lambda: os.getenv("LITESTAR_DEBUG", "False") in TRUE_VALUES)
+    DEBUG: bool = field(default_factory=lambda: os.getenv("LITESTAR_DEBUG", "True") in TRUE_VALUES)
     """Run `Litestar` with `debug=True`."""
     SECRET_KEY: str = field(
         default_factory=lambda: os.getenv("SECRET_KEY", binascii.hexlify(os.urandom(32)).decode(encoding="utf-8")),
@@ -398,7 +398,7 @@ class MinioSettings:
     ROOT_USER: str = field(default_factory=lambda: os.getenv("MINIO_ROOT_USER", "admin"))
     ROOT_PASSWORD: str = field(default_factory=lambda: os.getenv("MINIO_ROOT_PASSWORD", "password"))
     BUCKET: str = field(default_factory=lambda: os.getenv("MINIO_BUCKET", "swparse"))
-    ENDPOINT_URL: str = field(default_factory=lambda: os.getenv("MINIO_ENDPOINT_URL", "http://minio:9000/"))
+    ENDPOINT_URL: str = field(default_factory=lambda: os.getenv("MINIO_ENDPOINT", "http://minio:9000/"))
 
 
 @dataclass

@@ -52,7 +52,7 @@ saq = SAQConfig(
                 "swparse.domain.swparse.tasks.parse_xlsx_markdown_s3",
                 "swparse.domain.swparse.tasks.convert_xlsx_to_csv",
                 "swparse.domain.swparse.tasks.extract_text_files",
-            ],  # type: ignore
+            ],
         ),
     ],
 )
