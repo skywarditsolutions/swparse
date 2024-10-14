@@ -15,6 +15,7 @@ from xlsx2html import xlsx2html
 
 from swparse.config.app import settings
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
+from swparse.domain.swparse.utils import convert_xls_to_xlsx_bytes
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -32,18 +33,22 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
-    logger.error("READ Content")
     try:
-        with s3.open(s3_url, mode="rb") as doc:
-            xlsx_file = io.BytesIO(doc.read())
-            out_file = io.StringIO()
 
-            default_langs = "en"
-            xlsx2html(xlsx_file, out_file, locale=default_langs)
+        with s3.open(s3_url, mode="rb") as doc:
+
+            content = doc.read()
+            if isinstance(content, str):
+                content = content.encode()
+            if ext == "application/vnd.ms-excel":
+                logger.error("Converting to xlsx first")
+                content = convert_xls_to_xlsx_bytes(content)
+            xlsx_file = io.BytesIO(content)
+            out_file = io.StringIO()
+            xlsx2html(xlsx_file, out_file, locale="en")
             out_file.seek(0)
             result_html = out_file.read()
             markdown = html2text(result_html)
-
     except FileNotFoundError:
         logger.exception("File not found in %s", s3_url)
         markdown = ""

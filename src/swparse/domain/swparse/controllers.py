@@ -46,7 +46,7 @@ class ParserController(Controller):
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
         content = await data.read()
-        filename = data.filename
+        file_name = data.filename
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -54,7 +54,8 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-        s3_url = f"{BUCKET}/{filename}"
+
+        s3_url = f"{BUCKET}/{file_name}"
         with s3.open(s3_url, "wb") as f:
             f.write(content)  # type: ignore
 
@@ -90,7 +91,8 @@ class ParserController(Controller):
                     timeout=0,
                 ),
             )
-        elif data.content_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+        elif data.content_type in ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"):
+
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_markdown_s3",

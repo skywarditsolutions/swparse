@@ -1,36 +1,14 @@
 import io
 
-import pandas
+from xls2xlsx import XLS2XLSX
 
 
-def decode_content(content: bytes) -> str:
-    try:
-        return content.decode("utf-8")
-    except UnicodeDecodeError:
-        # Fall back measure for non-UTF-8 encoded text files
-        return content.decode("ISO-8859-1")
+def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
+    x2x = XLS2XLSX(io.BytesIO(content))
+    workbook = x2x.to_xlsx()
 
-async def extract_text(content: bytes, content_type: str) -> str:
-    decoded_content = decode_content(content)
-
-    if content_type == "text/csv":
-        csv_buffer = io.StringIO(decoded_content)
-        df = pandas.read_csv(csv_buffer)
-        return df.to_string(index=False)
-
-    if (
-        content_type
-        in [
-            "text/plain",
-            "text/html",
-            "text/css",
-            "text/javascript",
-            "text/markdown",
-            "text/vtt",
-        ]
-        or content_type == "text/xml"
-    ):
-        return decoded_content
-
-    return decoded_content
+    with io.BytesIO() as buffer:
+        workbook.save(buffer)
+        buffer.seek(0)
+        return buffer.read()

@@ -5,7 +5,7 @@
 groups = ["default", "docs", "linting", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:4c55e506486d8c5c1b82c4d0ff3a9d7ef27990e613a72fae22e72dcc2d6117fd"
+content_hash = "sha256:1c76cc7b8b853b59de02992bd0f6ee4305c87389ea12eba9636244a755523a79"
 
 [[package]]
 name = "accessible-pygments"
@@ -557,6 +557,17 @@ files = [
 ]
 
 [[package]]
+name = "chardet"
+version = "5.2.0"
+requires_python = ">=3.7"
+summary = "Universal encoding detector for Python 3"
+groups = ["default"]
+files = [
+    {file = "chardet-5.2.0-py3-none-any.whl", hash = "sha256:e1cf59446890a00105fe7b7912492ea04b6e6f06d4b742b2c788469e34c82970"},
+    {file = "chardet-5.2.0.tar.gz", hash = "sha256:1b3b6ff479a8c414bc3fa2c0852995695c4a026dcd6d0633b2dd092ca39c1cf7"},
+]
+
+[[package]]
 name = "charset-normalizer"
 version = "3.4.0"
 requires_python = ">=3.7.0"
@@ -742,6 +753,16 @@ dependencies = [
 files = [
     {file = "cssutils-2.11.1-py3-none-any.whl", hash = "sha256:a67bfdfdff4f3867fab43698ec4897c1a828eca5973f4073321b3bccaf1199b1"},
     {file = "cssutils-2.11.1.tar.gz", hash = "sha256:0563a76513b6af6eebbe788c3bf3d01c920e46b3f90c8416738c5cfc773ff8e2"},
+]
+
+[[package]]
+name = "currency-symbols"
+version = "2.0.3"
+summary = "Get currency symbol by currency code"
+groups = ["default"]
+files = [
+    {file = "currency-symbols-2.0.3.tar.gz", hash = "sha256:f6101415319e06674c63d05ed9988b131dd8004cc437e77f7e83e734e5d2eb2f"},
+    {file = "currency_symbols-2.0.3-py3-none-any.whl", hash = "sha256:e71c82320f1b410ab15614f5df6ea3645b204752081689bae30b6331006357f0"},
 ]
 
 [[package]]
@@ -983,6 +1004,18 @@ groups = ["default"]
 files = [
     {file = "flatbuffers-24.3.25-py2.py3-none-any.whl", hash = "sha256:8dbdec58f935f3765e4f7f3cf635ac3a77f83568138d6a2311f524ec96364812"},
     {file = "flatbuffers-24.3.25.tar.gz", hash = "sha256:de2ec5b203f21441716617f38443e0a8ebf3d25bf0d9c0bb0ce68fa00ad546a4"},
+]
+
+[[package]]
+name = "fonttools"
+version = "4.54.1"
+requires_python = ">=3.8"
+summary = "Tools to manipulate font files"
+groups = ["default"]
+files = [
+    {file = "fonttools-4.54.1-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:93d458c8a6a354dc8b48fc78d66d2a8a90b941f7fec30e94c7ad9982b1fa6bab"},
+    {file = "fonttools-4.54.1-py3-none-any.whl", hash = "sha256:37cddd62d83dc4f72f7c3f3c2bcf2697e89a30efb152079896544a93907733bd"},
+    {file = "fonttools-4.54.1.tar.gz", hash = "sha256:957f669d4922f92c171ba01bef7f29410668db09f6c02111e22b2bce446f3285"},
 ]
 
 [[package]]
@@ -4404,6 +4437,17 @@ files = [
 ]
 
 [[package]]
+name = "webcolors"
+version = "24.8.0"
+requires_python = ">=3.8"
+summary = "A library for working with the color formats defined by HTML and CSS."
+groups = ["default"]
+files = [
+    {file = "webcolors-24.8.0-py3-none-any.whl", hash = "sha256:fc4c3b59358ada164552084a8ebee637c221e4059267d0f8325b3b560f6c7f0a"},
+    {file = "webcolors-24.8.0.tar.gz", hash = "sha256:08b07af286a01bcd30d583a7acadf629583d1f79bfef27dd2c2c5c263817277d"},
+]
+
+[[package]]
 name = "webencodings"
 version = "0.5.1"
 summary = "Character encoding aliases for legacy web content"
@@ -4454,6 +4498,42 @@ files = [
     {file = "wrapt-1.16.0-cp312-cp312-win_amd64.whl", hash = "sha256:dcdba5c86e368442528f7060039eda390cc4091bfd1dca41e8046af7c910dda8"},
     {file = "wrapt-1.16.0-py3-none-any.whl", hash = "sha256:6906c4100a8fcbf2fa735f6059214bb13b97f75b1a61777fcf6432121ef12ef1"},
     {file = "wrapt-1.16.0.tar.gz", hash = "sha256:5f370f952971e7d17c7d1ead40e49f32345a7f7a5373571ef44d800d06b1899d"},
+]
+
+[[package]]
+name = "xlrd"
+version = "2.0.1"
+requires_python = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
+summary = "Library for developers to extract data from Microsoft Excel (tm) .xls spreadsheet files"
+groups = ["default"]
+files = [
+    {file = "xlrd-2.0.1-py2.py3-none-any.whl", hash = "sha256:6a33ee89877bd9abc1158129f6e94be74e2679636b8a205b43b85206c3f0bbdd"},
+    {file = "xlrd-2.0.1.tar.gz", hash = "sha256:f72f148f54442c6b056bf931dbc34f986fd0c3b0b6b5a58d013c9aef274d0c88"},
+]
+
+[[package]]
+name = "xls2xlsx"
+version = "0.2.0"
+requires_python = ">=3.7"
+summary = "Convert xls file to xlsx"
+groups = ["default"]
+dependencies = [
+    "Pillow",
+    "PyYAML",
+    "beautifulsoup4",
+    "chardet",
+    "cssutils",
+    "currency-symbols",
+    "fonttools",
+    "openpyxl",
+    "python-dateutil",
+    "requests",
+    "webcolors",
+    "xlrd",
+]
+files = [
+    {file = "xls2xlsx-0.2.0-py2.py3-none-any.whl", hash = "sha256:a6b9c6f887d2e366a54d26682d1ec399f5dbf408567d47768ef6178ef587af4e"},
+    {file = "xls2xlsx-0.2.0.tar.gz", hash = "sha256:98123cb8f43fdd68f4af8d61d7223100d6003daf9a592fa6c0746acbc7314c35"},
 ]
 
 [[package]]
