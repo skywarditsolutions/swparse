@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import httpx
 from typing import TYPE_CHECKING, Any
+from s3fs import S3FileSystem
+from swparse.config.app import settings
 
 from advanced_alchemy.repository import Empty, EmptyType, ErrorMessages
 from advanced_alchemy.service import (
@@ -9,6 +12,7 @@ from advanced_alchemy.service import (
 )
 
 from swparse.db.models import Document
+from swparse.domain.swparse.schemas import JobStatus, Status, JobResult
 
 from .repositories import DocumentRepository
 
@@ -17,6 +21,10 @@ if TYPE_CHECKING:
 
     from advanced_alchemy.repository import LoadSpec
     from sqlalchemy.orm import InstrumentedAttribute
+
+
+MINIO_ROOT_USER = settings.storage.ROOT_USER
+MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
 
 class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
@@ -78,3 +86,33 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
 
     async def to_model(self, data: ModelDictT[Document], operation: str | None = None) -> Document:
         return await super().to_model(data, operation)
+
+    async def check_job_status(self, job_id: str) -> bool:
+        url = f"http://localhost:8000/api/parsing/job/{job_id}"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+            )
+        job_status = JobStatus(**(response.json()))
+        return job_status.status == Status.complete.value
+    
+
+    async def get_extracted_file_path(self, job_id: str, file_path: str):
+        url = f"http://localhost:8000/api/parsing/job/{job_id}/result/markdown"
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                url,
+            )
+        job_result = JobResult(**(response.json()))
+        s3 = S3FileSystem(
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
+        base_file_path = file_path.rsplit('.', 1)[0]
+        extracted_s3_url = f"{base_file_path}_extracted.mdx"
+        markdown_content = job_result.markdown.encode('utf-8')
+        with s3.open(extracted_s3_url, "w") as f:
+            f.write(markdown_content) # type: ignore
+        return extracted_s3_url

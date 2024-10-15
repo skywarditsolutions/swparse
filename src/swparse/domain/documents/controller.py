@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
-from uuid import uuid4
 
 import httpx
 import structlog
@@ -110,6 +109,11 @@ class DocumentController(Controller):
     ) -> Document:
         """Get a Document."""
         db_obj = await doc_service.get(id)
+        if db_obj.extracted_file_path is None:
+            if await doc_service.check_job_status(db_obj.job_id):
+                extracted_file_path = await doc_service.get_extracted_file_path(db_obj.job_id, db_obj.file_path)
+                await doc_service.update(item_id=db_obj.id, data={"extracted_file_path": extracted_file_path})
+                db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
         return db_obj
@@ -139,9 +143,7 @@ class DocumentController(Controller):
                 files={"data": (data.filename, data.file, data.content_type)},
                 headers={"Content-Type": "multipart/form-data; boundary=0xc0d3kywt"},
             )
-        stats = JobStatus(**response.json())
-        logger.error("Response")
-        logger.error(stats.s3_url)
+        stats = JobStatus(**(response.json()))
         file_size = len(content)
         return await doc_service.create(
             Document(
@@ -151,7 +153,7 @@ class DocumentController(Controller):
                 user_id=current_user.id,
                 job_id=stats.id,
                 file_type=FileTypes.MARKDOWN,
-                extracted_file_path="",
+                extracted_file_path=None,
             ),
         )
 
