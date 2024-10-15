@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import httpx
 import structlog
-from advanced_alchemy.extensions.litestar import SQLAlchemyDTO
+from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
 from litestar import Controller, get, post
 from litestar.datastructures import UploadFile
 from litestar.di import Provide
@@ -42,14 +42,18 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET
 
-config = DTOConfig(
-    exclude={
-        "id",
-    },
+config = SQLAlchemyDTOConfig(
+    exclude={"id", "created_at", "updated_at"},
 )
-WriteDTO = SQLAlchemyDTO[Document]
-ReadDTO = SQLAlchemyDTO[Annotated[Document, config]]
-
+WriteDTO = SQLAlchemyDTO[Annotated[Document, config]]
+ReadDTO = SQLAlchemyDTO[
+    Annotated[
+        Document,
+        SQLAlchemyDTOConfig(
+            exclude={"user_id"},
+        ),
+    ]
+]
 
 def _raise_http_exception(detail: str, status_code: int) -> None:
     raise HTTPException(detail=detail, status_code=status_code)
@@ -61,6 +65,7 @@ class DocumentController(Controller):
         "doc_service": Provide(provide_document_service),
     }
     signature_namespace = {"DocumentService": DocumentService}
+    return_dto = ReadDTO
 
     @get(
         operation_id="ListDocuments",
@@ -118,7 +123,7 @@ class DocumentController(Controller):
         )
         return s3.ls(f"{BUCKET}")  # type: ignore
 
-    @post(path=urls.DOCUMENT_UPLOAD, guards=[requires_active_user], return_dto=WriteDTO)
+    @post(path=urls.DOCUMENT_UPLOAD, guards=[requires_active_user], return_dto=ReadDTO)
     async def upload_document(
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
