@@ -111,8 +111,9 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
             use_ssl=False,
         )
         base_file_path = file_path.rsplit('.', 1)[0]
-        extracted_s3_url = f"{base_file_path}_extracted.mdx"
+        extracted_s3_url = f"{base_file_path}_extracted.md"
         markdown_content = job_result.markdown.encode('utf-8')
-        with s3.open(extracted_s3_url, "w") as f:
+        with s3.open(extracted_s3_url, "wb") as f:
             f.write(markdown_content) # type: ignore
         return extracted_s3_url
+                                        
