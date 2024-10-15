@@ -14,18 +14,17 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.pagination import OffsetPagination
 from litestar.params import Body
-from litestar.repository.filters import LimitOffset, CollectionFilter
+from litestar.repository.filters import CollectionFilter, LimitOffset
 from s3fs import S3FileSystem
 
 from swparse.config.app import settings
+from swparse.db.models import User
 from swparse.db.models.document import Document
 from swparse.db.models.file_types import FileTypes
-from swparse.db.models import User
-
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
-from swparse.domain.swparse.schemas import JobStatus, JobResult
+from swparse.domain.swparse.schemas import JobStatus
 
 # from swparse.lib.dependencies import provide_limit_offset_pagination
 from . import urls
@@ -75,7 +74,10 @@ class DocumentController(Controller):
     ) -> OffsetPagination[Document]:
         """List documents."""
         user_id = current_user.id
-        docs, total = await doc_service.list_and_count(CollectionFilter("user_id", values=[user_id]))
+        docs, total = await doc_service.list_and_count(
+            CollectionFilter("user_id", values=[user_id]),
+            order_by=[("updated_at", True)],
+        )
         return OffsetPagination[Document](
             items=docs,
             total=total,
