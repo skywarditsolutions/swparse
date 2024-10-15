@@ -102,6 +102,9 @@ test = [
   "pytest-sugar",
   "pytest-databases[postgres,redis]>=0.1.0",
 ]
+dev = [
+    "commitizen>=3.29.1",
+]
 
 [tool.black]
 exclude = '''
