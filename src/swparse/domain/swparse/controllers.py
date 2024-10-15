@@ -46,7 +46,7 @@ class ParserController(Controller):
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
-        logger.error("hi")
+
         content = await data.read()
         file_name = data.filename
         new_uuid = uuid4()

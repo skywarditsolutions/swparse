@@ -55,6 +55,7 @@ ReadDTO = SQLAlchemyDTO[
     ]
 ]
 
+
 def _raise_http_exception(detail: str, status_code: int) -> None:
     raise HTTPException(detail=detail, status_code=status_code)
 
@@ -135,10 +136,12 @@ class DocumentController(Controller):
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url,
-                files={"data": content},
+                files={"data": (data.filename, data.file, data.content_type)},
                 headers={"Content-Type": "multipart/form-data; boundary=0xc0d3kywt"},
             )
         stats = JobStatus(**response.json())
+        logger.error("Response")
+        logger.error(stats.s3_url)
         file_size = len(content)
         return await doc_service.create(
             Document(
