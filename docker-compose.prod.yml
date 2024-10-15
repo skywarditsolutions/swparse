@@ -67,6 +67,13 @@ services:
       SAQ_USE_SERVER_LIFESPAN: "false"
     env_file:
       - .env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
   worker:
     image: swparse:latest
     command: litestar workers run
