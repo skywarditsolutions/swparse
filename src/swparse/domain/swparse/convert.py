@@ -35,18 +35,20 @@ logger = getLogger(__name__)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
-model_lst: list = []
+model_lst: list[typing.Any] = []
 
 
 def pdf_markdown(
-    input: str | pathlib.Path | bytes | ctypes.Array | typing.BinaryIO,
+    pdf_input: str | pathlib.Path | bytes | ctypes.Array | typing.BinaryIO,
     max_pages: int | None = None,
     start_page: int | None = None,
-    metadata: dict | None = None,
+    metadata: dict[str, typing.Any] | None = None,
     langs: list[str] | None = None,
     batch_multiplier: int = 1,
-) -> tuple[str, dict[str, Image.Image], dict]:
-    model_lst.extend(load_all_models())
+) -> tuple[str, dict[str, Image.Image], dict[str, typing.Any]]:
+    if len(model_lst) == 0:
+        logger.error("Loading Models")
+        model_lst.extend(load_all_models())
     # Set language needed for OCR
     if langs is None:
         langs = [settings.DEFAULT_LANG]
@@ -65,8 +67,8 @@ def pdf_markdown(
     }
 
     # Get initial text blocks from the pdf
-    doc = pdfium.PdfDocument(input)
-    pages, toc = get_text_blocks(doc, input, max_pages=max_pages, start_page=start_page)
+    doc = pdfium.PdfDocument(pdf_input)
+    pages, toc = get_text_blocks(doc, pdf_input, max_pages=max_pages, start_page=start_page)
     out_meta.update(
         {
             "toc": toc,
@@ -98,7 +100,7 @@ def pdf_markdown(
 
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
-        print(f"Could not extract any text blocks for {input}")
+        print(f"Could not extract any text blocks for {pdf_input}")
         return "", {}, out_meta
 
     surya_layout(doc, pages, layout_model, batch_multiplier=batch_multiplier)
@@ -112,7 +114,7 @@ def pdf_markdown(
     annotate_block_types(pages)
 
     # Dump debug data if flags are set
-    dump_bbox_debug_data(doc, input, pages)
+    dump_bbox_debug_data(doc, pdf_input, pages)
 
     # Find reading order for blocks
     # Sort blocks by reading order
@@ -187,7 +189,7 @@ async def convert_xlsx_csv(
             xlsx_data = pandas.read_excel(input)
 
         elif isinstance(input, str):
-            xlsx_data = input.decode("utf-8")
+            xlsx_data = input.encode("utf-8")
 
         else:
             xlsx_data = await input.read()

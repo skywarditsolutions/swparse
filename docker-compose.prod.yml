@@ -32,7 +32,7 @@ services:
       POSTGRES_USER: "swparse"
       POSTGRES_DB: "swparse"
     volumes:
-      - db-data-production:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     restart: unless-stopped
     logging:
       options:
@@ -150,6 +150,6 @@ services:
       - ./deploy/frontend/static:/static
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile
 volumes:
-  db-data-production: {}
+  db-data: {}
   cache-data: {}
   config: {}
