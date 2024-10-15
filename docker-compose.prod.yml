@@ -32,7 +32,7 @@ services:
       POSTGRES_USER: "swparse"
       POSTGRES_DB: "swparse"
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data-production:/var/lib/postgresql/data
     restart: unless-stopped
     logging:
       options:
@@ -50,7 +50,7 @@ services:
   swparse:
     build:
       context: .
-      dockerfile: deploy/docker/run/Dockerfile
+      dockerfile: deploy/docker/dev/Dockerfile
     image: swparse:latest
     restart: always
     depends_on:
@@ -143,6 +143,6 @@ services:
       - ./deploy/frontend/static:/static
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile
 volumes:
-  db-data: {}
+  db-data-production: {}
   cache-data: {}
   config: {}

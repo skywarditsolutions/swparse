@@ -1,1 +1,1 @@
-docker compose -f docker-compose.prod.yml -f docker-compose.override.yml up
+docker compose -f docker-compose.prod.yml up --build
