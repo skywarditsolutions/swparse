@@ -23,4 +23,4 @@ class Document(UUIDAuditBase):
     )
 
     file_path: Mapped[str] = mapped_column(String(length=255), nullable=False)
-    extracted_file_path: Mapped[str] = mapped_column(String(length=255), nullable=False)
+    extracted_file_path: Mapped[str | None] = mapped_column(String(length=255), nullable=True)
