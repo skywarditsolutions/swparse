@@ -94,7 +94,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
                 url,
             )
         job_status = JobStatus(**(response.json()))
-        return job_status.status == Status.complete.value
+        return job_status.status == Status.complete
     
 
     async def get_extracted_file_path(self, job_id: str, file_path: str):
