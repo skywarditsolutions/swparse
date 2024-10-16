@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
-import io
 import httpx
 import base64
 import structlog
@@ -27,6 +26,7 @@ from swparse.domain.swparse.schemas import JobStatus
 from . import urls
 from litestar.response import File
 import mimetypes
+import os
 import tempfile
  
 if TYPE_CHECKING:
@@ -196,8 +196,19 @@ class DocumentController(Controller):
                 if mime_type and mime_type.startswith("image/"):
                     logger.error("image")
                     return base64.b64encode(content).decode("utf-8")
-                  
-                with tempfile.NamedTemporaryFile(delete=True, suffix=f".{extension}") as tmp_file:
+       
+                temp_dir = tempfile.gettempdir()
+                temp_prefix = "swparse-doc"
+                try:
+                    files = os.listdir(temp_dir)   
+                    for old_temp_file in files:
+                        if old_temp_file.startswith(temp_prefix):
+                            file_path = os.path.join(temp_dir, old_temp_file)   
+                            os.remove(file_path)   
+                except Exception:
+                    pass
+           
+                with tempfile.NamedTemporaryFile(delete=False,prefix=temp_prefix,suffix=f".{extension}") as tmp_file:
                     tmp_file.write(content)
                     tmp_file.flush()
                     return File(
