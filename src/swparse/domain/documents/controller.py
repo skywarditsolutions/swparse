@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
-
+import io
 import httpx
+import base64
 import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
 from litestar import Controller, get, post
@@ -12,9 +13,9 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.pagination import OffsetPagination
 from litestar.params import Body
+from litestar.enums import MediaType
 from litestar.repository.filters import CollectionFilter, LimitOffset
 from s3fs import S3FileSystem
-
 from swparse.config.app import settings
 from swparse.db.models import User
 from swparse.db.models.document import Document
@@ -23,9 +24,11 @@ from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus
-
 from . import urls
-
+from litestar.response import File
+import mimetypes
+import tempfile
+ 
 if TYPE_CHECKING:
     from uuid import UUID
 
@@ -148,7 +151,7 @@ class DocumentController(Controller):
                 file_name=data.filename,
                 file_size=file_size,
                 file_path=stats.s3_url,
-                user_id=current_user.id,
+                user_id=current_user.id, 
                 job_id=stats.id,
                 file_type=FileTypes.MARKDOWN,
                 extracted_file_path=None,
@@ -166,26 +169,46 @@ class DocumentController(Controller):
                 description="The document to retrieve.",
             ),
         ],
-    ) -> str:
+    ) -> File | str:
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
-
-        s3_url = db_obj.file_path
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-
+        s3_url = db_obj.file_path
         try:
             with s3.open(s3_url, "rb") as f:
                 content: bytes = f.read()
-            return content.decode(encoding="utf-8", errors="ignore")
+                mime_type, _ = mimetypes.guess_type(s3_url)
+                extension = s3_url.split(".")[-1]
+
+                if mime_type and mime_type.startswith(MediaType.TEXT.value):
+                    logger.error("plain")
+                    return content.decode("utf-8","ignore")
+
+
+                if mime_type and mime_type.startswith("image/"):
+                    logger.error("image")
+                    return base64.b64encode(content).decode("utf-8")
+                  
+                with tempfile.NamedTemporaryFile(delete=False, suffix=f".{extension}") as tmp_file:
+                    tmp_file.write(content)
+                    tmp_file.flush()
+                    return File(
+                        content_disposition_type="attachment",
+                        path=tmp_file.name,
+                        filename=db_obj.file_name,
+                        media_type=mime_type,   
+                    )
 
         except Exception as e:
             _raise_http_exception(f"Failed to read document: {str(e)}", status_code=500)
+            return ""
+
 
     @post(path=urls.EXTRACTED_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
     async def get_extracted_content(
@@ -202,8 +225,14 @@ class DocumentController(Controller):
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
-
+            
         s3_url = db_obj.extracted_file_path
+        if s3_url is None:
+            if await doc_service.check_job_status(db_obj.job_id):
+                extracted_file_path = await doc_service.get_extracted_file_path(db_obj.job_id, db_obj.file_path)
+                await doc_service.update(item_id=db_obj.id, data={"extracted_file_path": extracted_file_path})
+                db_obj = await doc_service.get(id)
+        
         logger.error("s3_url")
         logger.error(s3_url)
         s3 = S3FileSystem(
@@ -220,3 +249,17 @@ class DocumentController(Controller):
 
         except Exception as e:
             _raise_http_exception(f"Failed to read document: {str(e)}", status_code=500)
+            return ""
+
+    # @delete(path="/api/documents/delete", guards=[requires_active_user])
+    # async def delete_document(
+    #     self,
+    #     doc_service: DocumentService,
+    #     id: UUID,
+    # ) -> str:
+    #     try:
+    #         await doc_service.delete(id)
+    #         return "success"
+    #     except Exception as e:
+    #         _raise_http_exception(f"Failed to delete document: {str(e)}", status_code=500)
+    #         return "fail"
