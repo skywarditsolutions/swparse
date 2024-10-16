@@ -160,7 +160,7 @@ class DocumentController(Controller):
             ),
         )
 
-    @post(path=urls.DOCUMENT_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
+    @get(path=urls.DOCUMENT_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
     async def get_document_content(
         self,
         doc_service: DocumentService,
@@ -212,7 +212,7 @@ class DocumentController(Controller):
             return ""
 
 
-    @post(path=urls.EXTRACTED_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
+    @get(path=urls.EXTRACTED_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
     async def get_extracted_content(
         self,
         doc_service: DocumentService,
