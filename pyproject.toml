@@ -37,7 +37,7 @@ license = { text = "BUSINESS" }
 name = "swparse"
 readme = "README.md"
 requires-python = "==3.12.6"
-version = "0.2.0"
+version = "0.3.0"
 
 # [project.urls]
 # Discord = "https://discord.gg/litestar"
@@ -70,6 +70,7 @@ test = "pdm run pytest tests"
 test_coverage = { composite = ["pdm run pytest tests", "pdm run coverage html", "pdm run coverage xml"] }
 
 [tool.pdm.dev-dependencies]
+dev = ["commitizen>=3.29.1"]
 docs = [
   "sphinx>=7.2.6",
   "sphinx-autobuild>=2021.3.14",
@@ -102,9 +103,10 @@ test = [
   "pytest-sugar",
   "pytest-databases[postgres,redis]>=0.1.0",
 ]
-dev = [
-    "commitizen>=3.29.1",
-]
+
+[tool.commitizen]
+tag_format = "v$version"
+version_provider = "pep621"
 
 [tool.black]
 exclude = '''

@@ -1,59 +1,63 @@
-=========
-Changelog
-=========
+## 0.2.0
 
-All commits to this project will be documented in this file.
+### Feat
 
-## [unreleased]
-
-### Bug Fixes
-
-- Auto create minio bucket
-- Packaging
-- Added missing files
-- Docker command
-- Docker command
-- Worker image bulding
-- Added missing files
-- Added missing files
-- Added missing files
-- Wrong flag
-- Volumne mountpoint
-- Makle sure env is sourced
-- Enum for status
-- Increase time out to 999999
-- Parser errors on other docs
-- Raised error instead of returning ok if a job failed
-- Various file input handling in xlsx to csv
-- Remove API endpoints and put them on worker
-- Inserting job to queue with timeout
-
-### Documentation
-
-- Add api doc url
-- Updated documentation on API use and added example ipynb
-- Added plans for phase1
-- Updated documentation
-- Added changelog
-
-### Features
-
-- Intial working version with api compatibility
-- Add a really nice api documentation
-- Docker compose and docker build ready for deployment
-- Docker compose file for prod , runs on port 80
-- Docker compose file for prod , runs on port 80
-- Imaged and pdf parsing
-- Prod deployment sh files
-- Add cleanup
-- Added llama_parse compatbile : See : example.ipynb
-- Page parsing support
-- Page number sync with lib
+- retrieve uploaded document file API
+- load models only if they are unloaded
+- markdown retrieve API
+- recent document list sorting
+- upload document and get document list by user_id
+- updated document controller to support s3_url output
+- added s3url to job status , chore: added cpu only launcher , fix: env vars
+- change xlsx parser to handle both xls and xlsx file types
+- two new models: Document and Extraction
+- UI host preparation
+- docx support , xlsx support , html and many other text files . User Login API , Oauth Support , RBAC , User management support and User Teams and Tagging support
+- fullstack integration with advanced quality swparse development
+- branch merge with hm3-text-extraction
+- xlsx to markdown API
+- text extraction for content-type text/ prefix files & xlsx to csv convert APIs
 - Added additional features to the plan
-- Text extraction for content-type text/ prefix files & xlsx to csv convert APIs
-- Xlsx to markdown API
-- Branch merge with hm3-text-extraction
-- Fullstack integration with advanced quality swparse development
-- Docx support , xlsx support , html and many other text files . User Login API , Oauth Support , RBAC , User management support and User Teams and Tagging support
+- page number sync with lib
+- page parsing support
+- added llamaparse compatbile api : See : example.ipynb
+- add cleanup
+- prod deployment sh files
+- imaged and pdf parsing
+- api documentation via RapiDOC and Scalar
+- intial working version with api compatibility
 
-SWParse Changelog
+### Fix
+
+- clean temp files created in path file of getDocumentContent API
+- docker file
+- change HTTP method from POST to GET
+- job error handling for document and extraction API & status comparison typo
+- prod , run on same dev image
+- md file store and retreive url
+- update document get api to update with extracted url when job is successed
+- httpx syntax to get filename and extension
+- DTO and return DTO in Document Controller
+- set extracted file path to nullable with new migration file
+- Type Checking remove to fix UUID errors
+- add configs for local env
+- proper caddy config
+- inserting job to queue with timeout
+- remove API endpoints and put them on worker
+- various file input handling in xlsx to csv
+- raised error instead of returning ok if a job failed
+- parser errors on other docs
+- increase time out to 999999
+- Enum for status
+- makle sure env is sourced
+- volumne mountpoint
+- wrong flag
+- added missing files
+- added missing files
+- added missing files
+- worker image bulding
+- docker command
+- docker command
+- added missing files
+- packaging
+- auto create minio bucket
