@@ -15,7 +15,7 @@ from xlsx2html import xlsx2html
 
 from swparse.config.app import settings
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
-from swparse.domain.swparse.utils import convert_xls_to_xlsx_bytes
+from swparse.domain.swparse.utils import convert_xls_to_xlsx_bytes, save_file_s3, get_file_name, change_file_ext
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -26,7 +26,7 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
 
-async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
+async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> list[str]:
     s3 = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
         key=MINIO_ROOT_USER,
@@ -36,27 +36,44 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
     try:
         with s3.open(s3_url, mode="rb") as doc:
             content = doc.read()
-            if isinstance(content, str):
-                content = content.encode()
-            if ext == "application/vnd.ms-excel":
-                logger.error("Converting to xlsx first")
-                content = convert_xls_to_xlsx_bytes(content)
-            xlsx_file = io.BytesIO(content)
-            out_file = io.StringIO()
-            xlsx2html(xlsx_file, out_file, locale="en")
-            out_file.seek(0)
-            result_html = out_file.read()
-            markdown = html2text(result_html)
+        if isinstance(content, str):
+            content = content.encode()
+            
+        file_name = get_file_name(s3_url)
+        # CSV Parsing
+        csv_file = await convert_xlsx_csv(content)
+        csv_file_name = change_file_ext(file_name, "csv")
+        csv_file_path = await save_file_s3(s3, csv_file_name, csv_file)
+        
+        if ext == "application/vnd.ms-excel":
+            logger.error("Converting to xlsx first")
+            content = convert_xls_to_xlsx_bytes(content)
+        
+        # HTML Parsing
+        xlsx_file = io.BytesIO(content)
+        out_file = io.StringIO()
+        xlsx2html(xlsx_file, out_file, locale="en")
+        out_file.seek(0)
+        result_html = out_file.read()
+        html_file_name = change_file_ext(file_name, "html")
+        html_file_path = await save_file_s3(s3, html_file_name, result_html)
+            
+        # Markdown Parsing
+        markdown = html2text(result_html)
+        md_file_name = change_file_ext(file_name, "md")
+        md_file_path = await save_file_s3(s3, md_file_name, markdown)
+        
+        return [csv_file_path, html_file_path, md_file_path]
+        
     except FileNotFoundError:
         logger.exception("File not found in %s", s3_url)
-        markdown = ""
+         
     except Exception as e:
         logger.exception("Error while parsing document: %s", e)
-        markdown = ""
 
     logger.error(s3_url)
     logger.error("parse_xlsx_markdown_s3")
-    return markdown
+    return []
 
 
 async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> str:
@@ -94,7 +111,7 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
     return markdown
 
 
-async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) -> str:
+async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) ->list[str]:
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -102,15 +119,24 @@ async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) -> str:
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
-    with s3.open(s3_url, mode="rb") as doc:
-        result = mammoth.convert_to_html(doc)
-        htmlData = result.value
-        markdown = md(htmlData)
-        logger.error("parse_docx_markdown_s3")
-        logger.error(s3_url)
-        logger.error(htmlData)
-        logger.error(markdown)
-    return markdown
+    file_name = get_file_name(s3_url)
+    # HTML parsing
+    with s3.open(s3_url, mode="rb") as byte_content:
+        result = mammoth.convert_to_html(byte_content) # type: ignore
+        htmlData:str = result.value # type: ignore
+    html_file_name = change_file_ext(file_name, "html")
+    html_file_path = await save_file_s3(s3, html_file_name, htmlData)
+    
+    # Markdown parsing
+    markdown = md(htmlData) # type: ignore
+    md_file_name = change_file_ext(file_name, "md")
+    md_file_path = await save_file_s3(s3, md_file_name, markdown)
+    
+    logger.error("parse_docx_markdown_s3")
+    logger.error(s3_url)
+    
+    logger.error(markdown)
+    return [html_file_path, md_file_path]
 
 
 async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str, page: int) -> str:
