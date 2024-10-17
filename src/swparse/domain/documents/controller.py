@@ -22,7 +22,6 @@ from s3fs import S3FileSystem
 from swparse.config.app import settings
 from swparse.db.models import User
 from swparse.db.models.document import Document
-from swparse.db.models.file_types import FileTypes
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
@@ -159,8 +158,7 @@ class DocumentController(Controller):
                 file_path=stats.s3_url,
                 user_id=current_user.id,
                 job_id=stats.id,
-                file_type=FileTypes.MARKDOWN,
-                extracted_file_path=None,
+                extracted_file_paths=None,
             ),
         )
 
