@@ -5,6 +5,7 @@ from logging import getLogger
 from typing import TYPE_CHECKING
 
 import mammoth
+import mistletoe
 import pandas as pd
 import pypdfium2 as pdfium
 from html2text import html2text
@@ -24,6 +25,11 @@ logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+MD_EXT = ".extracted.md"
+TXT_EXT = ".extracted.txt"
+HTML_EXT = ".extracted.html"
+CSV_EXT = ".extracted.csv"
+JSON_EXT = ".extracted.json"
 
 
 async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
@@ -77,7 +83,7 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> str:
             return str(byte_string)
 
 
-async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
+async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -85,13 +91,24 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> str:
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
+    out_md = f"{s3_url}.{MD_EXT}"
+    out_txt = f"{s3_url}.{TXT_EXT}"
+    out_html = f"{s3_url}.{HTML_EXT}"
 
-    with s3.open(s3_url, mode="rb") as doc:
+    with s3.open(s3_url, mode="rb") as doc:  # type: ignore
         markdown, doc_images, out_meta = pdf_markdown(doc.read(), max_pages=20)
+
+    with s3.open(out_md, mode="w") as out_file_md:  # type: ignore
+        out_file_md.write(markdown)  # type: ignore
+    with s3.open(out_html, mode="w") as out_file_html:  # type: ignore
+        out_file_html.write(mistletoe.markdown(markdown))  # type: ignore
+    with s3.open(out_txt, mode="w") as out_file_txt:  # type: ignore
+        out_file_txt.write(markdown)  # type: ignore
+    results = {"markdown": out_md, "html": out_html, "text": out_txt}
     logger.error("parse_pdf_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
-    return markdown
+    return results
 
 
 async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) -> str:

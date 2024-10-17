@@ -46,7 +46,6 @@ class ParserController(Controller):
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
-
         content = await data.read()
         file_name = data.filename
         new_uuid = uuid4()
@@ -59,7 +58,7 @@ class ParserController(Controller):
         )
         s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
         with s3.open(s3_url, "wb") as f:
-            f.write(content)  # type: ignore
+            f.write(content)
 
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
@@ -205,15 +204,40 @@ class ParserController(Controller):
     async def get_result(self, job_id: str, result_type: str = "markdown") -> JobResult:
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)
+        s3 = S3FileSystem(
+            # asynchronous=True,
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
+        jm = JobMetadata(
+            credits_used=0,
+            credits_max=1000000,
+            job_credits_usage=0,
+            job_pages=0,
+            job_is_cache_hit=False,
+        )
         if job:
             await job.refresh(1)
-            markdown = job.result
-            jm = JobMetadata(
-                credits_used=0,
-                credits_max=1000000,
-                job_credits_usage=0,
-                job_pages=0,
-                job_is_cache_hit=False,
-            )
-            return JobResult(markdown=markdown, job_metadata=jm)
+            results = job.result
+            match result_type:
+                case "markdown":
+                    with s3.open(results["markdown"], mode="r") as out_file_md:
+                        markdown = out_file_md.read()
+                        return JobResult(markdown=markdown, html="", text="", job_metadata=jm)
+
+                case "html":
+                    with s3.open(results["html"], mode="r") as out_file_html:
+                        html = out_file_html.read()
+                        return JobResult(markdown="", html=html, text="", job_metadata=jm)
+
+                case "text":
+                    with s3.open(results["text"], mode="r") as out_file_txt:
+                        text = out_file_txt.read()
+                        return JobResult(markdown="", html="", text=text, job_metadata=jm)
+                case _:
+                    unsupported = f"Format {result_type} in currently unsupported."
+                    raise HTTPException(unsupported)
+
         raise HTTPException(f"No Such Job {job_id} ")

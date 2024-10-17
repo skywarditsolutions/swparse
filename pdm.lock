@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "linting", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:bd620e44d35823e6cf01ab67d94058126eacda2ae18efdf3c56c916d366e6c85"
+content_hash = "sha256:11adb5d72c6365ba255b674fc620f0c15b7e72a1b22157ccc521e354676678fd"
 
 [[metadata.targets]]
 requires_python = "==3.12.6"
@@ -1739,6 +1739,17 @@ groups = ["default"]
 files = [
     {file = "minijinja-2.2.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c9cad5ccb021ef25b6a271158f4d6636474edb08cd1dd49355aac6b68a48aebb"},
     {file = "minijinja-2.2.0.tar.gz", hash = "sha256:4411052c7a60f8d56468cc6d17d45d72be3d5e89e9578a04f8336cc56601523c"},
+]
+
+[[package]]
+name = "mistletoe"
+version = "1.4.0"
+requires_python = "~=3.5"
+summary = "A fast, extensible Markdown parser in pure Python."
+groups = ["default"]
+files = [
+    {file = "mistletoe-1.4.0-py3-none-any.whl", hash = "sha256:44a477803861de1237ba22e375c6b617690a31d2902b47279d1f8f7ed498a794"},
+    {file = "mistletoe-1.4.0.tar.gz", hash = "sha256:1630f906e5e4bbe66fdeb4d29d277e2ea515d642bb18a9b49b136361a9818c9d"},
 ]
 
 [[package]]

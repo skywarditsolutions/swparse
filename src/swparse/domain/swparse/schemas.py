@@ -47,6 +47,8 @@ class JobStatus:
 @dataclass
 class JobResult:
     markdown: str
+    html: str
+    text: str
     job_metadata: JobMetadata
 
 
