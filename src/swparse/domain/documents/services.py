@@ -10,7 +10,9 @@ from advanced_alchemy.service import (
     ModelDictT,
     SQLAlchemyAsyncRepositoryService,
 )
-
+from litestar_saq import Queue
+from litestar.exceptions import HTTPException
+from swparse.domain.swparse.exceptions import JobNotFoundError
 from swparse.db.models import Document
 from swparse.domain.swparse.schemas import JobStatus, Status, JobResult
 
@@ -23,6 +25,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import InstrumentedAttribute
 
 
+queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
@@ -95,25 +98,12 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
             )
         job_status = JobStatus(**(response.json()))
         return job_status.status == Status.complete
-    
 
-    async def get_extracted_file_path(self, job_id: str, file_path: str):
-        url = f"http://localhost:8000/api/parsing/job/{job_id}/result/markdown"
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                url,
-            )
-        job_result = JobResult(**(response.json()))
-        s3 = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-        base_file_path = file_path.rsplit('.', 1)[0]
-        extracted_s3_url = f"{base_file_path}_extracted.md"
-        markdown_content = job_result.markdown.encode('utf-8')
-        with s3.open(extracted_s3_url, "wb") as f:
-            f.write(markdown_content) # type: ignore
-        return extracted_s3_url
-                                        
+
+    async def get_extracted_file_paths(self, job_id: str) -> dict:
+        job_key = queue.job_key_from_id(job_id=job_id)
+        job = await queue.job(job_key=job_key)
+        if not job:
+            raise HTTPException(detail=f"Job {job_id} is not found", status_code=404)
+        return job.result
+

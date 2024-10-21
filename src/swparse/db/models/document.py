@@ -16,4 +16,4 @@ class Document(UUIDAuditBase):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user_account.id", ondelete="cascade"), nullable=False)
     job_id: Mapped[str] = mapped_column(String(length=150), nullable=False)
     file_path: Mapped[str] = mapped_column(String(length=255), nullable=False)
-    extracted_file_paths: Mapped[dict[ContentType, str]] = mapped_column(JSONB, nullable=True)
+    extracted_file_paths: Mapped[dict[ContentType, str] | None] = mapped_column(JSONB, nullable=True)

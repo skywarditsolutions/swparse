@@ -7,4 +7,4 @@ DOCUMENT_UPLOAD = "/api/documents/upload"
 LIST_DIR = "/api/bucket/dirs"
 
 DOCUMENT_CONTENT = "/api/documents/content/{id:uuid}"
-EXTRACTED_CONTENT = "/api/extractions/content/{id:uuid}"
+EXTRACTED_CONTENT = "/api/extractions/content/{id:uuid}/{resutl_type:str}"

@@ -113,11 +113,11 @@ class DocumentController(Controller):
     ) -> Document:
         """Get a Document."""
         db_obj = await doc_service.get(id)
-        if db_obj.extracted_file_path is None:
+        if db_obj.extracted_file_paths is None:
             try:
                 if await doc_service.check_job_status(db_obj.job_id):
-                    extracted_file_path = await doc_service.get_extracted_file_path(db_obj.job_id, db_obj.file_path)
-                    await doc_service.update(item_id=db_obj.id, data={"extracted_file_path": extracted_file_path})
+                    extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
+                    await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
                     db_obj = await doc_service.get(id)
             except Exception as e:
                 logger.error(f"Failed to retrieve the extracted file {e}")
@@ -217,35 +217,36 @@ class DocumentController(Controller):
         self,
         doc_service: DocumentService,
         id: Annotated[
-            UUID,
+            UUID, 
             Parameter(
                 title="Document ID",
                 description="The document to retrieve.",
             ),
         ],
+        result_type: str = "markdown",
     ) -> str:
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
+
+        if db_obj.extracted_file_paths is None and not await doc_service.check_job_status(db_obj.job_id):
+            _raise_http_exception("Uploaded document is not extracted yet.", status_code=400)
+
+        if db_obj.extracted_file_paths is None and await doc_service.check_job_status(db_obj.job_id):
+            extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
+            await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
+            db_obj = await doc_service.get(id)
+
+        extracted_file_paths: dict = db_obj.extracted_file_paths
+        if result_type not in extracted_file_paths:
+            _raise_http_exception("Extracted file does not exit.", status_code=400)
+        extracted_file_path = extracted_file_paths[result_type]
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-        if db_obj.extracted_file_path is None:
-            try:
-                if await doc_service.check_job_status(db_obj.job_id):
-                    extracted_file_path = await doc_service.get_extracted_file_path(db_obj.job_id, db_obj.file_path)
-                    await doc_service.update(item_id=db_obj.id, data={"extracted_file_path": extracted_file_path})
-                    db_obj = await doc_service.get(id)
-
-            except Exception as e:
-                _raise_http_exception(f"Failed to read document: {e!s}", status_code=500)
-
-        if not db_obj.extracted_file_path:
-            _raise_http_exception(detail="Extracted file path is missing.", status_code=400)
-
-        with s3.open(db_obj.extracted_file_path, "rb") as f:
+        with s3.open(extracted_file_path, "rb") as f:
             content: bytes = f.read()
-            return content.decode(encoding="utf-8", errors="ignore")
+        return content.decode(encoding="utf-8", errors="ignore")

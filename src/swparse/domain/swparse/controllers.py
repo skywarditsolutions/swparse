@@ -76,7 +76,7 @@ class ParserController(Controller):
                     "parse_image_markdown_s3",
                     kwargs={
                         "s3_url": s3_url,
-                        "ext": data.content_type,
+                        "ext":  data.content_type,
                     },
                     timeout=0,
                 ),
