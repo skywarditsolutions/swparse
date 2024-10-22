@@ -107,6 +107,7 @@ class ParserController(Controller):
                 ),
             )
         elif data.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+            logger.error("WORKED parse_docx_markdown_s3")
             job = await queue.enqueue(
                 Job(
                     "parse_docx_markdown_s3",

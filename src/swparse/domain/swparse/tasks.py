@@ -18,6 +18,7 @@ from swparse.config.app import settings
 from swparse.db.models  import ContentType 
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
 from swparse.domain.swparse.utils import convert_xls_to_xlsx_bytes, save_file_s3, get_file_name, change_file_ext
+import html_text  
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -70,10 +71,18 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> dict
         md_file_name = change_file_ext(file_name, "md")
         md_file_path = save_file_s3(s3, md_file_name, markdown)
         
+        # Parsing to Text
+         # Parsing to Text
+        text_content = html_text.extract_text(result_html, guess_layout=False)
+        text_file_name = change_file_ext(file_name, "txt")
+        txt_file_path = save_file_s3(s3, text_file_name, text_content)
+        
+        
         return  {
             ContentType.CSV.value: csv_file_path,
             ContentType.MARKDOWN.value: md_file_path,
             ContentType.HTML.value: html_file_path,
+            ContentType.TEXT.value: txt_file_path,
         }
         
     except FileNotFoundError:
@@ -161,13 +170,22 @@ async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) ->dict[str,str]:
     md_file_name = change_file_ext(file_name, "md")
     md_file_path = save_file_s3(s3, md_file_name, markdown)
     
+    
+    # Parsing to Text
+    text_content = html_text.extract_text(htmlData, guess_layout=False)
+    text_file_name = change_file_ext(file_name, "txt")
+    txt_file_path = save_file_s3(s3, text_file_name, text_content)
+    
     logger.error("parse_docx_markdown_s3")
     logger.error(s3_url)
     
+    logger.error("HELLO WORLD")
+    logger.error(txt_file_path)
     logger.error(markdown)
     return  {
         ContentType.HTML.value: html_file_path,
         ContentType.MARKDOWN.value: md_file_path,
+        ContentType.TEXT.value: txt_file_path,
     }
 
 
