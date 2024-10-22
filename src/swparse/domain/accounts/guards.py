@@ -109,5 +109,6 @@ auth = OAuth2PasswordBearerAuth[User](
         "^/schema",
         "^/public/",
         "^/saq/static/",
+        "^/vendor/",
     ],
 )

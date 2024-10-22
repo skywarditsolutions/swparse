@@ -12,6 +12,9 @@ config = OpenAPIConfig(
     components=[auth.openapi_components],
     security=[auth.security_requirement],
     use_handler_docstrings=True,
-    render_plugins=[ScalarRenderPlugin(), RapidocRenderPlugin(path="/docs/")],
+    render_plugins=[
+        ScalarRenderPlugin(js_url="/vendor/scalar/api-reference@latest"),
+        RapidocRenderPlugin(path="/docs/", js_url="/vendor/rapidocs/rapidoc-min.min.js"),
+    ],
 )
 """OpenAPI config for swparse.  See OpenAPISettings for configuration."""

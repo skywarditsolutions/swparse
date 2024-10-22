@@ -63,7 +63,7 @@ class ParserController(Controller):
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 Job(
-                    "parse_pdf_markdown_s3",
+                    "parse_pdf_s3",
                     kwargs={
                         "s3_url": s3_url,
                     },
@@ -73,10 +73,10 @@ class ParserController(Controller):
         elif data.content_type.split("/")[0].lower() == "image":
             job = await queue.enqueue(
                 Job(
-                    "parse_image_markdown_s3",
+                    "parse_image_s3",
                     kwargs={
                         "s3_url": s3_url,
-                        "ext":  data.content_type,
+                        "ext": data.content_type,
                     },
                     timeout=0,
                 ),
@@ -98,7 +98,7 @@ class ParserController(Controller):
         ):
             job = await queue.enqueue(
                 Job(
-                    "parse_xlsx_markdown_s3",
+                    "parse_xlsx_s3",
                     kwargs={
                         "s3_url": s3_url,
                         "ext": data.content_type,
@@ -107,10 +107,10 @@ class ParserController(Controller):
                 ),
             )
         elif data.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-            logger.error("WORKED parse_docx_markdown_s3")
+            logger.error("WORKED parse_docx_s3")
             job = await queue.enqueue(
                 Job(
-                    "parse_docx_markdown_s3",
+                    "parse_docx_s3",
                     kwargs={
                         "s3_url": s3_url,
                     },
@@ -172,7 +172,7 @@ class ParserController(Controller):
             f.write(content)  # type: ignore
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
-                "parse_docx_markdown_s3",
+                "parse_docx_s3",
                 s3_url=s3_url,
                 page=page,
             )

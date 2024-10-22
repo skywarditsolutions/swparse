@@ -1,8 +1,9 @@
-import ctypes
 import io
 import os
 import pathlib
+import tempfile
 import typing
+import warnings
 from logging import getLogger
 
 import pandas
@@ -11,9 +12,10 @@ from marker.cleaners.bullets import replace_bullets
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.fontstyle import find_bold_italic
 from marker.cleaners.headers import filter_common_titles, filter_header_footer
-from marker.cleaners.headings import split_heading_blocks
+from marker.cleaners.headings import infer_heading_levels, split_heading_blocks
 from marker.cleaners.text import cleanup_text
-from marker.debug.data import dump_bbox_debug_data
+from marker.cleaners.toc import compute_toc
+from marker.debug.data import draw_page_debug_images, dump_bbox_debug_data
 from marker.equations.equations import replace_equations
 from marker.images.extract import extract_images
 from marker.images.save import images_to_dict
@@ -24,7 +26,7 @@ from marker.ocr.detection import surya_detection
 from marker.ocr.lang import replace_langs_with_codes, validate_langs
 from marker.ocr.recognition import run_ocr
 from marker.pdf.extract_text import get_text_blocks
-from marker.postprocessors.editor import edit_full_text
+from marker.pdf.utils import find_filetype
 from marker.postprocessors.markdown import get_full_text, merge_lines, merge_spans
 from marker.settings import settings
 from marker.tables.table import format_tables
@@ -38,40 +40,76 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
 model_lst: list[typing.Any] = []
 
 
+warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
+
+
 def pdf_markdown(
-    pdf_input: str | pathlib.Path | bytes | ctypes.Array | typing.BinaryIO,
-    max_pages: int | None = None,
-    start_page: int | None = None,
-    metadata: dict[str, typing.Any] | None = None,
-    langs: list[str] | None = None,
-    batch_multiplier: int = 1,
-) -> tuple[str, dict[str, Image.Image], dict[str, typing.Any]]:
+    in_file: bytes,
+    langs: list[str] = ["en"],
+    start_page: int = 0,
+    max_pages: int = 40,
+    ocr_all_pages: bool = False,
+) -> tuple[str, dict[str, Image.Image], dict]:
     if len(model_lst) == 0:
         logger.error("Loading Models")
         model_lst.extend(load_all_models())
-    # Set language needed for OCR
-    if langs is None:
-        langs = [settings.DEFAULT_LANG]
-    # print("work")
+        logger.error(len(model_lst))
+    with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
+        temp_pdf.write(in_file)
+        temp_pdf.seek(0)
+        filename = temp_pdf.name
+        full_text, images, out_meta = convert_single_pdf(
+            filename,
+            model_lst=model_lst,
+            langs=langs,
+            start_page=start_page,
+            max_pages=max_pages,
+            ocr_all_pages=ocr_all_pages,
+        )
+    return full_text, images, out_meta
+
+
+def convert_single_pdf(
+    fname: str,
+    model_lst: list,
+    max_pages: int | None = None,
+    start_page: int | None = None,
+    metadata: dict | None = None,
+    langs: list[str] | None = None,
+    batch_multiplier: int = 1,
+    ocr_all_pages: bool = False,
+) -> tuple[str, dict[str, Image.Image], dict]:
+    ocr_all_pages = ocr_all_pages or settings.OCR_ALL_PAGES
+
     if metadata:
         langs = metadata.get("languages", langs)
+
     langs = replace_langs_with_codes(langs)
     validate_langs(langs)
 
     # Find the filetype
+    filetype = find_filetype(fname)
 
     # Setup output metadata
     out_meta = {
         "languages": langs,
-        "filetype": "application/pdf",
+        "filetype": filetype,
     }
 
+    if filetype == "other":  # We can't process this file
+        return "", {}, out_meta
+
     # Get initial text blocks from the pdf
-    doc = pdfium.PdfDocument(pdf_input)
-    pages, toc = get_text_blocks(doc, pdf_input, max_pages=max_pages, start_page=start_page)
+    doc = pdfium.PdfDocument(fname)
+    pages, toc = get_text_blocks(
+        doc,
+        fname,
+        max_pages=max_pages,
+        start_page=start_page,
+    )
     out_meta.update(
         {
-            "toc": toc,
+            "pdf_toc": toc,
             "pages": len(pages),
         },
     )
@@ -82,7 +120,7 @@ def pdf_markdown(
             doc.del_page(0)
 
     # Unpack models from list
-    texify_model, layout_model, order_model, edit_model, detection_model, ocr_model = model_lst
+    texify_model, layout_model, order_model, detection_model, ocr_model, table_rec_model = model_lst
 
     # Identify text lines on pages
     surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
@@ -95,12 +133,13 @@ def pdf_markdown(
         langs,
         ocr_model,
         batch_multiplier=batch_multiplier,
+        ocr_all_pages=ocr_all_pages,
     )
     flush_cuda_memory()
 
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
-        print(f"Could not extract any text blocks for {pdf_input}")
+        print(f"Could not extract any text blocks for {fname}")
         return "", {}, out_meta
 
     surya_layout(doc, pages, layout_model, batch_multiplier=batch_multiplier)
@@ -113,14 +152,15 @@ def pdf_markdown(
     # Add block types in
     annotate_block_types(pages)
 
-    # Dump debug data if flags are set
-    dump_bbox_debug_data(doc, pdf_input, pages)
-
     # Find reading order for blocks
     # Sort blocks by reading order
     surya_order(doc, pages, order_model, batch_multiplier=batch_multiplier)
     sort_blocks_in_reading_order(pages)
     flush_cuda_memory()
+
+    # Dump debug data if flags are set
+    draw_page_debug_images(fname, pages)
+    dump_bbox_debug_data(fname, pages)
 
     # Fix code blocks
     code_block_count = identify_code_blocks(pages)
@@ -128,7 +168,7 @@ def pdf_markdown(
     indent_blocks(pages)
 
     # Fix table blocks
-    table_count = format_tables(pages)
+    table_count = format_tables(pages, doc, fname, detection_model, table_rec_model, ocr_model)
     out_meta["block_stats"]["table"] = table_count
 
     for page in pages:
@@ -151,7 +191,11 @@ def pdf_markdown(
 
     # Split out headers
     split_heading_blocks(pages)
+    infer_heading_levels(pages)
     find_bold_italic(pages)
+
+    # Use headers to compute a table of contents
+    out_meta["computed_toc"] = compute_toc(pages)
 
     # Copy to avoid changing original data
     merged_lines = merge_spans(filtered)
@@ -165,14 +209,6 @@ def pdf_markdown(
     # Replace bullet characters with a -
     full_text = replace_bullets(full_text)
 
-    # Postprocess text with editor model
-    full_text, edit_stats = edit_full_text(
-        full_text,
-        edit_model,
-        batch_multiplier=batch_multiplier,
-    )
-    flush_cuda_memory()
-    out_meta["postprocess_stats"] = {"edit": edit_stats}
     doc_images = images_to_dict(pages)
 
     return full_text, doc_images, out_meta
