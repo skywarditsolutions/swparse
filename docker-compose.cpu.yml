@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
     logging:
       options:
-        max-size: 10mz
+        max-size: 10m
         max-file: "3"
     healthcheck:
       test:
