@@ -113,11 +113,11 @@ class DocumentController(Controller):
     ) -> Document:
         """Get a Document."""
         db_obj = await doc_service.get(id)
-        extracted_file_paths = db_obj.extracted_file_paths
-        extracted_file_paths = base64.b64decode(extracted_file_paths).decode('utf-8')
-        extracted_file_paths =  json.loads(extracted_file_paths)
-
-        if not extracted_file_paths:
+        logger.error("db_obj.extracted_file_paths")
+        logger.error(db_obj.extracted_file_paths)
+        logger.error(type(db_obj.extracted_file_paths))
+        
+        if db_obj.extracted_file_paths is None:
             try:
                 if await doc_service.check_job_status(db_obj.job_id):
                     extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
@@ -126,6 +126,9 @@ class DocumentController(Controller):
             except Exception as e:
                 logger.error(f"Failed to retrieve the extracted file {e}")
                 _raise_http_exception(detail=f"Failed to retrieve the extracted file {e}", status_code=404)
+        extracted_file_paths =  db_obj.extracted_file_paths
+        extracted_file_paths = base64.b64decode(extracted_file_paths).decode('utf-8')
+        db_obj.extracted_file_paths = json.loads(extracted_file_paths)
         return db_obj
 
     @get(path=urls.LIST_DIR, guards=[requires_active_user])
@@ -162,7 +165,7 @@ class DocumentController(Controller):
                 file_path=stats.s3_url,
                 user_id=current_user.id,
                 job_id=stats.id,
-                extracted_file_paths={},
+                # extracted_file_paths=None,
             ),
         )
 
@@ -232,23 +235,19 @@ class DocumentController(Controller):
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
-      
-        extracted_file_paths = db_obj.extracted_file_paths
-        extracted_file_paths = base64.b64decode(extracted_file_paths).decode('utf-8')
-        extracted_file_paths =  json.loads(extracted_file_paths)
+ 
         
-        if not extracted_file_paths and not await doc_service.check_job_status(db_obj.job_id):
+        if db_obj.extracted_file_paths is None and not await doc_service.check_job_status(db_obj.job_id):
             _raise_http_exception("Uploaded document is not extracted yet.", status_code=400)
 
-        if not extracted_file_paths and await doc_service.check_job_status(db_obj.job_id):
+        if db_obj.extracted_file_paths is None and await doc_service.check_job_status(db_obj.job_id):
             extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
             await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
             db_obj = await doc_service.get(id)
-
-        extracted_file_paths = db_obj.extracted_file_paths
-        extracted_file_paths = base64.b64decode(extracted_file_paths).decode('utf-8')
-        extracted_file_paths =  json.loads(extracted_file_paths)
  
+        extracted_file_paths =  db_obj.extracted_file_paths
+        extracted_file_paths = json.loads( base64.b64decode(extracted_file_paths).decode('utf-8'))
+        
         if result_type not in extracted_file_paths:
             _raise_http_exception("Extracted file does not exit.", status_code=400)
 
