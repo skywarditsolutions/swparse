@@ -19,6 +19,7 @@ from litestar.repository.filters import CollectionFilter, LimitOffset
 from litestar.response import File
 from s3fs import S3FileSystem
 
+from typing import Optional
 from swparse.config.app import settings
 from swparse.db.models import User
 from swparse.db.models.document import Document
@@ -129,6 +130,7 @@ class DocumentController(Controller):
         extracted_file_paths =  db_obj.extracted_file_paths
         extracted_file_paths = base64.b64decode(extracted_file_paths).decode('utf-8')
         db_obj.extracted_file_paths = json.loads(extracted_file_paths)
+
         return db_obj
 
     @get(path=urls.LIST_DIR, guards=[requires_active_user])
@@ -230,7 +232,7 @@ class DocumentController(Controller):
                 description="The document to retrieve.",
             ),
         ],
-        result_type: str="markdown",
+        result_type:Optional[str]="markdown",
     ) -> str:
         db_obj = await doc_service.get(id)
         if not db_obj:
@@ -250,7 +252,6 @@ class DocumentController(Controller):
         
         if result_type not in extracted_file_paths:
             _raise_http_exception("Extracted file does not exit.", status_code=400)
-
         extracted_file_path = extracted_file_paths[result_type]
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,

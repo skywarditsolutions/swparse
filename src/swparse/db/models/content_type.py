@@ -8,7 +8,7 @@ class ContentType(str, Enum):
 
     # Text-based types
     MARKDOWN = "markdown"
-    TEXT = "plain"
+    TEXT = "text"
     CSV = "csv"
     HTML = "html"
     JSON = "json"

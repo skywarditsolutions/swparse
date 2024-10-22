@@ -87,7 +87,7 @@ async def parse_xlsx_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> dict
     return {}
 
 
-async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> str:
+async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str,str]:
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -97,12 +97,19 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> str:
     )
     logger.error("extract_string")
     logger.error(s3_url)
+    file_name = get_file_name(s3_url)
+    txt_file_name = change_file_ext(file_name, "txt")
+
     with s3.open(s3_url, mode="rb") as doc:
         byte_string = doc.read()
         try:
-            return str(byte_string.decode("utf-8"))
+            out_txt = str(byte_string.decode("utf-8"))
+            text_file_path = save_file_s3(s3, txt_file_name, out_txt)
+            return {ContentType.TEXT.value: text_file_path}
         except UnicodeDecodeError:
-            return str(byte_string)
+            out_txt = str(byte_string)
+            text_file_path = save_file_s3(s3, txt_file_name, out_txt)
+            return {ContentType.TEXT.value:text_file_path }
 
 
 async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
@@ -126,7 +133,7 @@ async def parse_pdf_markdown_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
         out_file_html.write(mistletoe.markdown(markdown))  # type: ignore
     with s3.open(out_txt, mode="w") as out_file_txt:  # type: ignore
         out_file_txt.write(markdown)  # type: ignore
-    results = {"markdown": out_md, "html": out_html, "text": out_txt}
+    results = {ContentType.MARKDOWN.value: out_md, ContentType.HTML.value: out_html, ContentType.TEXT.value: out_txt}
     logger.error("parse_pdf_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
@@ -164,7 +171,7 @@ async def parse_docx_markdown_s3(ctx: Context, *, s3_url: str) ->dict[str,str]:
     }
 
 
-async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str, page: int) -> str:
+async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str, page: int) -> dict[str,str]:
     from swparse.domain.swparse.convert import pdf_markdown
 
     s3 = S3FileSystem(
@@ -174,16 +181,20 @@ async def parse_pdf_page_markdown_s3(ctx: Context, *, s3_url: str, page: int) ->
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
-
+    file_name = get_file_name(s3_url)
     with s3.open(s3_url, mode="rb") as doc:
         markdown, doc_images, out_meta = pdf_markdown(doc.read(), start_page=page, max_pages=1)
     logger.error("parse_pdf_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
-    return markdown
+    md_file_name = change_file_ext(file_name, "md")
+    md_file_path = save_file_s3(s3, md_file_name, markdown)
+    return  {
+        ContentType.MARKDOWN.value: md_file_path,
+    }
 
 
-async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str:
+async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     from swparse.domain.swparse.convert import pdf_markdown
 
     s3 = S3FileSystem(
@@ -217,10 +228,13 @@ async def parse_image_markdown_s3(ctx: Context, *, s3_url: str, ext: str) -> str
     logger.error("parse_image_markdown_s3")
     logger.error(s3_url)
     logger.error(markdown)
-    return markdown[0]
+    file_name = get_file_name(s3_url)
+    md_file_name = change_file_ext(file_name, "md")
+    md_file_path = save_file_s3(s3, md_file_name, markdown[0])
+    return  {ContentType.MARKDOWN.value: md_file_path}
 
 
-async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> str:
+async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str,str]:
     try:
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -228,25 +242,49 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> str:
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
+        file_name = get_file_name(s3_url)
         with s3.open(s3_url, mode="rb") as doc:
             content = doc.read()
             if isinstance(content, bytes):
                 content = content.decode("utf-8")
+                
+            text_file_name = change_file_ext(file_name, "txt")
+            text_file_path = save_file_s3(s3, text_file_name, content)
+            result = {ContentType.TEXT.value: text_file_path}
 
             if ext == "text/csv":
                 csv_buffer = io.StringIO(content)
                 df = pd.read_csv(csv_buffer)
-                content = df.to_string(index=False)
-
-            return content
+                txt_content = df.to_string(index=False)
+                text_file_name = change_file_ext(file_name, "txt")
+                text_file_path = save_file_s3(s3, text_file_name, txt_content)
+            
+     
+                html_content = df.to_html()
+                html_file_name = change_file_ext(file_name, "html")
+                html_file_path = save_file_s3(s3, html_file_name, html_content)
+           
+            
+                # Markdown Parsing
+                markdown = html2text(html_content)
+                md_file_name = change_file_ext(file_name, "md")
+                md_file_path = save_file_s3(s3, md_file_name, markdown)
+    
+                result = { 
+                ContentType.TEXT.value:text_file_path,
+                ContentType.MARKDOWN.value: md_file_path,
+                ContentType.HTML.value: html_file_path
+                }
+                
+            return result
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
 
-        return ""
+        return {}
 
 
-async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> str:
+async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
         key=MINIO_ROOT_USER,
@@ -255,4 +293,8 @@ async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> str:
     )
     with s3.open(s3_url, mode="rb") as doc:
         content = doc.read()
-        return await convert_xlsx_csv(content)
+        csv_content = await convert_xlsx_csv(content)
+    file_name = get_file_name(s3_url)
+    csv_file_name = change_file_ext(file_name, "csv")
+    csv_file_path = save_file_s3(s3, csv_file_name, csv_content)
+    return {"csv":csv_file_path}
