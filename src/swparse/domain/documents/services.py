@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import httpx
+import os
 from typing import TYPE_CHECKING, Any
 from s3fs import S3FileSystem
 from swparse.config.app import settings
@@ -12,7 +13,6 @@ from advanced_alchemy.service import (
 )
 from litestar_saq import Queue
 from litestar.exceptions import HTTPException
-from swparse.domain.swparse.exceptions import JobNotFoundError
 from swparse.db.models import Document
 from swparse.domain.swparse.schemas import JobStatus, Status, JobResult
 
@@ -91,7 +91,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
         return await super().to_model(data, operation)
 
     async def check_job_status(self, job_id: str) -> bool:
-        url = f"http://localhost:8000/api/parsing/job/{job_id}"
+        url = f"{os.environ.get('APP_URL')}/api/parsing/job/{job_id}"
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
@@ -106,4 +106,13 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
         if not job:
             raise HTTPException(detail=f"Job {job_id} is not found", status_code=404)
         return job.result
-
+    
+    async def get_presigned_url(self, s3_url: str) -> str | None:
+        expiry_time = 3600
+        s3 = S3FileSystem(
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
+        return s3.url(path=s3_url, expires=expiry_time)

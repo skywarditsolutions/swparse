@@ -4,7 +4,7 @@ import base64
 import mimetypes
 import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
-
+import os
 import httpx
 import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
@@ -142,7 +142,7 @@ class DocumentController(Controller):
         current_user: User,
     ) -> Document:
         content = await data.read()
-        url = "http://localhost:8000/api/parsing/upload"  # URL of the upload_and_parse_que endpoint
+        url = f"{os.environ.get('APP_URL')}/api/parsing/upload"  # URL of the upload_and_parse_que endpoint
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url,
@@ -250,3 +250,24 @@ class DocumentController(Controller):
         with s3.open(extracted_file_path, "rb") as f:
             content: bytes = f.read()
         return content.decode(encoding="utf-8", errors="ignore")
+    
+
+    @get(path=urls.EXTRACTED_CONTENT_PRESIGNED_URL, guards=[requires_active_user])
+    async def get_extracted_file_presigned_url(self, doc_service: DocumentService, doc_id: Annotated[UUID, Parameter(title="Document ID", description="The document to retrieve.")], result_type: str = "markdown") -> str | None:
+        doc_obj = await doc_service.get(doc_id)
+        if not doc_obj:
+            _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
+
+        if doc_obj.extracted_file_paths is None and not await doc_service.check_job_status(doc_obj.job_id):
+            _raise_http_exception("Uploaded document is not extracted yet.", status_code=400)
+
+        if doc_obj.extracted_file_paths is None and await doc_service.check_job_status(doc_obj.job_id):
+            extracted_file_paths = await doc_service.get_extracted_file_paths(doc_obj.job_id)
+            await doc_service.update(item_id=doc_obj.id, data={"extracted_file_paths": extracted_file_paths})
+            doc_obj = await doc_service.get(id)
+        
+        extracted_file_paths: dict = doc_obj.extracted_file_paths
+        if result_type not in extracted_file_paths:
+            _raise_http_exception("Extracted file does not exit.", status_code=400)
+        extracted_file_path = extracted_file_paths[result_type]
+        return await doc_service.get_presigned_url(extracted_file_path)

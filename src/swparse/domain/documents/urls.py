@@ -8,3 +8,4 @@ LIST_DIR = "/api/bucket/dirs"
 
 DOCUMENT_CONTENT = "/api/documents/content/{id:uuid}"
 EXTRACTED_CONTENT = "/api/extractions/content/{id:uuid}/{resutl_type:str}"
+EXTRACTED_CONTENT_PRESIGNED_URL = "/api/extractions/presigned/{doc_id:uuid}/{resutl_type:str}"
