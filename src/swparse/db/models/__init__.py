@@ -9,6 +9,7 @@ from .team_roles import TeamRoles
 from .team_tag import team_tag
 from .user import User
 from .user_role import UserRole
+from .content_type import ContentType
 
 __all__ = (
     "User",
@@ -22,5 +23,5 @@ __all__ = (
     "TeamMember",
     "TeamRoles",
     "Document",
-    "FileType"
+    "ContentType"
 )

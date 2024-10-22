@@ -14,7 +14,7 @@ from advanced_alchemy.service import (
 from litestar_saq import Queue
 from litestar.exceptions import HTTPException
 from swparse.db.models import Document
-from swparse.domain.swparse.schemas import JobStatus, Status, JobResult
+from swparse.domain.swparse.schemas import JobStatus, Status
 
 from .repositories import DocumentRepository
 
