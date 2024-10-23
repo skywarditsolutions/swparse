@@ -23,7 +23,7 @@ services:
       timeout: 3s
       retries: 30
   db:
-    image: postgres:latest
+    image: postgres:17
     ports:
       - "15432:5432"
     hostname: db
