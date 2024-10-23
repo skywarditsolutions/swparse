@@ -5,6 +5,9 @@
 	handle /api/* {
 		reverse_proxy http://localhost:8000
 	}
+	handle /public/* {
+		reverse_proxy http://localhost:8000
+	}
 	handle /health {
 		reverse_proxy http://localhost:8000
 	}

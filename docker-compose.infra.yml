@@ -83,6 +83,16 @@ services:
       /usr/bin/mc config host add --quiet --api s3v4 minio http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; 
       sleep infinity;
       "
+  caddy:
+    image: caddy:2.7
+    restart: always
+    network_mode: "host"
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./deploy/frontend/static:/static
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile
 volumes:
   db-data: {}
   cache-data: {}
