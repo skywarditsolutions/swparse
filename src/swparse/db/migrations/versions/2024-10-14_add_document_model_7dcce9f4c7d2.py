@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 import sqlalchemy as sa
 from alembic import op
 from advanced_alchemy.types import EncryptedString, EncryptedText, GUID, ORA_JSONB, DateTimeUTC
-from sqlalchemy import Text  # noqa: F401
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -59,7 +58,7 @@ def schema_upgrades() -> None:
     sa.Column('job_id', sa.String(length=150), nullable=False),
     sa.Column('file_type', sa.String(length=50), nullable=False),
     sa.Column('file_path', sa.String(length=255), nullable=False),
-    sa.Column('extracted_file_path', sa.String(length=255), nullable=False),
+    sa.Column('extracted_file_path', sa.String(length=255), nullable=True),
     sa.Column('sa_orm_sentinel', sa.Integer(), nullable=True),
     sa.Column('created_at', sa.DateTimeUTC(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTimeUTC(timezone=True), nullable=False),
