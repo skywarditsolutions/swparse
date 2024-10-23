@@ -63,6 +63,7 @@ ENV PATH="/workspace/swparse/.venv/bin:$PATH" \
 WORKDIR /workspace/swparse
 COPY tests/ tests/
 COPY src src/
+COPY deploy deploy/
 RUN apt-get update && apt-get install -y libgl-dev
 RUN pdm install $PDM_INSTALL_ARGS
 STOPSIGNAL SIGINT
