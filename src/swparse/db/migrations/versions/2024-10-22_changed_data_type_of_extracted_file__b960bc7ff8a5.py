@@ -36,7 +36,7 @@ depends_on = None
 def upgrade() -> None:
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore", category=UserWarning)
-        op.execute("UPDATE documents SET documents.extracted_file_path = '{}' WHERE documents.extracted_file_path IS NULL  ")
+        # op.execute("UPDATE documents SET documents.extracted_file_path = '{}' WHERE documents.extracted_file_path IS NULL  ")
         with op.get_context().autocommit_block():
             schema_upgrades()
             data_upgrades()
