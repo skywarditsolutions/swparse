@@ -33,7 +33,7 @@ def package_standalone_app(options: argparse.Namespace) -> None:
         # "PYAPP_PROJECT_NAME": "swparse",
         # "PYAPP_PROJECT_VERSION": "0.2.0",
         # "PYAPP_EXEC_MODULE": "swparse",
-        "PYAPP_PYTHON_VERSION": "3.11",
+        "PYAPP_PYTHON_VERSION": "3.12",
         # "PYAPP_DISTRIBUTION_EMBED": "1",
         "PYAPP_FULL_ISOLATION": "1",
         "PYAPP_EXEC_SPEC": "swparse.__main__:run_cli",
