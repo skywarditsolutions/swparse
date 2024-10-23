@@ -222,23 +222,27 @@ class ParserController(Controller):
         if job:
             await job.refresh(1)
             results = job.result
-            match result_type:
-                case "markdown":
-                    with s3.open(results["markdown"], mode="r") as out_file_md:
-                        markdown = out_file_md.read()
-                        return JobResult(markdown=markdown, html="", text="", job_metadata=jm)
+            try:
+                match result_type:
+                    case "markdown":
+                        with s3.open(results["markdown"], mode="r") as out_file_md:
+                            markdown = out_file_md.read()
+                            return JobResult(markdown=markdown, html="", text="", job_metadata=jm)
 
-                case "html":
-                    with s3.open(results["html"], mode="r") as out_file_html:
-                        html = out_file_html.read()
-                        return JobResult(markdown="", html=html, text="", job_metadata=jm)
+                    case "html":
+                        with s3.open(results["html"], mode="r") as out_file_html:
+                            html = out_file_html.read()
+                            return JobResult(markdown="", html=html, text="", job_metadata=jm)
 
-                case "text":
-                    with s3.open(results["text"], mode="r") as out_file_txt:
-                        text = out_file_txt.read()
-                        return JobResult(markdown="", html="", text=text, job_metadata=jm)
-                case _:
-                    unsupported = f"Format {result_type} in currently unsupported."
-                    raise HTTPException(unsupported)
+                    case "text":
+                        with s3.open(results["text"], mode="r") as out_file_txt:
+                            text = out_file_txt.read()
+                            return JobResult(markdown="", html="", text=text, job_metadata=jm)
+                    case _:
+                        unsupported = f"Format {result_type} is currently unsupported."
+                        raise HTTPException(unsupported)
+            except KeyError:
+                unsupported = f"Format {result_type} is currently unsupported for {job_key}"
+                raise HTTPException(unsupported)
 
         raise HTTPException(f"No Such Job {job_id} ")
