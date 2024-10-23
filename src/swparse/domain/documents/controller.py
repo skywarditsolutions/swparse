@@ -115,9 +115,7 @@ class DocumentController(Controller):
         """Get a Document."""
         db_obj = await doc_service.get(id)
         logger.error("db_obj.extracted_file_paths")
-        logger.error(db_obj.extracted_file_paths)
-        logger.error(type(db_obj.extracted_file_paths))
-        
+
         if db_obj.extracted_file_paths is None:
             try:
                 if await doc_service.check_job_status(db_obj.job_id):
