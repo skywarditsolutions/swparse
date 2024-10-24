@@ -231,7 +231,7 @@ class DocumentController(Controller):
             ),
         ],
         result_type:Optional[str]="markdown",
-    ) -> str:
+    ) -> str | None:
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
@@ -249,7 +249,8 @@ class DocumentController(Controller):
         extracted_file_paths = json.loads( base64.b64decode(extracted_file_paths).decode('utf-8'))
         
         if result_type not in extracted_file_paths:
-            _raise_http_exception("Extracted file does not exit.", status_code=400)
+            # Extracted file does not exit
+            return None
         extracted_file_path = extracted_file_paths[result_type]
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -279,6 +280,7 @@ class DocumentController(Controller):
         
         extracted_file_paths: dict = doc_obj.extracted_file_paths
         if result_type not in extracted_file_paths:
-            _raise_http_exception("Extracted file does not exit.", status_code=400)
+            # Extracted file does not exit
+            return None
         extracted_file_path = extracted_file_paths[result_type]
         return await doc_service.get_presigned_url(extracted_file_path)

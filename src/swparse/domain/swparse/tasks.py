@@ -27,12 +27,6 @@ logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-MD_EXT = ".extracted.md"
-TXT_EXT = ".extracted.txt"
-HTML_EXT = ".extracted.html"
-CSV_EXT = ".extracted.csv"
-JSON_EXT = ".extracted.json"
-
 
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
@@ -128,22 +122,31 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
-    out_md = f"{s3_url}.{MD_EXT}"
-    out_txt = f"{s3_url}.{TXT_EXT}"
-    out_html = f"{s3_url}.{HTML_EXT}"
+
+    file_name = get_file_name(s3_url)
 
     with s3.open(s3_url, mode="rb") as doc:
         markdown, doc_images, out_meta = pdf_markdown(doc.read(), start_page=start_page, max_pages=end_page)
+
     html_results = mistletoe.markdown(markdown)
     text_results = html_text.extract_text(html_results, guess_layout=True)
-    with s3.open(out_md, mode="w") as out_file_md:
-        out_file_md.write(markdown)
-    with s3.open(out_html, mode="w") as out_file_html:
-        out_file_html.write(html_results)
-    with s3.open(out_txt, mode="w") as out_file_txt:
-        out_file_txt.write(text_results)
-    logger.info(out_file_html, out_file_txt, out_file_md)
-    return {ContentType.MARKDOWN.value: out_md, ContentType.HTML.value: out_html, ContentType.TEXT.value: out_txt}
+
+    # Markdown Parsing
+    md_file_name = change_file_ext(file_name, "md")
+    md_file_path = save_file_s3(s3, md_file_name, markdown)
+    # HTML Parsing
+    html_file_name = change_file_ext(file_name, "html")
+    html_file_path = save_file_s3(s3, html_file_name, html_results)
+    # Markdown Parsing
+    txt_file_name = change_file_ext(file_name, "txt")
+    txt_file_path = save_file_s3(s3, txt_file_name, text_results)
+
+    logger.info(md_file_path, html_file_path, txt_file_path)
+    return {
+        ContentType.MARKDOWN.value: md_file_path,
+        ContentType.HTML.value: html_file_path,
+        ContentType.TEXT.value: txt_file_path,
+    }
 
 
 async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
