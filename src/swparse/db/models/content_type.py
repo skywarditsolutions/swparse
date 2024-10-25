@@ -14,6 +14,7 @@ class ContentType(str, Enum):
     JSON = "json"
     XML = "xml"
     PDF = "pdf"
+    TABLE ="table"
 
 
 

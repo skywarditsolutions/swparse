@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import base64
+import json
 import mimetypes
+import os
 import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
-import os
+
 import httpx
 import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
@@ -19,15 +21,15 @@ from litestar.repository.filters import CollectionFilter, LimitOffset
 from litestar.response import File
 from s3fs import S3FileSystem
 
-from typing import Optional
 from swparse.config.app import settings
-from swparse.db.models import User
+from swparse.db.models import ContentType, User
 from swparse.db.models.document import Document
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus
-import json
+from swparse.domain.swparse.utils import change_file_ext, extract_tables_from_html, get_file_name, save_file_s3
+
 from . import urls
 
 if TYPE_CHECKING:
@@ -230,39 +232,53 @@ class DocumentController(Controller):
                 description="The document to retrieve.",
             ),
         ],
-        result_type:Optional[str]="markdown",
+        result_type:str="markdown",
     ) -> str | None:
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
- 
-        
-        if db_obj.extracted_file_paths is None and not await doc_service.check_job_status(db_obj.job_id):
-            _raise_http_exception("Uploaded document is not extracted yet.", status_code=400)
 
-        if db_obj.extracted_file_paths is None and await doc_service.check_job_status(db_obj.job_id):
+        if  db_obj.extracted_file_paths is None:
+            if not await doc_service.check_job_status(db_obj.job_id):
+                _raise_http_exception("Uploaded document has not extracted yet.", status_code=400)
+ 
             extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
             await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
-            db_obj = await doc_service.get(id)
- 
-        extracted_file_paths =  db_obj.extracted_file_paths
-        extracted_file_paths = json.loads( base64.b64decode(extracted_file_paths).decode('utf-8'))
-        
-        if result_type not in extracted_file_paths:
-            # Extracted file does not exit
-            return None
-        extracted_file_path = extracted_file_paths[result_type]
-        s3 = S3FileSystem(
+        else:
+            raw_file_paths = base64.b64decode(db_obj.extracted_file_paths).decode()
+            extracted_file_paths = json.loads(raw_file_paths)
+
+        s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-        with s3.open(extracted_file_path, "rb") as f:
+        if result_type not in extracted_file_paths:
+            if result_type != ContentType.TABLE.value:
+                # Extracted file type does not exit
+                return None
+            # Extracting table from the existing HTML file path
+            html_file_path = extracted_file_paths.get(ContentType.HTML.value)
+            if html_file_path is None:
+                _raise_http_exception("HTML file hasn't extracted", status_code=404)
+
+            html_tables = extract_tables_from_html(s3fs, html_file_path)
+            if html_tables is not None:
+                result_html = "<br><br>".join(html_tables)
+                file_name = get_file_name(html_file_path)
+                html_file_name = change_file_ext(file_name, "html")
+                html_file_path = save_file_s3(s3fs, html_file_name, result_html)
+                extracted_file_paths[ContentType.TABLE.value] = html_file_path
+                await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
+
+        extracted_file_path = extracted_file_paths[result_type]
+
+        with s3fs.open(extracted_file_path, "rb") as f:
             content: bytes = f.read()
-  
+
         return content.decode(encoding="utf-8", errors="ignore")
-    
+
 
     @get(path=urls.EXTRACTED_CONTENT_PRESIGNED_URL, guards=[requires_active_user])
     async def get_extracted_file_presigned_url(self, doc_service: DocumentService, doc_id: Annotated[UUID, Parameter(title="Document ID", description="The document to retrieve.")], result_type: str = "markdown") -> str | None:
@@ -277,10 +293,10 @@ class DocumentController(Controller):
             extracted_file_paths = await doc_service.get_extracted_file_paths(doc_obj.job_id)
             await doc_service.update(item_id=doc_obj.id, data={"extracted_file_paths": extracted_file_paths})
             doc_obj = await doc_service.get(id)
-        
+
         extracted_file_paths: dict = doc_obj.extracted_file_paths
         if result_type not in extracted_file_paths:
             # Extracted file does not exit
             return None
         extracted_file_path = extracted_file_paths[result_type]
-        return await doc_service.get_presigned_url(extracted_file_path)
+        return await doc_service.get_presigned_url(extracted_file_path)()

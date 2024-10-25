@@ -35,6 +35,9 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
+    result = {}
+    logger.error("Started parse_xlsx_s3")
+    logger.error(s3_url)
     try:
         with s3.open(s3_url, mode="rb") as doc:
             content = doc.read()
@@ -66,27 +69,21 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
         md_file_path = save_file_s3(s3, md_file_name, markdown)
 
         # Parsing to Text
-        # Parsing to Text
         text_content = html_text.extract_text(result_html, guess_layout=False)
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3, text_file_name, text_content)
 
-        return {
+        result = {
             ContentType.CSV.value: csv_file_path,
             ContentType.MARKDOWN.value: md_file_path,
             ContentType.HTML.value: html_file_path,
             ContentType.TEXT.value: txt_file_path,
         }
 
-    except FileNotFoundError:
-        logger.exception("File not found in %s", s3_url)
-
     except Exception as e:
-        logger.exception("Error while parsing document: %s", e)
+        logger.exception(f"Error while parsing document: {e}")
 
-    logger.error(s3_url)
-    logger.error("parse_xlsx_s3")
-    return {}
+    return result
 
 
 async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
@@ -97,7 +94,7 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, st
         secret=MINIO_ROOT_PASSWORD,
         use_ssl=False,
     )
-    logger.error("extract_string")
+    logger.error("Started extract_string")
     logger.error(s3_url)
     file_name = get_file_name(s3_url)
     txt_file_name = change_file_ext(file_name, "txt")
@@ -107,11 +104,10 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, st
         try:
             out_txt = str(byte_string.decode("utf-8"))
             text_file_path = save_file_s3(s3, txt_file_name, out_txt)
-            return {ContentType.TEXT.value: text_file_path}
         except UnicodeDecodeError:
             out_txt = str(byte_string)
             text_file_path = save_file_s3(s3, txt_file_name, out_txt)
-            return {ContentType.TEXT.value: text_file_path}
+        return {ContentType.TEXT.value: text_file_path}
 
 
 def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[str, str]:
@@ -150,6 +146,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
 
 
 async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+    logger.error("Started parse_docx_s3")
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -174,13 +171,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     text_content = html_text.extract_text(htmlData, guess_layout=False)
     text_file_name = change_file_ext(file_name, "txt")
     txt_file_path = save_file_s3(s3, text_file_name, text_content)
-
-    logger.error("parse_docx_s3")
-    logger.error(s3_url)
-
-    logger.error("HELLO WORLD")
-    logger.error(txt_file_path)
-    logger.error(markdown)
+ 
     return {
         ContentType.HTML.value: html_file_path,
         ContentType.MARKDOWN.value: md_file_path,
@@ -189,9 +180,8 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
 
 
 async def parse_pdf_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+    logger.error("Started parse_pdf_s3")
     results = _pdf_exchange(s3_url)
-    logger.error("parse_pdf_markdown_s3")
-    logger.error(s3_url)
     return results
 
 
@@ -200,6 +190,7 @@ async def parse_pdf_page_s3(ctx: Context, *, s3_url: str, page: int) -> dict[str
 
 
 async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
+    logger.error("Started parse_image_s3")
     s3 = S3FileSystem(
         # asynchronous=True,
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -232,6 +223,8 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, st
 
 
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
+    logger.error("Started extract_text_files")
+    result = {}
     try:
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -271,12 +264,10 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
                     ContentType.HTML.value: html_file_path,
                 }
 
-            return result
-
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
 
-        return {}
+    return result
 
 
 async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
