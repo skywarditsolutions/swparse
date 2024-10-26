@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 from logging import getLogger
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 import html_text
 import mammoth
@@ -17,7 +18,7 @@ from s3fs import S3FileSystem
 from swparse.config.app import settings
 from swparse.db.models import ContentType
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
-from swparse.domain.swparse.utils import change_file_ext, convert_xls_to_xlsx_bytes, get_file_name, save_file_s3
+from swparse.domain.swparse.utils import change_file_ext, convert_xls_to_xlsx_bytes, get_file_name, save_file_s3, convert_pptx_to_md
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -83,6 +84,42 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
 
     return result
 
+async def parse_pptx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+    s3 = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
+    logger.error("Started parse_pptx_s3")
+    logger.error(s3_url)
+    try:
+        file_name = get_file_name(s3_url)
+        md_file_name = change_file_ext(file_name, "md")
+        new_uuid = uuid4()
+        md_file_path = f"{BUCKET}/{new_uuid}_{md_file_name}"
+
+        markdown = convert_pptx_to_md(s3_url, md_file_path)
+
+        html_results = mistletoe.markdown(markdown)
+        text_results = html_text.extract_text(html_results, guess_layout=True)
+
+        # HTML Parsing
+        html_file_name = change_file_ext(file_name, "html")
+        html_file_path = save_file_s3(s3, html_file_name, html_results)
+
+        # Text Parsing
+        txt_file_name = change_file_ext(file_name, "txt")
+        txt_file_path = save_file_s3(s3, txt_file_name, text_results)
+
+        results = {
+            ContentType.MARKDOWN.value: md_file_path,
+            ContentType.HTML.value: html_file_path,
+            ContentType.TEXT.value: txt_file_path,
+        }
+    except Exception as e:
+        logger.exception(f"Error while parsing document: {e}")
+    return results
 
 async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(

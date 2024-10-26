@@ -11,6 +11,7 @@ from litestar.exceptions import HTTPException
 from litestar.params import Body  # noqa: TCH002
 from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
+from swparse.domain.swparse.utils import get_file_name, change_file_ext
 
 from swparse.config.app import settings
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
@@ -33,6 +34,8 @@ def _raise_http_exception(detail: str, status_code: int) -> None:
 class ParserController(Controller):
     tags = ["Parsers"]
     path = PARSER_BASE
+
+
 
     @post(
         operation_id="ParserQueue",
@@ -111,6 +114,17 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_docx_s3",
+                    kwargs={
+                        "s3_url": s3_url,
+                    },
+                    timeout=0,
+                ),
+            )
+        elif data.content_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+            logger.error("WORKED parse_pptx_s3")
+            job = await queue.enqueue(
+                Job(
+                    "parse_pptx_s3",
                     kwargs={
                         "s3_url": s3_url,
                     },
@@ -246,3 +260,5 @@ class ParserController(Controller):
                 raise HTTPException(unsupported)
 
         raise HTTPException(f"No Such Job {job_id} ")
+
+

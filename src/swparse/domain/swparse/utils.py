@@ -5,10 +5,22 @@ from uuid import uuid4
 from lxml import html
 from s3fs import S3FileSystem
 from xls2xlsx import XLS2XLSX
-
+from pptx2md import outputter, parser
+from pptx import Presentation
 from swparse.config.app import settings
+import re
 
 BUCKET = settings.storage.BUCKET
+MINIO_ROOT_USER = settings.storage.ROOT_USER
+MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+
+s3 = S3FileSystem(
+            # asynchronous=True,
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
 
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
@@ -57,3 +69,22 @@ def extract_tables_from_html(s3fs: S3FileSystem, html_file_path: str) -> list[st
         html_tables.append(html_table)
 
     return html_tables
+
+
+
+class CustomizedMdOutputter(outputter.md_outputter):
+    def __init__(self, s3_url: str):
+        self.ofile = s3.open(s3_url, "w")
+        self.esc_re1 = re.compile(r'([\\\*`!_\{\}\[\]\(\)#\+-\.])')
+        self.esc_re2 = re.compile(r'(<[^>]+>)')
+
+
+
+def convert_pptx_to_md(input_url: str, output_url: str):
+    try:
+        with s3.open(input_url, "rb") as f:
+            pptx_content = Presentation(f)
+        output_obj = CustomizedMdOutputter(output_url)
+        parser.parse(pptx_content, output_obj)
+    except Exception as e:
+        raise Exception(f"Error converting PPTX to Markdown: {e}")
