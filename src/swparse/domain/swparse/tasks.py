@@ -13,7 +13,6 @@ from html2text import html2text
 from markdownify import markdownify as md
 from PIL import Image
 from s3fs import S3FileSystem
-from xlsx2html import xlsx2html
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType
@@ -55,21 +54,20 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
             content = convert_xls_to_xlsx_bytes(content)
 
         # HTML Parsing
-        xlsx_file = io.BytesIO(content)
-        out_file = io.StringIO()
-        xlsx2html(xlsx_file, out_file, locale="en")
-        out_file.seek(0)
-        result_html = out_file.read()
+        str_buffer = io.StringIO(csv_file)
+        df = pd.read_csv(str_buffer)
+        html_content = df.to_html()
+
         html_file_name = change_file_ext(file_name, "html")
-        html_file_path = save_file_s3(s3, html_file_name, result_html)
+        html_file_path = save_file_s3(s3, html_file_name, html_content)
 
         # Markdown Parsing
-        markdown = html2text(result_html)
+        markdown = html2text(html_content)
         md_file_name = change_file_ext(file_name, "md")
         md_file_path = save_file_s3(s3, md_file_name, markdown)
 
         # Parsing to Text
-        text_content = html_text.extract_text(result_html, guess_layout=False)
+        text_content = html_text.extract_text(html_content, guess_layout=False)
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3, text_file_name, text_content)
 

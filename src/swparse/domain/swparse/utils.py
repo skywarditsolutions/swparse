@@ -41,7 +41,7 @@ def change_file_ext(file_name:str, extension:str) ->str:
 def extract_tables_from_html(s3fs: S3FileSystem, html_file_path: str) -> list[str] | None:
     with s3fs.open(html_file_path, mode="rb") as doc:
         content = doc.read().decode()
- 
+
     tree = html.fromstring(content)
     tables = tree.xpath('//table')
     if not tables:
