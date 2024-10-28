@@ -182,7 +182,7 @@ class DocumentController(Controller):
                 description="The document to retrieve.",
             ),
         ],
-    ) -> File | str:
+    ) -> File | None:
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
@@ -199,14 +199,6 @@ class DocumentController(Controller):
             mime_type, _ = mimetypes.guess_type(s3_url)
             extension = s3_url.split(".")[-1]
 
-            if mime_type and mime_type.startswith(MediaType.TEXT.value):
-                logger.error("plain")
-                return content.decode("utf-8", "ignore")
-
-            if mime_type and mime_type.startswith("image/"):
-                logger.error("image")
-                return base64.b64encode(content).decode("utf-8")
-
             with tempfile.NamedTemporaryFile(delete=False, suffix=f".{extension}") as tmp_file:
                 tmp_file.write(content)
                 tmp_file.flush()
@@ -219,7 +211,7 @@ class DocumentController(Controller):
 
         except Exception as e:
             _raise_http_exception(f"Failed to read document: {e!s}", status_code=500)
-            return ""
+        return None
 
     @get(path=urls.EXTRACTED_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
     async def get_extracted_content(
