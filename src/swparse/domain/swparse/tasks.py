@@ -13,7 +13,7 @@ from html2text import html2text
 from markdownify import markdownify as md
 from PIL import Image
 from s3fs import S3FileSystem
-
+import markdown as markdown_converter
 from swparse.config.app import settings
 from swparse.db.models import ContentType
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
@@ -238,29 +238,35 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
 
             text_file_name = change_file_ext(file_name, "txt")
             text_file_path = save_file_s3(s3, text_file_name, content)
-            result = {ContentType.TEXT.value: text_file_path}
 
-            if ext == "text/csv":
+            if ext == "text/xml":
+                df = pd.read_xml(io.StringIO(content))
+                html_content = df.to_html()
+
+            elif ext == "text/csv":
                 csv_buffer = io.StringIO(content)
                 df = pd.read_csv(csv_buffer)
                 txt_content = df.to_string(index=False)
                 text_file_name = change_file_ext(file_name, "txt")
                 text_file_path = save_file_s3(s3, text_file_name, txt_content)
-
                 html_content = df.to_html()
-                html_file_name = change_file_ext(file_name, "html")
-                html_file_path = save_file_s3(s3, html_file_name, html_content)
 
-                # Markdown Parsing
-                markdown = html2text(html_content)
-                md_file_name = change_file_ext(file_name, "md")
-                md_file_path = save_file_s3(s3, md_file_name, markdown)
+            else:
+                html_content = markdown_converter.markdown(content)
 
-                result = {
-                    ContentType.TEXT.value: text_file_path,
-                    ContentType.MARKDOWN.value: md_file_path,
-                    ContentType.HTML.value: html_file_path,
-                }
+            html_file_name = change_file_ext(file_name, "html")
+            html_file_path = save_file_s3(s3, html_file_name, html_content)
+
+            # Markdown Parsing
+            markdown = html2text(html_content)
+            md_file_name = change_file_ext(file_name, "md")
+            md_file_path = save_file_s3(s3, md_file_name, markdown)
+
+            result = {
+                ContentType.MARKDOWN.value: md_file_path,
+                ContentType.TEXT.value: text_file_path,
+                ContentType.HTML.value: html_file_path
+            }
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")

@@ -31,6 +31,7 @@ dependencies = [
     "nest-asyncio>=1.6.0",
     "mistletoe>=1.4.0",
     "html-text>=0.6.2",
+    "markdown>=3.7",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
