@@ -34,6 +34,7 @@ dependencies = [
     "html-text>=0.6.2",
     "pptx2md>=1.7.1",
     "matplotlib>=3.9.2",
+    "unoserver>=3.0.1",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]

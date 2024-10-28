@@ -120,6 +120,28 @@ class ParserController(Controller):
                     timeout=0,
                 ),
             )
+        elif data.content_type == "application/msword":
+            logger.error("WORKED parse_doc_s3")
+            job = await queue.enqueue(
+                Job(
+                    "parse_doc_s3",
+                    kwargs={
+                        "s3_url": s3_url,
+                    },
+                    timeout=0,
+                ),
+            )
+        elif data.content_type == "application/vnd.ms-powerpoint":
+            logger.error("WORKED parse_ppt_s3")
+            job = await queue.enqueue(
+                Job(
+                    "parse_ppt_s3",
+                    kwargs={
+                        "s3_url": s3_url,
+                    },
+                    timeout=0
+                ),
+            )
         elif data.content_type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
             logger.error("WORKED parse_pptx_s3")
             job = await queue.enqueue(

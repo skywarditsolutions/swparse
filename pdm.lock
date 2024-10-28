@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "linting", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:f50f76952fc71a8a9063a4f1bc675fed59799ff9b4858618b5e8091533659911"
+content_hash = "sha256:5803796cbff02db0ce0293adbaebca6f506518d4378e88b957b09e92ca9b79f2"
 
 [[metadata.targets]]
 requires_python = "==3.12.6"
@@ -29,7 +29,7 @@ files = [
 
 [[package]]
 name = "advanced-alchemy"
-version = "0.21.0"
+version = "0.22.0"
 requires_python = ">=3.8"
 summary = "Ready-to-go SQLAlchemy concoctions."
 groups = ["default"]
@@ -41,24 +41,24 @@ dependencies = [
     "typing-extensions>=4.0.0",
 ]
 files = [
-    {file = "advanced_alchemy-0.21.0-py3-none-any.whl", hash = "sha256:9be6d4d58b10850c5d02e6c7364b8e79b169001ee0a0640420928df6598b5fcc"},
-    {file = "advanced_alchemy-0.21.0.tar.gz", hash = "sha256:e662c6e6a14b8ee87e039f564fa6e5e5f8467a4f56dd2acf2d292f521436a339"},
+    {file = "advanced_alchemy-0.22.0-py3-none-any.whl", hash = "sha256:51ed88e18c298b56c05f1cc17e75fa270241e26257d9c7cb1c301eefd94643f2"},
+    {file = "advanced_alchemy-0.22.0.tar.gz", hash = "sha256:dbbc6137254639ca2c2cae658a6c0fdbe069f65f8b4431df90baaf4426fcd53b"},
 ]
 
 [[package]]
 name = "advanced-alchemy"
-version = "0.21.0"
+version = "0.22.0"
 extras = ["uuid"]
 requires_python = ">=3.8"
 summary = "Ready-to-go SQLAlchemy concoctions."
 groups = ["default"]
 dependencies = [
-    "advanced-alchemy==0.21.0",
+    "advanced-alchemy==0.22.0",
     "uuid-utils>=0.6.1",
 ]
 files = [
-    {file = "advanced_alchemy-0.21.0-py3-none-any.whl", hash = "sha256:9be6d4d58b10850c5d02e6c7364b8e79b169001ee0a0640420928df6598b5fcc"},
-    {file = "advanced_alchemy-0.21.0.tar.gz", hash = "sha256:e662c6e6a14b8ee87e039f564fa6e5e5f8467a4f56dd2acf2d292f521436a339"},
+    {file = "advanced_alchemy-0.22.0-py3-none-any.whl", hash = "sha256:51ed88e18c298b56c05f1cc17e75fa270241e26257d9c7cb1c301eefd94643f2"},
+    {file = "advanced_alchemy-0.22.0.tar.gz", hash = "sha256:dbbc6137254639ca2c2cae658a6c0fdbe069f65f8b4431df90baaf4426fcd53b"},
 ]
 
 [[package]]
@@ -392,6 +392,9 @@ version = "2.16.0"
 requires_python = ">=3.8"
 summary = "Internationalization utilities"
 groups = ["default", "docs"]
+dependencies = [
+    "pytz>=2015.7; python_version < \"3.9\"",
+]
 files = [
     {file = "babel-2.16.0-py3-none-any.whl", hash = "sha256:368b5b98b37c06b7daf6696391c3240c938b37767d4584413e8438c5c435fa8b"},
     {file = "babel-2.16.0.tar.gz", hash = "sha256:d1f3554ca26605fe173f3de0c65f750f5a42f924499bf134de6423582298e316"},
@@ -1043,7 +1046,7 @@ files = [
 
 [[package]]
 name = "ftfy"
-version = "6.3.0"
+version = "6.3.1"
 requires_python = ">=3.9"
 summary = "Fixes mojibake and other problems with Unicode, after the fact"
 groups = ["default"]
@@ -1051,8 +1054,8 @@ dependencies = [
     "wcwidth",
 ]
 files = [
-    {file = "ftfy-6.3.0-py3-none-any.whl", hash = "sha256:17aca296801f44142e3ff2c16f93fbf6a87609ebb3704a9a41dd5d4903396caf"},
-    {file = "ftfy-6.3.0.tar.gz", hash = "sha256:1c7d6418e72b25a7760feb150acf574b86924dbb2e95b32c0b3abbd1ba3d7ad6"},
+    {file = "ftfy-6.3.1-py3-none-any.whl", hash = "sha256:7c70eb532015cd2f9adb53f101fb6c7945988d023a085d127d1573dc49dd0083"},
+    {file = "ftfy-6.3.1.tar.gz", hash = "sha256:9b3c3d90f84fb267fe64d375a07b7f8912d817cf86009ae134aa03e1819506ec"},
 ]
 
 [[package]]
@@ -1086,7 +1089,7 @@ files = [
 
 [[package]]
 name = "granian"
-version = "1.6.1"
+version = "1.6.2"
 requires_python = ">=3.8"
 summary = "A Rust HTTP server for Python applications"
 groups = ["default"]
@@ -1095,41 +1098,41 @@ dependencies = [
     "uvloop>=0.18.0; sys_platform != \"win32\" and platform_python_implementation == \"CPython\"",
 ]
 files = [
-    {file = "granian-1.6.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e2b9647bfab44e4117a8e9166fceec8ac3b9a74e7eca9224906961fa0afa1426"},
-    {file = "granian-1.6.1.tar.gz", hash = "sha256:ed47464202cf9f589c812940fcbba9ad234215698f3fa25bcae4e81dd243ee6b"},
+    {file = "granian-1.6.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6913644d1be01f6b72fcd6fd215bf5c50690d803c253602451e45cdb7e0006a3"},
+    {file = "granian-1.6.2.tar.gz", hash = "sha256:2473eb8b05972ddb890134270cfef85308042f5bc2e62957548f872fe680e1e2"},
 ]
 
 [[package]]
 name = "granian"
-version = "1.6.1"
+version = "1.6.2"
 extras = ["all"]
 requires_python = ">=3.8"
 summary = "A Rust HTTP server for Python applications"
 groups = ["default"]
 dependencies = [
-    "granian==1.6.1",
+    "granian==1.6.2",
     "granian[pname,reload]",
 ]
 files = [
-    {file = "granian-1.6.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e2b9647bfab44e4117a8e9166fceec8ac3b9a74e7eca9224906961fa0afa1426"},
-    {file = "granian-1.6.1.tar.gz", hash = "sha256:ed47464202cf9f589c812940fcbba9ad234215698f3fa25bcae4e81dd243ee6b"},
+    {file = "granian-1.6.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6913644d1be01f6b72fcd6fd215bf5c50690d803c253602451e45cdb7e0006a3"},
+    {file = "granian-1.6.2.tar.gz", hash = "sha256:2473eb8b05972ddb890134270cfef85308042f5bc2e62957548f872fe680e1e2"},
 ]
 
 [[package]]
 name = "granian"
-version = "1.6.1"
+version = "1.6.2"
 extras = ["pname", "reload"]
 requires_python = ">=3.8"
 summary = "A Rust HTTP server for Python applications"
 groups = ["default"]
 dependencies = [
-    "granian==1.6.1",
+    "granian==1.6.2",
     "setproctitle~=1.3.3",
     "watchfiles~=0.21",
 ]
 files = [
-    {file = "granian-1.6.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e2b9647bfab44e4117a8e9166fceec8ac3b9a74e7eca9224906961fa0afa1426"},
-    {file = "granian-1.6.1.tar.gz", hash = "sha256:ed47464202cf9f589c812940fcbba9ad234215698f3fa25bcae4e81dd243ee6b"},
+    {file = "granian-1.6.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6913644d1be01f6b72fcd6fd215bf5c50690d803c253602451e45cdb7e0006a3"},
+    {file = "granian-1.6.2.tar.gz", hash = "sha256:2473eb8b05972ddb890134270cfef85308042f5bc2e62957548f872fe680e1e2"},
 ]
 
 [[package]]
@@ -1911,13 +1914,13 @@ files = [
 
 [[package]]
 name = "narwhals"
-version = "1.10.0"
+version = "1.11.0"
 requires_python = ">=3.8"
 summary = "Extremely lightweight compatibility layer between dataframe libraries"
 groups = ["default"]
 files = [
-    {file = "narwhals-1.10.0-py3-none-any.whl", hash = "sha256:c83a378960651c391e5f3d68af3a821eda74c9713073518fe0c39aefc5ad8f8e"},
-    {file = "narwhals-1.10.0.tar.gz", hash = "sha256:a380e64110c3169c4b0b592c5b64ae6dc4cce76e9d3c56edc608a8ae5994cfc1"},
+    {file = "narwhals-1.11.0-py3-none-any.whl", hash = "sha256:672b76d04ae17e968c90cdf275912b292a94af3a61f44acd961fb2b5efad53a8"},
+    {file = "narwhals-1.11.0.tar.gz", hash = "sha256:b440e3d75b010ef16c8d81fe488cca465491fd45ad4698b6fe9a8a2efa6b6a01"},
 ]
 
 [[package]]
@@ -2345,7 +2348,7 @@ files = [
 
 [[package]]
 name = "pdftext"
-version = "0.3.17"
+version = "0.3.18"
 requires_python = "<4.0,>=3.10"
 summary = "Extract structured text from pdfs quickly"
 groups = ["default"]
@@ -2356,8 +2359,8 @@ dependencies = [
     "pypdfium2<5.0.0,>=4.29.0",
 ]
 files = [
-    {file = "pdftext-0.3.17-py3-none-any.whl", hash = "sha256:fa43626d589aba4b5d04d7007cd5b3742731b69770b215fb515967a879a801da"},
-    {file = "pdftext-0.3.17.tar.gz", hash = "sha256:199bf03337ccb19b6af8cc9c60ad490cc4d72f49a4f3db6de53eb561121a7f10"},
+    {file = "pdftext-0.3.18-py3-none-any.whl", hash = "sha256:de937b4eaa46920a973397d1bdf3bd3b14f663b929cfe43f844630b3e99b8d18"},
+    {file = "pdftext-0.3.18.tar.gz", hash = "sha256:437d1363753c588dec66916e211ecc74641586f799089455e0f4a572c3523082"},
 ]
 
 [[package]]
@@ -2405,13 +2408,13 @@ files = [
 
 [[package]]
 name = "pip"
-version = "24.2"
+version = "24.3.1"
 requires_python = ">=3.8"
 summary = "The PyPA recommended tool for installing Python packages."
 groups = ["default"]
 files = [
-    {file = "pip-24.2-py3-none-any.whl", hash = "sha256:2cd581cf58ab7fcfca4ce8efa6dcacd0de5bf8d0a3eb9ec927e07405f4d9e2a2"},
-    {file = "pip-24.2.tar.gz", hash = "sha256:5b5e490b5e9cb275c879595064adce9ebd31b854e3e803740b72f9ccf34a45b8"},
+    {file = "pip-24.3.1-py3-none-any.whl", hash = "sha256:3790624780082365f47549d032f3770eeb2b1e8bd1f7b2e02dace1afa361b4ed"},
+    {file = "pip-24.3.1.tar.gz", hash = "sha256:ebcb60557f2aefabc2e0f918751cd24ea0d56d8ec5445fe1807f1d2109660b99"},
 ]
 
 [[package]]
@@ -3616,7 +3619,7 @@ files = [
 
 [[package]]
 name = "starlette"
-version = "0.41.0"
+version = "0.41.2"
 requires_python = ">=3.8"
 summary = "The little ASGI library that shines."
 groups = ["docs"]
@@ -3625,8 +3628,8 @@ dependencies = [
     "typing-extensions>=3.10.0; python_version < \"3.10\"",
 ]
 files = [
-    {file = "starlette-0.41.0-py3-none-any.whl", hash = "sha256:a0193a3c413ebc9c78bff1c3546a45bb8c8bcb4a84cae8747d650a65bd37210a"},
-    {file = "starlette-0.41.0.tar.gz", hash = "sha256:39cbd8768b107d68bfe1ff1672b38a2c38b49777de46d2a592841d58e3bf7c2a"},
+    {file = "starlette-0.41.2-py3-none-any.whl", hash = "sha256:fbc189474b4731cf30fcef52f18a8d070e3f3b46c6a04c97579e85e6ffca942d"},
+    {file = "starlette-0.41.2.tar.gz", hash = "sha256:9834fd799d1a87fd346deb76158668cfa0b0d56f85caefe8268e2d97c3468b62"},
 ]
 
 [[package]]
@@ -4105,6 +4108,17 @@ groups = ["default"]
 files = [
     {file = "tzdata-2024.2-py2.py3-none-any.whl", hash = "sha256:a48093786cdcde33cad18c2555e8532f34422074448fbc874186f0abd79565cd"},
     {file = "tzdata-2024.2.tar.gz", hash = "sha256:7d85cc416e9382e69095b7bdf4afd9e3880418a2413feec7069d533d6b4e31cc"},
+]
+
+[[package]]
+name = "unoserver"
+version = "3.0.1"
+requires_python = ">=3.8"
+summary = "A server for file conversions with Libre Office"
+groups = ["default"]
+files = [
+    {file = "unoserver-3.0.1-py3-none-any.whl", hash = "sha256:a833d766ca41db964216fc27fc703570a170932e986ae5240388ae8652c59bc2"},
+    {file = "unoserver-3.0.1.tar.gz", hash = "sha256:a01101fc20b19745e23cc07cd13cc93231af357e7ffaff345ba06b894e8115ad"},
 ]
 
 [[package]]
