@@ -93,6 +93,25 @@ services:
     volumes:
       - ./deploy/frontend/static:/static
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile
+  libreoffice:
+    image: linuxserver/libreoffice:latest
+    container_name: libreoffice
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./data:/config
+      - ./documents:/documents
+    ports:
+      - "2002:2002"
+      - "2003:2003"
+    command: |
+      /bin/sh -c '
+      apk add --no-cache python3 py3-pip libreoffice libreoffice-base msttcorefonts-installer fontconfig ttf-dejavu python3-dev gcc musl-dev python3-dev
+      pip3 install --break-system-packages unoserver
+      unoserver --interface 0.0.0.0 --port 2003 --uno-port 2002
+      '
 volumes:
   db-data: {}
   cache-data: {}
