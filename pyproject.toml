@@ -111,6 +111,7 @@ test = [
 
 [tool.commitizen]
 tag_format = "v$version"
+update_changelog_on_bump = true
 version_provider = "pep621"
 
 [tool.black]
