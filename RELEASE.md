@@ -11,9 +11,9 @@ We're excited to announce the release of our new version! This update brings a h
 
 ### New Parsing Capabilities
 
-- **PDF, DOCX, XLSX, CSV, IMAGES**: Extended support for converting these file types to HTML, TXT, MD, CSV, and PDF formats.
-- **HTML Results**: Now supports extracting HTML from PDF files.
+- **PDF, DOCX, XLSX, CSV, IMAGES**: Extended support for extracting these file types to HTML, TXT, MD, and PDF formats.
 - **Text, HTML, MD Extraction for CSV**: Enhanced support for extracting text, HTML, and Markdown from CSV files.
+- **Table Extraction(Experimental)** : Advanced extraction with `table` mode for CSV , HTML , and XLSX and XLM formats.
 
 ### Improved Extraction
 
@@ -25,6 +25,13 @@ We're excited to announce the release of our new version! This update brings a h
 - **Presigned URL**: Added functionality to get presigned URLs for extracted files.
 - **Standardized Response**: Refactored the `get_document` API response to return a standard `FileResponse`.
 - **Paginated Filter**: Introduced pagination filter for better data navigation.
+
+### Frontend
+
+- **File Upload**: Revised UI to focus on consecutive file upload and processing.
+- **Preview**: PDF and Image preview for uploaded docs
+- **Extracted View** : Extracted Raw and Rendered views
+- **Bigger Space** : Improve UI so convient for document side by side previews.
 
 ## Bug Fixes & Improvements
 
@@ -54,15 +61,10 @@ We're excited to announce the release of our new version! This update brings a h
 
 - **pptx extraction**: WIP for converting PowerPoint presentations to Markdown.
 - **Unoserver Support**:  Old MS97 formats to support via LibreOffice based exractions
+- **API Key Creation**: API Key creation by admin and Permission based on API key for parsers.
 - **LibreOffice Image with Unoserver**: Test Docker Compose file to support parsing old file formats.
-
-We hope you enjoy these new features and improvements! If you have any questions or encounter any issues, please don't hesitate to reach out to our support team.
-
-Happy coding!
-
--The Team
-
-# Version : 0.3.0
+  
+## Version : 0.3.0
 
 ## Structured Extractions support
 
