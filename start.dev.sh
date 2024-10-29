@@ -1,6 +1,6 @@
 # pdm install
-docker compose -f docker-compose.infra.yml up --build -d
-swparse workers run -d &
+docker compose -f docker-compose.infra.yml up --build &
+.venv/bin/swparse workers run -d &
 sleep 4
-swparse run -d &
+.venv/bin/swparse run -d &
 sleep infinity
