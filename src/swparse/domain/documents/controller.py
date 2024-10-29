@@ -88,6 +88,7 @@ class DocumentController(Controller):
         user_id = current_user.id
         docs, total = await doc_service.list_and_count(
             CollectionFilter("user_id", values=[user_id]),
+            limit_offset,
             order_by=[("updated_at", True)],
         )
         return OffsetPagination[Document](
@@ -127,8 +128,8 @@ class DocumentController(Controller):
             except Exception as e:
                 logger.error(f"Failed to retrieve the extracted file {e}")
                 _raise_http_exception(detail=f"Failed to retrieve the extracted file {e}", status_code=404)
-        extracted_file_paths =  db_obj.extracted_file_paths
-        extracted_file_paths = base64.b64decode(extracted_file_paths).decode('utf-8')
+        extracted_file_paths = db_obj.extracted_file_paths
+        extracted_file_paths = base64.b64decode(extracted_file_paths).decode("utf-8")
         db_obj.extracted_file_paths = json.loads(extracted_file_paths)
 
         return db_obj
@@ -218,22 +219,22 @@ class DocumentController(Controller):
         self,
         doc_service: DocumentService,
         id: Annotated[
-            UUID, 
+            UUID,
             Parameter(
                 title="Document ID",
                 description="The document to retrieve.",
             ),
         ],
-        result_type:str="markdown",
+        result_type: str = "markdown",
     ) -> str | None:
         db_obj = await doc_service.get(id)
         if not db_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
 
-        if  db_obj.extracted_file_paths is None:
+        if db_obj.extracted_file_paths is None:
             if not await doc_service.check_job_status(db_obj.job_id):
                 _raise_http_exception("Uploaded document has not extracted yet.", status_code=400)
- 
+
             extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
             await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
         else:
@@ -271,9 +272,13 @@ class DocumentController(Controller):
 
         return content.decode(encoding="utf-8", errors="ignore")
 
-
     @get(path=urls.EXTRACTED_CONTENT_PRESIGNED_URL, guards=[requires_active_user])
-    async def get_extracted_file_presigned_url(self, doc_service: DocumentService, doc_id: Annotated[UUID, Parameter(title="Document ID", description="The document to retrieve.")], result_type: str = "markdown") -> str | None:
+    async def get_extracted_file_presigned_url(
+        self,
+        doc_service: DocumentService,
+        doc_id: Annotated[UUID, Parameter(title="Document ID", description="The document to retrieve.")],
+        result_type: str = "markdown",
+    ) -> str | None:
         doc_obj = await doc_service.get(doc_id)
         if not doc_obj:
             _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
