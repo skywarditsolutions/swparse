@@ -41,7 +41,7 @@ license = { text = "BUSINESS" }
 name = "swparse"
 readme = "README.md"
 requires-python = ">=3.12"
-version = "0.3.0"
+version = "0.4.0"
 
 # [project.urls]
 # Discord = "https://discord.gg/litestar"
@@ -77,6 +77,7 @@ test_coverage = { composite = ["pdm run pytest tests", "pdm run coverage html", 
 dev = ["commitizen>=3.29.1"]
 docs = [
   "sphinx>=7.2.6",
+  "commitizen>=3.30.0",
   "sphinx-autobuild>=2021.3.14",
   "sphinx-copybutton>=0.5.2",
   "sphinx-toolbox>=3.5.0",
@@ -250,6 +251,7 @@ target-version = "py311"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
