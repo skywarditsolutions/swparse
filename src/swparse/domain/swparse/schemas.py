@@ -49,6 +49,7 @@ class JobResult:
     markdown: str
     html: str
     text: str
+    table: str | None = ""
     job_metadata: JobMetadata
 
 
