@@ -1,16 +1,23 @@
 import io
 import os
 from uuid import uuid4
+from typing import IO
 
 from lxml import html
 from s3fs import S3FileSystem
 from xls2xlsx import XLS2XLSX
-
-# from pptx2md import outputter, parser
-# from pptx import Presentation
+from pptx import Presentation
 from swparse.config.app import settings
 import re
+from pptx.shapes.base import BaseShape
+from mdutils.mdutils import MdUtils
+from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.shapes.shapetree import SlideShapes
+from logging import getLogger
+from mdutils.mdutils import MdUtils
+from operator import attrgetter
 
+logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
@@ -76,19 +83,111 @@ def extract_tables_from_html(s3fs: S3FileSystem, html_file_path: str) -> list[st
     return html_tables
 
 
-# class CustomizedMdOutputter(outputter.md_outputter):
-#     def __init__(self, s3_url: str):
-#         self.ofile = s3.open(s3_url, "w")
-#         self.esc_re1 = re.compile(r'([\\\*`!_\{\}\[\]\(\)#\+-\.])')
-#         self.esc_re2 = re.compile(r'(<[^>]+>)')
+def ungroup_shapes(shapes: SlideShapes) -> list[BaseShape]:
+    res = []
+    for shape in shapes:
+        try:
+            if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                res.extend(ungroup_shapes(shape.shapes))
+            else:
+                res.append(shape)
+        except Exception as e:
+            raise Exception(f"{e}")
+    return res
 
 
-def convert_pptx_to_md(input_url: str, output_url: str):
-    ...
-    # try:
-    #     with s3.open(input_url, "rb") as f:
-    #         pptx_content = Presentation(f)
-    #     output_obj = CustomizedMdOutputter(output_url)
-    #     parser.parse(pptx_content, output_obj)
-    # except Exception as e:
-    #     raise Exception(f"Error converting PPTX to Markdown: {e}")
+def is_title(shape: BaseShape) -> bool:
+    if shape.is_placeholder and shape.placeholder_format.type in [
+        PP_PLACEHOLDER.TITLE,
+        PP_PLACEHOLDER.SUBTITLE,
+        PP_PLACEHOLDER.VERTICAL_TITLE,
+        PP_PLACEHOLDER.CENTER_TITLE,
+    ]:
+        return True
+    return False
+
+
+def is_text_block(shape: BaseShape) -> bool:
+    if shape.has_text_frame:
+        if (
+            shape.is_placeholder
+            and shape.placeholder_format.type == PP_PLACEHOLDER.BODY
+        ) or shape.shape_type==MSO_SHAPE_TYPE.TEXT_BOX:
+            return True
+    return False
+
+
+def is_list_block(shape: BaseShape) -> bool:
+    levels = []
+    for para in shape.text_frame.paragraphs:
+        print(f"this is para{para.text}")
+        print(f"this is para level{para.level}")
+        if para.level not in levels:
+            levels.append(para.level)
+        if para.level != 0 or len(levels) > 1:
+            return True
+    return False
+
+
+def add_to_list(nested_list: list, level: int, text: str):
+    if level == 0:
+        nested_list.append(text)
+    else:
+        if not nested_list or not isinstance(nested_list[-1], list):
+            nested_list.append([])
+        add_to_list(nested_list[-1], level - 1, text)
+
+
+def process_shapes(shapes: list[BaseShape], file: MdUtils):
+    try:
+        for shape in shapes:
+            if is_title(shape):
+                file.new_header(level=1, title=shape.text_frame.text)
+            elif is_text_block(shape):
+                if is_list_block(shape):
+                    items = []
+                    for paragraph in shape.text_frame.paragraphs:
+                        add_to_list(items, paragraph.level, paragraph.text)
+                    file.new_list(items)
+                else:
+                    for paragraph in shape.text_frame.paragraphs:
+                        file.new_paragraph(text=paragraph.text)
+            elif shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
+                pass
+            elif shape.shape_type == MSO_SHAPE_TYPE.TABLE:
+                cells = [cell.text for row in shape.table.rows for cell in row.cells]
+                file.new_table(
+                    columns=len(shape.table.columns),
+                    rows=len(shape.table.rows),
+                    text=cells,
+                    text_align="center",
+                )
+            else:
+                pass
+            try:
+                ph = shape.placeholder_format
+                if (
+                    ph.type == PP_PLACEHOLDER.OBJECT
+                    and hasattr(shape, "image")
+                    and getattr(shape, "image")
+                ):
+                    pass
+            except:
+                pass  
+    except Exception as e:
+        raise Exception
+
+
+def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
+    try:
+        prs = Presentation(pptx_content)
+        md_file = MdUtils(pptx_filename)
+        for idx, slide in enumerate(prs.slides):
+            shapes = []
+            shapes = sorted(ungroup_shapes(slide.shapes), key=attrgetter("top", "left"))
+            process_shapes(shapes, md_file)
+        return md_file.get_md_text()
+    except Exception as e:
+        raise Exception
+        
+
