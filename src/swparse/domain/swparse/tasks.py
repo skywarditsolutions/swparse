@@ -60,7 +60,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
         # HTML Parsing
         str_buffer = io.StringIO(csv_file)
         df = pd.read_csv(str_buffer)
-        html_content = df.to_html()
+        html_content = df.to_html(index=False)
 
         html_file_name = change_file_ext(file_name, "html")
         html_file_path = save_file_s3(s3, html_file_name, html_content)

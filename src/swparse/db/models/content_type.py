@@ -15,6 +15,7 @@ class ContentType(str, Enum):
     XML = "xml"
     PDF = "pdf"
     TABLE ="table"
+    MARKDOWN_TABLE = "table_md"
 
 
 

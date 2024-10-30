@@ -50,7 +50,8 @@ class JobResult:
     html: str
     text: str
     table: str | None = ""
-    job_metadata: JobMetadata
+    table_md: str | None = ""
+    job_metadata: JobMetadata | None = None
 
 
 @dataclass
