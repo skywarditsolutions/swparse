@@ -281,15 +281,15 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
 
             if ext == "text/xml":
                 df = pd.read_xml(io.StringIO(content))
-                html_content = df.to_html()
+                html_content = df.to_html(index=False)
 
             elif ext == "text/csv":
                 csv_buffer = io.StringIO(content)
-                df = pd.read_csv(csv_buffer)
+                df = pd.read_csv(csv_buffer, index_col=False)
                 txt_content = df.to_string(index=False)
                 text_file_name = change_file_ext(file_name, "txt")
                 text_file_path = save_file_s3(s3, text_file_name, txt_content)
-                html_content = df.to_html()
+                html_content = df.to_html(index=False)
 
             else:
                 html_content = markdown_converter.markdown(content)
