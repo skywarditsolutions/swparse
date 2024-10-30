@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeVar
 from uuid import uuid4
 
+import pandas as pd
 import structlog
 from html2text import html2text
 from litestar import Controller, MediaType, get, post
@@ -289,8 +290,15 @@ class ParserController(Controller):
                         else:
                             html = extract_tables_from_html(s3, results["html"])
                             result_html = "<br><br>".join(html)
-                        tbl_md = html2text(result_html)
-                        return JobResult(markdown="", html="", text="", table_md = tbl_md, job_metadata=jm)
+
+                        dfs = pd.read_html(result_html)
+                        markdown_tbls = ""
+                        for i, df in enumerate(dfs):
+                            markdown_tbls += (f"## Table {i + 1}\n\n")
+                            markdown_tbls +=df.to_markdown()
+                            markdown_tbls += "\n\n" 
+
+                        return JobResult(markdown="", html="", text="", table_md = markdown_tbls, job_metadata=jm)
                     case _:
                         unsupported = f"Format {result_type} is currently unsupported."
                         raise HTTPException(unsupported)

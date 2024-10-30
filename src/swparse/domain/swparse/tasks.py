@@ -59,14 +59,15 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
 
         # HTML Parsing
         str_buffer = io.StringIO(csv_file)
-        df = pd.read_csv(str_buffer)
-        html_content = df.to_html(index=False)
+        df = pd.read_csv(str_buffer, header=0, skip_blank_lines=True, na_filter=False)
+        df = df.fillna("")
+        html_content = df.to_html(index=False, na_rep="")
 
         html_file_name = change_file_ext(file_name, "html")
         html_file_path = save_file_s3(s3, html_file_name, html_content)
 
         # Markdown Parsing
-        markdown = html2text(html_content)
+        markdown = df.to_markdown()
         md_file_name = change_file_ext(file_name, "md")
         md_file_path = save_file_s3(s3, md_file_name, markdown)
 
@@ -293,7 +294,6 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
 
             else:
                 html_content = markdown_converter.markdown(content)
-
             html_file_name = change_file_ext(file_name, "html")
             html_file_path = save_file_s3(s3, html_file_name, html_content)
 
@@ -343,10 +343,10 @@ async def parse_doc_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
         with s3.open(s3_url, 'rb') as s3_file:
             with open(temp_input_path, 'wb') as local_file:
                 local_file.write(s3_file.read())
-        
+
         conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote") 
         results = {}
-        
+
         txt_name = change_file_ext(file_name, "txt")
         temp_txt_path = os.path.join(temp_dir, txt_name)
         conv.convert(inpath=temp_input_path, outpath=temp_txt_path)
@@ -360,7 +360,7 @@ async def parse_doc_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
         with open(temp_html_path, 'rb') as converted_file:
             html_s3_path = save_file_s3(s3, html_name, converted_file.read())
         results[ContentType.HTML.value] = html_s3_path    
-            
+
         with open(temp_html_path, 'r') as html_file:
             markdown = md(html_file.read())
             md_file_name = change_file_ext(file_name, "md")
@@ -383,7 +383,7 @@ async def parse_ppt_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
         with s3.open(s3_url, 'rb') as s3_file:
             with open(temp_input_path, 'wb') as local_file:
                 local_file.write(s3_file.read())
-        
+
         conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote") 
 
         results = {}
@@ -413,4 +413,3 @@ async def parse_ppt_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
             ContentType.TEXT.value: txt_file_path,
         }
         return results
-        

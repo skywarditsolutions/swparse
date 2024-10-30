@@ -8,9 +8,9 @@ import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
 import httpx
+import pandas as pd
 import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
-from html2text import html2text
 from litestar import Controller, get, post
 from litestar.datastructures import UploadFile
 from litestar.di import Provide
@@ -270,13 +270,20 @@ class DocumentController(Controller):
                 tbl_file_path = save_file_s3(s3fs, html_file_name, result_html)
                 extracted_file_paths[ContentType.TABLE.value] = tbl_file_path
 
-            else:
+            if result_type == ContentType.MARKDOWN_TABLE.value:
                 with s3fs.open(table_file_path, "r") as f:
                     html_content = f.read()
-                tbl_md = html2text(html_content)
+
+                dfs = pd.read_html(html_content)
+                markdown_tbls = ""
+                for i, df in enumerate(dfs):
+                    markdown_tbls += (f"## Table {i + 1}\n\n")
+                    markdown_tbls +=df.to_markdown()
+                    markdown_tbls += "\n\n"
+
                 file_name = get_file_name(table_file_path)
                 md_tbl_file_name = change_file_ext(file_name, "html")
-                md_tbl_file_path = save_file_s3(s3fs, md_tbl_file_name, tbl_md)
+                md_tbl_file_path = save_file_s3(s3fs, md_tbl_file_name, markdown_tbls)
                 extracted_file_paths[ContentType.MARKDOWN_TABLE.value] = md_tbl_file_path
 
             await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
