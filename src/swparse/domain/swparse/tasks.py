@@ -18,7 +18,13 @@ import markdown as markdown_converter
 from swparse.config.app import settings
 from swparse.db.models import ContentType
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
-from swparse.domain.swparse.utils import change_file_ext, convert_xls_to_xlsx_bytes, get_file_name, save_file_s3, convert_pptx_to_md
+from swparse.domain.swparse.utils import (
+    change_file_ext,
+    convert_xls_to_xlsx_bytes,
+    get_file_name,
+    save_file_s3,
+    convert_pptx_to_md,
+)
 import tempfile
 import os
 from unoserver import client
@@ -30,6 +36,7 @@ logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+
 
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
@@ -87,42 +94,6 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
 
     return result
 
-async def parse_pptx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
-    s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
-    logger.error("Started parse_pptx_s3")
-    logger.error(s3_url)
-    try:
-        file_name = get_file_name(s3_url)
-        md_file_name = change_file_ext(file_name, "md")
-        new_uuid = uuid4()
-        md_file_path = f"{BUCKET}/{new_uuid}_{md_file_name}"
-
-        markdown = convert_pptx_to_md(s3_url, md_file_path)
-
-        html_results = mistletoe.markdown(markdown)
-        text_results = html_text.extract_text(html_results, guess_layout=True)
-
-        # HTML Parsing
-        html_file_name = change_file_ext(file_name, "html")
-        html_file_path = save_file_s3(s3, html_file_name, html_results)
-
-        # Text Parsing
-        txt_file_name = change_file_ext(file_name, "txt")
-        txt_file_path = save_file_s3(s3, txt_file_name, text_results)
-
-        results = {
-            ContentType.MARKDOWN.value: md_file_path,
-            ContentType.HTML.value: html_file_path,
-            ContentType.TEXT.value: txt_file_path,
-        }
-    except Exception as e:
-        logger.exception(f"Error while parsing document: {e}")
-    return results
 
 async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
@@ -209,7 +180,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     text_content = html_text.extract_text(htmlData, guess_layout=False)
     text_file_name = change_file_ext(file_name, "txt")
     txt_file_path = save_file_s3(s3, text_file_name, text_content)
- 
+
     return {
         ContentType.HTML.value: html_file_path,
         ContentType.MARKDOWN.value: md_file_path,
@@ -305,7 +276,7 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
             result = {
                 ContentType.MARKDOWN.value: md_file_path,
                 ContentType.TEXT.value: text_file_path,
-                ContentType.HTML.value: html_file_path
+                ContentType.HTML.value: html_file_path,
             }
 
     except Exception as e:
@@ -329,39 +300,37 @@ async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> dict[st
     csv_file_path = save_file_s3(s3, csv_file_name, csv_content)
     return {"csv": csv_file_path}
 
-async def parse_doc_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
+
+async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False
+        endpoint_url=settings.storage.ENDPOINT_URL, key=MINIO_ROOT_USER, secret=MINIO_ROOT_PASSWORD, use_ssl=False
     )
     file_name = get_file_name(s3_url)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_input_path = os.path.join(temp_dir, file_name)
-        with s3.open(s3_url, 'rb') as s3_file:
-            with open(temp_input_path, 'wb') as local_file:
+        with s3.open(s3_url, "rb") as s3_file:
+            with open(temp_input_path, "wb") as local_file:
                 local_file.write(s3_file.read())
-        
-        conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote") 
+
+        conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote")
         results = {}
-        
+
         txt_name = change_file_ext(file_name, "txt")
         temp_txt_path = os.path.join(temp_dir, txt_name)
         conv.convert(inpath=temp_input_path, outpath=temp_txt_path)
-        with open(temp_txt_path, 'rb') as converted_file:
+        with open(temp_txt_path, "rb") as converted_file:
             txt_s3_path = save_file_s3(s3, txt_name, converted_file.read())
         results[ContentType.TEXT.value] = txt_s3_path
 
         html_name = change_file_ext(file_name, "html")
         temp_html_path = os.path.join(temp_dir, html_name)
         conv.convert(inpath=temp_input_path, outpath=temp_html_path)
-        with open(temp_html_path, 'rb') as converted_file:
+        with open(temp_html_path, "rb") as converted_file:
             html_s3_path = save_file_s3(s3, html_name, converted_file.read())
-        results[ContentType.HTML.value] = html_s3_path    
-            
-        with open(temp_html_path, 'r') as html_file:
+        results[ContentType.HTML.value] = html_s3_path
+
+        with open(temp_html_path, "r") as html_file:
             markdown = md(html_file.read())
             md_file_name = change_file_ext(file_name, "md")
             md_file_path = save_file_s3(s3, md_file_name, markdown)
@@ -369,29 +338,27 @@ async def parse_doc_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
 
     return results
 
-async def parse_ppt_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
+
+async def parse_ppt_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False
+        endpoint_url=settings.storage.ENDPOINT_URL, key=MINIO_ROOT_USER, secret=MINIO_ROOT_PASSWORD, use_ssl=False
     )
     file_name = get_file_name(s3_url)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_input_path = os.path.join(temp_dir, file_name)
-        with s3.open(s3_url, 'rb') as s3_file:
-            with open(temp_input_path, 'wb') as local_file:
+        with s3.open(s3_url, "rb") as s3_file:
+            with open(temp_input_path, "wb") as local_file:
                 local_file.write(s3_file.read())
-        
-        conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote") 
+
+        conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote")
 
         results = {}
 
         pptx_name = change_file_ext(file_name, "pptx")
         temp_pptx_path = os.path.join(temp_dir, pptx_name)
         conv.convert(inpath=temp_input_path, outpath=temp_pptx_path)
-        with open(temp_pptx_path, 'rb') as converted_file:
+        with open(temp_pptx_path, "rb") as converted_file:
             pptx_s3_path = save_file_s3(s3, pptx_name, converted_file.read())
         results[ContentType.TEXT.value] = pptx_s3_path
         md_file_name = change_file_ext(file_name, "md")
@@ -413,4 +380,33 @@ async def parse_ppt_s3(ctx:Context, *, s3_url: str) -> dict[str, str]:
             ContentType.TEXT.value: txt_file_path,
         }
         return results
-        
+
+
+async def parse_pptx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+    s3 = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
+    file_name = get_file_name(s3_url)
+    md_file_name = change_file_ext(file_name, "md")
+    with s3.open(s3_url, mode="rb") as pptx_file:
+        markdown_content = convert_pptx_to_md(pptx_file, file_name)
+    md_file_path = save_file_s3(s3, md_file_name, markdown_content)
+
+    html_content = mistletoe.markdown(markdown_content)
+    text_content = html_text.extract_text(html_content, guess_layout=True)
+
+    html_file_name = change_file_ext(file_name, "html")
+    html_file_path = save_file_s3(s3, html_file_name, html_content)
+
+    txt_file_name = change_file_ext(file_name, "txt")
+    txt_file_path = save_file_s3(s3, txt_file_name, text_content)
+
+    results = {
+        ContentType.MARKDOWN.value: md_file_path,
+        ContentType.HTML.value: html_file_path,
+        ContentType.TEXT.value: txt_file_path,
+    }
+    return results
