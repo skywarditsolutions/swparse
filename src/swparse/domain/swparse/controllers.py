@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeVar
 from uuid import uuid4
 
+import pandas as pd
 import structlog
+from html2text import html2text
 from litestar import Controller, MediaType, get, post
 from litestar.datastructures import UploadFile  # noqa: TCH002
 from litestar.enums import RequestEncodingType  # noqa: TCH002
@@ -13,6 +15,7 @@ from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
 
 from swparse.config.app import settings
+from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
 from swparse.domain.swparse.utils import extract_tables_from_html
 
@@ -258,26 +261,44 @@ class ParserController(Controller):
             results = job.result
             try:
                 match result_type:
-                    case "markdown":
+                    case ContentType.MARKDOWN.value:
                         with s3.open(results["markdown"], mode="r") as out_file_md:
                             markdown = out_file_md.read()
                             return JobResult(markdown=markdown, html="", text="", job_metadata=jm)
 
-                    case "html":
+                    case ContentType.HTML.value:
                         with s3.open(results["html"], mode="r") as out_file_html:
                             html = out_file_html.read()
                             return JobResult(markdown="", html=html, text="", job_metadata=jm)
 
-                    case "text":
+                    case ContentType.TEXT.value:
                         with s3.open(results["text"], mode="r") as out_file_txt:
                             text = out_file_txt.read()
                             return JobResult(markdown="", html="", text=text, job_metadata=jm)
-                    case "table":
+                    case ContentType.TABLE.value:
                         html = extract_tables_from_html(s3, results["html"])
                         result_html = "<br><br>"
                         if html:
                             result_html = result_html.join(html)
                         return JobResult(markdown="", html="", text="", table=result_html, job_metadata=jm)
+
+                    case ContentType.MARKDOWN_TABLE.value:
+                        table_file_path = results.get("table")
+                        if table_file_path:
+                            with s3.open(results["table"], mode="r") as out_file_html:
+                                result_html = out_file_html.read()
+                        else:
+                            html = extract_tables_from_html(s3, results["html"])
+                            result_html = "<br><br>".join(html)
+
+                        dfs = pd.read_html(result_html)
+                        markdown_tbls = ""
+                        for i, df in enumerate(dfs):
+                            markdown_tbls += (f"## Table {i + 1}\n\n")
+                            markdown_tbls +=df.to_markdown()
+                            markdown_tbls += "\n\n" 
+
+                        return JobResult(markdown="", html="", text="", table_md = markdown_tbls, job_metadata=jm)
                     case _:
                         unsupported = f"Format {result_type} is currently unsupported."
                         raise HTTPException(unsupported)
