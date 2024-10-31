@@ -112,16 +112,16 @@ def is_text_block(shape: BaseShape) -> bool:
         if (
             shape.is_placeholder
             and shape.placeholder_format.type == PP_PLACEHOLDER.BODY
-        ) or shape.shape_type==MSO_SHAPE_TYPE.TEXT_BOX:
+        ) or (
+            shape.is_placeholder
+            and shape.placeholder_format.type == PP_PLACEHOLDER.OBJECT
+        ) or shape.shape_type == MSO_SHAPE_TYPE.TEXT_BOX:
             return True
     return False
-
 
 def is_list_block(shape: BaseShape) -> bool:
     levels = []
     for para in shape.text_frame.paragraphs:
-        print(f"this is para{para.text}")
-        print(f"this is para level{para.level}")
         if para.level not in levels:
             levels.append(para.level)
         if para.level != 0 or len(levels) > 1:

@@ -1,46 +1,44 @@
 [project]
-authors = [{ name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech" }]
+authors = [{name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech"}]
 dependencies = [
-    "litestar[full]>=2.11",
-    "advanced-alchemy[uuid]>=0.10.0",
-    "asyncpg>=0.28.0",
-    "python-dotenv>=1.0.0",
-    "passlib[argon2]>=1.7.4",
-    "litestar-saq>=0.1.3",
-    "litestar-granian>=0.1.4",
-    "aiosqlite>=0.19.0",
-    "httptools",
-    "setuptools>=70.3.0",
-    "pip>=24.1.2",
-    "premailer>=3.10.0",
-    "openpyxl>=3.1.5",
-    "pymupdf>=1.24.7",
-    "pdf4llm>=0.0.9",
-    "s3fs>=2024.9.0",
-    "filetype>=1.2.0",
-    "transformers==4.45.2",
-    "streamlit>=1.36.0",
-    "marker-pdf==0.3.2",
-    "pillow>=10.4.0",
-    "llama-parse>=0.5.7",
-    "mammoth>=1.8.0",
-    "openpyxl>=3.1.5",
-    "surya-ocr==0.6.12",
-    "html2text>=2024.2.26",
-    "markdownify>=0.13.1",
-    "xls2xlsx>=0.2.0",
-    "nest-asyncio>=1.6.0",
-    "mistletoe>=1.4.0",
-    "html-text>=0.6.2",
-    "markdown>=3.7",
-    "unoserver>=3.0.1",
-    "rich>=13.9.3",
-    "python-pptx>=1.0.2",
-    "mdutils>=1.6.0",
+  "litestar[full]>=2.11",
+  "advanced-alchemy[uuid]>=0.10.0",
+  "asyncpg>=0.28.0",
+  "python-dotenv>=1.0.0",
+  "passlib[argon2]>=1.7.4",
+  "litestar-saq>=0.1.3",
+  "litestar-granian>=0.1.4",
+  "aiosqlite>=0.19.0",
+  "httptools",
+  "setuptools>=70.3.0",
+  "pip>=24.1.2",
+  "premailer>=3.10.0",
+  "openpyxl>=3.1.5",
+  "s3fs>=2024.9.0",
+  "filetype>=1.2.0",
+  "transformers==4.45.2",
+  "streamlit>=1.36.0",
+  "marker-pdf==0.3.2",
+  "pillow>=10.4.0",
+  "llama-parse>=0.5.7",
+  "mammoth>=1.8.0",
+  "openpyxl>=3.1.5",
+  "surya-ocr==0.6.12",
+  "html2text>=2024.2.26",
+  "markdownify>=0.13.1",
+  "xls2xlsx>=0.2.0",
+  "nest-asyncio>=1.6.0",
+  "mistletoe>=1.4.0",
+  "html-text>=0.6.2",
+  "markdown>=3.7",
+  "unoserver>=3.0.1",
+  "rich>=13.9.3",
+  "python-pptx>=1.0.2",
+  "mdutils>=1.6.0",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
-license = { text = "BUSINESS" }
+license = {text = "BUSINESS"}
 name = "swparse"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -74,7 +72,7 @@ lint = "pdm run pre-commit run --all-files"
 start-infra = "docker compose -f docker-compose.infra.yml up --force-recreate -d"
 stop-infra = "docker compose -f docker-compose.infra.yml down --remove-orphans"
 test = "pdm run pytest tests"
-test_coverage = { composite = ["pdm run pytest tests", "pdm run coverage html", "pdm run coverage xml"] }
+test_coverage = {composite = ["pdm run pytest tests", "pdm run coverage html", "pdm run coverage xml"]}
 
 [tool.pdm.dev-dependencies]
 dev = ["commitizen>=3.29.1"]
@@ -198,33 +196,33 @@ exclude = [
 fix = true
 line-length = 120
 lint.ignore = [
-  "E501",    # pycodestyle line too long, handled by black
-  "D100",    # pydocstyle - missing docstring in public module
-  "D101",    # pydocstyle - missing docstring in public class
-  "D102",    # pydocstyle - missing docstring in public method
-  "D103",    # pydocstyle - missing docstring in public function
-  "D104",    # pydocstyle - missing docstring in public package
-  "D105",    # pydocstyle - missing docstring in magic method
-  "D106",    # pydocstyle - missing docstring in public nested class
-  "D107",    # pydocstyle - missing docstring in __init__
-  "D202",    # pydocstyle - no blank lines allowed after function docstring
-  "D205",    # pydocstyle - 1 blank line required between summary line and description
-  "D415",    # pydocstyle - first line should end with a period, question mark, or exclamation point
-  "UP037",   # pyupgrade - removes quotes from type annotation
-  "A003",    # flake8-builtins - class attribute {name} is shadowing a python builtin
-  "B010",    # flake8-bugbear - do not call setattr with a constant attribute value
-  "B008",    #  flake8-bugbear - Do not perform function call `Parameter` in argument defaultsRuff(B008)
-  "RUF012",  # ruff - mutable class attributes should be annotated with `typing.ClassVar`
-  "ANN401",  # ruff - Dynamically typed expressions (typing.Any) are disallowed
+  "E501", # pycodestyle line too long, handled by black
+  "D100", # pydocstyle - missing docstring in public module
+  "D101", # pydocstyle - missing docstring in public class
+  "D102", # pydocstyle - missing docstring in public method
+  "D103", # pydocstyle - missing docstring in public function
+  "D104", # pydocstyle - missing docstring in public package
+  "D105", # pydocstyle - missing docstring in magic method
+  "D106", # pydocstyle - missing docstring in public nested class
+  "D107", # pydocstyle - missing docstring in __init__
+  "D202", # pydocstyle - no blank lines allowed after function docstring
+  "D205", # pydocstyle - 1 blank line required between summary line and description
+  "D415", # pydocstyle - first line should end with a period, question mark, or exclamation point
+  "UP037", # pyupgrade - removes quotes from type annotation
+  "A003", # flake8-builtins - class attribute {name} is shadowing a python builtin
+  "B010", # flake8-bugbear - do not call setattr with a constant attribute value
+  "B008", #  flake8-bugbear - Do not perform function call `Parameter` in argument defaultsRuff(B008)
+  "RUF012", # ruff - mutable class attributes should be annotated with `typing.ClassVar`
+  "ANN401", # ruff - Dynamically typed expressions (typing.Any) are disallowed
   "ANN102",
-  "ANN101",  # ruff - Missing type annotation for `self` in method
+  "ANN101", # ruff - Missing type annotation for `self` in method
   "PLR0913", # ruff - Too many arguments to function call
   "PLR2004", # Magic value used in comparison
-  "FBT001",  # Boolean typed positional argument in function definition
-  "FBT002",  # Boolean default positional argument in function definition
-  "FBT003",  # Boolean Boolean default positional argument in function definition
-  "ARG002",  # Unused method argument
-  "ARG001",  #  Unused function argument
+  "FBT001", # Boolean typed positional argument in function definition
+  "FBT002", # Boolean default positional argument in function definition
+  "FBT003", # Boolean Boolean default positional argument in function definition
+  "ARG002", # Unused method argument
+  "ARG001", #  Unused function argument
   "TD002",
   "TD003",
   "FIX002",
@@ -235,7 +233,7 @@ lint.ignore = [
   'PT004',
   'PT005',
   'S603',
-  "E501",    # pycodestyle line too long, handled by black
+  "E501", # pycodestyle line too long, handled by black
   "PLW2901", # pylint - for loop variable overwritten by assignment target
   "ANN401",
   "ANN102",
@@ -255,7 +253,6 @@ target-version = "py311"
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
-
 
 [tool.ruff.lint.mccabe]
 max-complexity = 12
@@ -328,7 +325,6 @@ module = ["sqlalchemy.*", "saq.*", "uvicorn.*", "aiohttp.*", "jsbeautifier", "js
 ignore_errors = true
 module = ["swparse.db.migrations.*", "swparse.lib.dto.*"]
 
-
 [tool.pyright]
 exclude = ["scripts", "docs"]
 include = ["src/swparse", "tests"]
@@ -349,7 +345,7 @@ reportOptionalMemberAccess = "information"
 reportOptionalOperand = "information"
 reportPossiblyUnboundVariable = "warning"
 reportUnknownArgumentType = "information"
-reportUnknownMemberType = "warning"
+reportUnknownMemberType = "information"
 reportUnknownParameterType = "information"
 reportUnknownVariableType = "information"
 reportUnsupportedDunderAll = "warning"
@@ -371,16 +367,16 @@ trim = true
 
 [tool.git-cliff.git]
 commit_parsers = [
-  { message = "^feat", group = "Features" },
-  { message = "^fix", group = "Bug Fixes" },
-  { message = "^doc", group = "Documentation" },
-  { message = "^perf", group = "Performance" },
-  { message = "^refactor", group = "Refactor" },
-  { message = "^style", group = "Styling" },
-  { message = "^test", group = "Testing" },
-  { message = "^chore\\(release\\): prepare for", skip = true },
-  { message = "^chore", group = "Miscellaneous Tasks" },
-  { body = ".*security", group = "Security" },
+  {message = "^feat", group = "Features"},
+  {message = "^fix", group = "Bug Fixes"},
+  {message = "^doc", group = "Documentation"},
+  {message = "^perf", group = "Performance"},
+  {message = "^refactor", group = "Refactor"},
+  {message = "^style", group = "Styling"},
+  {message = "^test", group = "Testing"},
+  {message = "^chore\\(release\\): prepare for", skip = true},
+  {message = "^chore", group = "Miscellaneous Tasks"},
+  {body = ".*security", group = "Security"},
 ]
 conventional_commits = true
 filter_commits = false

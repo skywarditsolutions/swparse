@@ -37,26 +37,7 @@ class ParserController(Controller):
     tags = ["Parsers"]
     path = PARSER_BASE
 
-    # @post(
-    #     path="test",
-    # )
-    # async def test_pptx_md(
-    #     self,
-    #     data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
-    # ) -> str:
-    #     content = await data.read()
-    #     file_name = data.filename
-    #     new_uuid = uuid4()
-    #     s3 = S3FileSystem(
-    #         # asynchronous=True,
-    #         endpoint_url=settings.storage.ENDPOINT_URL,
-    #         key=MINIO_ROOT_USER,
-    #         secret=MINIO_ROOT_PASSWORD,
-    #         use_ssl=False,
-    #     )
-    #     s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
-    #     with s3.open(s3_url, "wb") as f:
-    #         f.write(content)
+
 
     @post(
         operation_id="ParserQueue",

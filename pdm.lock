@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "linting", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:8f8c402d86bdada3adc264872060e69a323c0cf0c3657e39751cef816e361cb9"
+content_hash = "sha256:b4096ac53ad90a30508acd56b38df05c5cbce813644df5f3d93145ac3b3a82ef"
 
 [[metadata.targets]]
 requires_python = ">=3.12"
@@ -2835,19 +2835,6 @@ files = [
 ]
 
 [[package]]
-name = "pdf4llm"
-version = "0.0.9"
-summary = "PyMuPDF Utilities for LLM/RAG"
-groups = ["default"]
-dependencies = [
-    "pymupdf4llm",
-]
-files = [
-    {file = "pdf4llm-0.0.9-py3-none-any.whl", hash = "sha256:98188f4ed6b78e93fa9cfceb102b82ae1893f97933023126493fdb35de53cf51"},
-    {file = "pdf4llm-0.0.9.tar.gz", hash = "sha256:616340e1e8df370b6b138b5e82755b3b29e78226145abb89011ba92e71b3b859"},
-]
-
-[[package]]
 name = "pdftext"
 version = "0.3.18"
 requires_python = "<4.0,>=3.10"
@@ -3335,35 +3322,6 @@ dependencies = [
 files = [
     {file = "pylint-3.3.1-py3-none-any.whl", hash = "sha256:2f846a466dd023513240bc140ad2dd73bfc080a5d85a710afdb728c420a5a2b9"},
     {file = "pylint-3.3.1.tar.gz", hash = "sha256:9f3dcc87b1203e612b78d91a896407787e708b3f189b5fa0b307712d49ff0c6e"},
-]
-
-[[package]]
-name = "pymupdf"
-version = "1.24.13"
-requires_python = ">=3.9"
-summary = "A high performance Python library for data extraction, analysis, conversion & manipulation of PDF (and other) documents."
-groups = ["default"]
-files = [
-    {file = "PyMuPDF-1.24.13-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:c11bb9198af69d490b4b346421db827d875a28fbc760d239e691d4b3ed12b5ad"},
-    {file = "PyMuPDF-1.24.13-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:240d5c43daa9278db50d609162b48f673ab256d7e5c73eea67af517c1fc2d47c"},
-    {file = "PyMuPDF-1.24.13-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:c830610e4fde237fcf0532f1f8c1381453f48c164a5eadd0c6e5fd0bea1ca8e3"},
-    {file = "PyMuPDF-1.24.13-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:4520558580ac6b5a7164fda29fbc14e39d3114fd803420721500edbf47d04872"},
-    {file = "PyMuPDF-1.24.13-cp39-abi3-win32.whl", hash = "sha256:ab22828d4fc205791ef1332a64893cbfc38cd9c331c5f46ae4537372ffee6fc1"},
-    {file = "PyMuPDF-1.24.13-cp39-abi3-win_amd64.whl", hash = "sha256:ec17914e4a560f4070212a2e84db5cc8b561d85d1ead193605a22f9561b03148"},
-    {file = "PyMuPDF-1.24.13.tar.gz", hash = "sha256:6ec3ab3c6d5cba60bfcf58daaa2d1a5b700b0366ce52be666445007351461fa4"},
-]
-
-[[package]]
-name = "pymupdf4llm"
-version = "0.0.17"
-summary = "PyMuPDF Utilities for LLM/RAG"
-groups = ["default"]
-dependencies = [
-    "pymupdf>=1.24.10",
-]
-files = [
-    {file = "pymupdf4llm-0.0.17-py3-none-any.whl", hash = "sha256:26de9996945f15e3ca507908f80dc18a959f5b5214bb2e302c7f7034089665a0"},
-    {file = "pymupdf4llm-0.0.17.tar.gz", hash = "sha256:27287ef9fe0217cf37841a3ef2bcf70da2553c43d95ea39b664a6de6485678c3"},
 ]
 
 [[package]]

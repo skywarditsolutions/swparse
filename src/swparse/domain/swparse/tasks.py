@@ -371,7 +371,8 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
         md_file_name = change_file_ext(file_name, "md")
         new_uuid = uuid4()
         md_file_path = f"{BUCKET}/{new_uuid}_{md_file_name}"
-        markdown = convert_pptx_to_md(pptx_s3_path, md_file_path)
+        with s3.open(pptx_s3_path, "rb") as pptx_file:
+            markdown = convert_pptx_to_md(pptx_file, file_name)
         html_results = mistletoe.markdown(markdown)
         text_results = html_text.extract_text(html_results, guess_layout=True)
 
