@@ -49,7 +49,9 @@ class JobResult:
     markdown: str
     html: str
     text: str
-    job_metadata: JobMetadata
+    table: str | None = ""
+    table_md: str | None = ""
+    job_metadata: JobMetadata | None = None
 
 
 @dataclass

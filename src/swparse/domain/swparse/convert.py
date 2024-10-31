@@ -230,9 +230,8 @@ async def convert_xlsx_csv(
         else:
             xlsx_data = await input.read()
 
-        csv_data = xlsx_data.to_csv(index=True)
+        return str(xlsx_data.to_csv(index=False))
 
-        return csv_data
 
     except Exception as e:
         logger.error(f"Error converting XLSX to CSV: {e}")

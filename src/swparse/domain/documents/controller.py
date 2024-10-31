@@ -8,6 +8,7 @@ import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
 import httpx
+import pandas as pd
 import structlog
 from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
 from litestar import Controller, get, post
@@ -248,22 +249,44 @@ class DocumentController(Controller):
             use_ssl=False,
         )
         if result_type not in extracted_file_paths:
-            if result_type != ContentType.TABLE.value:
+            if result_type not in (ContentType.TABLE.value, ContentType.MARKDOWN_TABLE.value):
                 # Extracted file type does not exit
                 return None
             # Extracting table from the existing HTML file path
-            html_file_path = extracted_file_paths.get(ContentType.HTML.value)
-            if html_file_path is None:
-                _raise_http_exception("HTML file hasn't extracted", status_code=404)
+            table_file_path = extracted_file_paths.get(ContentType.TABLE.value)
 
-            html_tables = extract_tables_from_html(s3fs, html_file_path)
-            if html_tables is not None:
+            if table_file_path is None:
+                html_file_path = extracted_file_paths.get(ContentType.HTML.value)
+                if html_file_path is None:
+                    _raise_http_exception("HTML file hasn't extracted", status_code=404)
+
+                html_tables = extract_tables_from_html(s3fs, html_file_path)
+                if html_tables is None:
+                # the file doesn't has any tables
+                    return ""
                 result_html = "<br><br>".join(html_tables)
                 file_name = get_file_name(html_file_path)
                 html_file_name = change_file_ext(file_name, "html")
-                html_file_path = save_file_s3(s3fs, html_file_name, result_html)
-                extracted_file_paths[ContentType.TABLE.value] = html_file_path
-                await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
+                tbl_file_path = save_file_s3(s3fs, html_file_name, result_html)
+                extracted_file_paths[ContentType.TABLE.value] = tbl_file_path
+
+            if result_type == ContentType.MARKDOWN_TABLE.value:
+                with s3fs.open(table_file_path, "r") as f:
+                    html_content = f.read()
+
+                dfs = pd.read_html(html_content)
+                markdown_tbls = ""
+                for i, df in enumerate(dfs):
+                    markdown_tbls += (f"## Table {i + 1}\n\n")
+                    markdown_tbls +=df.to_markdown()
+                    markdown_tbls += "\n\n"
+
+                file_name = get_file_name(table_file_path)
+                md_tbl_file_name = change_file_ext(file_name, "html")
+                md_tbl_file_path = save_file_s3(s3fs, md_tbl_file_name, markdown_tbls)
+                extracted_file_paths[ContentType.MARKDOWN_TABLE.value] = md_tbl_file_path
+
+            await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
 
         extracted_file_path = extracted_file_paths[result_type]
 

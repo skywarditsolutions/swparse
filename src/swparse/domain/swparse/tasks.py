@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import io
+import os
+import tempfile
 from logging import getLogger
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import html_text
 import mammoth
+import markdown as markdown_converter
 import mistletoe
 import pandas as pd
 import pypdfium2 as pdfium
@@ -14,20 +17,18 @@ from html2text import html2text
 from markdownify import markdownify as md
 from PIL import Image
 from s3fs import S3FileSystem
-import markdown as markdown_converter
+from unoserver import client
+
 from swparse.config.app import settings
 from swparse.db.models import ContentType
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
 from swparse.domain.swparse.utils import (
     change_file_ext,
+    convert_pptx_to_md,
     convert_xls_to_xlsx_bytes,
     get_file_name,
     save_file_s3,
-    convert_pptx_to_md,
 )
-import tempfile
-import os
-from unoserver import client
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -66,14 +67,15 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
 
         # HTML Parsing
         str_buffer = io.StringIO(csv_file)
-        df = pd.read_csv(str_buffer)
-        html_content = df.to_html()
+        df = pd.read_csv(str_buffer, header=0, skip_blank_lines=True, na_filter=False)
+        df = df.fillna("")
+        html_content = df.to_html(index=False, na_rep="")
 
         html_file_name = change_file_ext(file_name, "html")
         html_file_path = save_file_s3(s3, html_file_name, html_content)
 
         # Markdown Parsing
-        markdown = html2text(html_content)
+        markdown = df.to_markdown()
         md_file_name = change_file_ext(file_name, "md")
         md_file_path = save_file_s3(s3, md_file_name, markdown)
 
@@ -252,19 +254,18 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
 
             if ext == "text/xml":
                 df = pd.read_xml(io.StringIO(content))
-                html_content = df.to_html()
+                html_content = df.to_html(index=False)
 
             elif ext == "text/csv":
                 csv_buffer = io.StringIO(content)
-                df = pd.read_csv(csv_buffer)
+                df = pd.read_csv(csv_buffer, index_col=False)
                 txt_content = df.to_string(index=False)
                 text_file_name = change_file_ext(file_name, "txt")
                 text_file_path = save_file_s3(s3, text_file_name, txt_content)
-                html_content = df.to_html()
+                html_content = df.to_html(index=False)
 
             else:
                 html_content = markdown_converter.markdown(content)
-
             html_file_name = change_file_ext(file_name, "html")
             html_file_path = save_file_s3(s3, html_file_name, html_content)
 
@@ -303,7 +304,10 @@ async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> dict[st
 
 async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL, key=MINIO_ROOT_USER, secret=MINIO_ROOT_PASSWORD, use_ssl=False
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
     )
     file_name = get_file_name(s3_url)
 
@@ -330,7 +334,7 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
             html_s3_path = save_file_s3(s3, html_name, converted_file.read())
         results[ContentType.HTML.value] = html_s3_path
 
-        with open(temp_html_path, "r") as html_file:
+        with open(temp_html_path) as html_file:
             markdown = md(html_file.read())
             md_file_name = change_file_ext(file_name, "md")
             md_file_path = save_file_s3(s3, md_file_name, markdown)
@@ -341,7 +345,10 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
 
 async def parse_ppt_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL, key=MINIO_ROOT_USER, secret=MINIO_ROOT_PASSWORD, use_ssl=False
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
     )
     file_name = get_file_name(s3_url)
 
