@@ -35,6 +35,8 @@ dependencies = [
     "markdown>=3.7",
     "unoserver>=3.0.1",
     "rich>=13.9.3",
+    "python-pptx>=1.0.2",
+    "mdutils>=1.6.0",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
