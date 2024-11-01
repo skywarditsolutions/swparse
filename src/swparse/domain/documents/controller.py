@@ -5,7 +5,7 @@ import json
 import mimetypes
 import os
 import tempfile
-from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
+from typing import TYPE_CHECKING, Annotated, Literal, Optional, TypeVar
 
 import httpx
 import pandas as pd
@@ -236,6 +236,7 @@ class DocumentController(Controller):
             ),
         ],
         result_type: str = "markdown",
+        image_key: str | None = None,
     ) -> str | None:
         db_obj = await doc_service.get(id)
         if not db_obj:
@@ -273,7 +274,7 @@ class DocumentController(Controller):
 
                 html_tables = extract_tables_from_html(s3fs, html_file_path)
                 if html_tables is None:
-                # the file doesn't has any tables
+                    # the file doesn't has any tables
                     return ""
                 result_html = "<br><br>".join(html_tables)
                 file_name = get_file_name(html_file_path)
@@ -288,8 +289,8 @@ class DocumentController(Controller):
                 dfs = pd.read_html(html_content)
                 markdown_tbls = ""
                 for i, df in enumerate(dfs):
-                    markdown_tbls += (f"## Table {i + 1}\n\n")
-                    markdown_tbls +=df.to_markdown()
+                    markdown_tbls += f"## Table {i + 1}\n\n"
+                    markdown_tbls += df.to_markdown()
                     markdown_tbls += "\n\n"
 
                 file_name = get_file_name(table_file_path)
@@ -300,6 +301,19 @@ class DocumentController(Controller):
             await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
 
         extracted_file_path = extracted_file_paths[result_type]
+
+        if result_type == ContentType.IMAGES.value:
+            if not image_key:
+                _raise_http_exception("image_key is required", status_code=400)
+            images = json.loads(extracted_file_path)
+            print(images)
+            image_path = images.get(image_key)
+            if image_path:
+                with s3fs.open(image_path, "rb") as f:
+                    b64_bytes = base64.b64encode(f.read())
+                    return b64_bytes.decode("ascii")
+            else:
+                _raise_http_exception("Image not found", status_code=404)
 
         with s3fs.open(extracted_file_path, "rb") as f:
             content: bytes = f.read()

@@ -14,8 +14,6 @@ class ContentType(str, Enum):
     JSON = "json"
     XML = "xml"
     PDF = "pdf"
-    TABLE ="table"
+    TABLE = "table"
     MARKDOWN_TABLE = "table_md"
-
-
-
+    IMAGES = "images"

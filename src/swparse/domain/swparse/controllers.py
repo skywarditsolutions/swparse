@@ -30,15 +30,14 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
 
-def _raise_http_exception(detail: str, status_code: int) -> None:
-    raise HTTPException(detail=detail, status_code=status_code)
+# def _raise_http_exception(detail: str, status_code: int) -> None:
+#     raise HTTPException(detail=detail, status_code=status_code)
 
 
 class ParserController(Controller):
     tags = ["Parsers"]
     path = PARSER_BASE
     middleware = [ApiKeyAuthMiddleware]
-
 
     @post(
         operation_id="ParserQueue",
@@ -301,6 +300,9 @@ class ParserController(Controller):
                             markdown_tbls += "\n\n"
 
                         return JobResult(markdown="", html="", text="", table_md=markdown_tbls, job_metadata=jm)
+                    case ContentType.IMAGES.value:
+                        images = results.get("images")
+                        return JobResult(markdown="", html="", text="", images=images)
                     case _:
                         unsupported = f"Format {result_type} is currently unsupported."
                         raise HTTPException(unsupported)

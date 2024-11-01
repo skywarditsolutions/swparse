@@ -3,7 +3,9 @@ from __future__ import annotations
 import io
 import os
 import tempfile
+import json
 from logging import getLogger
+import re
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -29,6 +31,8 @@ from swparse.domain.swparse.utils import (
     get_file_name,
     save_file_s3,
 )
+import base64
+from io import BytesIO
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -138,6 +142,16 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     html_results = mistletoe.markdown(markdown)
     text_results = html_text.extract_text(html_results, guess_layout=True)
 
+    images = {}
+    # Save Images
+    for image_name, img in doc_images.items():
+        image_name = image_name.lower()
+        buffered = BytesIO()
+        img.save(buffered, format=image_name.split(".")[-1])
+        img_b = buffered.getvalue()
+        img_file_path = save_file_s3(s3, image_name, img_b)
+        images[image_name] = img_file_path
+
     # Markdown Parsing
     md_file_name = change_file_ext(file_name, "md")
     md_file_path = save_file_s3(s3, md_file_name, markdown)
@@ -153,6 +167,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
         ContentType.MARKDOWN.value: md_file_path,
         ContentType.HTML.value: html_file_path,
         ContentType.TEXT.value: txt_file_path,
+        ContentType.IMAGES.value: json.dumps(images),
     }
 
 
@@ -170,6 +185,22 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     with s3.open(s3_url, mode="rb") as byte_content:
         result = mammoth.convert_to_html(byte_content)  # type: ignore
         htmlData: str = result.value  # type: ignore
+        img_tags = re.findall(r'<img\s+[^>]*src=[\'"].+?[\'"][^>]*>', htmlData)
+
+        images = {}
+
+        for i, img in enumerate(img_tags):
+
+            src = re.search(r'src=[\'"]([^\'"]+)[\'"]', img).group(1)
+            header, encoded = src.split(",", 1)
+            image_type = header.split(";")[0].split(":")[1].split("/")[1]
+            image_bytes = base64.b64decode(encoded)
+
+            image_key = f"image-{i}.{image_type}"
+            htmlData = htmlData.replace(img, f'<img src="{image_key}" alt="{image_key}" />', 1)
+            image_file_path = save_file_s3(s3, image_key, image_bytes)
+            images[image_key] = image_file_path
+
     html_file_name = change_file_ext(file_name, "html")
     html_file_path = save_file_s3(s3, html_file_name, htmlData)
 
@@ -187,6 +218,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
         ContentType.HTML.value: html_file_path,
         ContentType.MARKDOWN.value: md_file_path,
         ContentType.TEXT.value: txt_file_path,
+        ContentType.IMAGES.value: json.dumps(images),
     }
 
 
