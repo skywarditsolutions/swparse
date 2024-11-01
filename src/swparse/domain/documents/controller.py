@@ -131,9 +131,8 @@ class DocumentController(Controller):
                 _raise_http_exception(detail=f"Failed to retrieve the extracted file {e}", status_code=404)
         extracted_file_paths = db_obj.extracted_file_paths
         extracted_file_paths = base64.b64decode(extracted_file_paths).decode("utf-8")
-        db_obj.extracted_file_paths = json.loads(extracted_file_paths)
 
-        return db_obj
+        return json.loads(extracted_file_paths)
 
     @get(path=urls.LIST_DIR, guards=[requires_active_user])
     async def list_bucket_dirs(self) -> list[str]:
@@ -247,10 +246,10 @@ class DocumentController(Controller):
                 _raise_http_exception("Uploaded document has not extracted yet.", status_code=400)
 
             extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
-            await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
-        else:
-            raw_file_paths = base64.b64decode(db_obj.extracted_file_paths).decode()
-            extracted_file_paths = json.loads(raw_file_paths)
+            db_obj = await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
+
+        raw_file_paths = base64.b64decode(db_obj.extracted_file_paths).decode()
+        extracted_file_paths = json.loads(raw_file_paths)
 
         s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -259,6 +258,8 @@ class DocumentController(Controller):
             use_ssl=False,
         )
         if result_type not in extracted_file_paths:
+
+            #advanced extraction content type
             if result_type not in (ContentType.TABLE.value, ContentType.MARKDOWN_TABLE.value):
                 # Extracted file type does not exit
                 return None

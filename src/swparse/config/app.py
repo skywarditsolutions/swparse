@@ -50,7 +50,6 @@ saq = SAQConfig(
                 "swparse.domain.swparse.tasks.parse_pdf_page_s3",
                 "swparse.domain.swparse.tasks.parse_xlsx_s3",
                 "swparse.domain.swparse.tasks.extract_string",
-                "swparse.domain.swparse.tasks.convert_xlsx_to_csv",
                 "swparse.domain.swparse.tasks.extract_text_files",
                 "swparse.domain.swparse.tasks.parse_pptx_s3",
                 "swparse.domain.swparse.tasks.parse_doc_s3",

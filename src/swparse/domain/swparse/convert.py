@@ -215,24 +215,12 @@ def convert_single_pdf(
 
 
 async def convert_xlsx_csv(
-    input: str | pathlib.Path | bytes | typing.BinaryIO,
+    input: bytes
 ) -> str:
     try:
-        if isinstance(input, bytes):
-            input = io.BytesIO(input)
-
-        if hasattr(input, "read"):
-            xlsx_data = pandas.read_excel(input)
-
-        elif isinstance(input, str):
-            xlsx_data = input.encode("utf-8")
-
-        else:
-            xlsx_data = await input.read()
-
-        return str(xlsx_data.to_csv(index=False))
-
-
+        xlsx_data = io.BytesIO(input)
+        df = pandas.read_excel(xlsx_data, header=None)
+        return df.to_csv(index=False)
     except Exception as e:
         logger.error(f"Error converting XLSX to CSV: {e}")
         return ""

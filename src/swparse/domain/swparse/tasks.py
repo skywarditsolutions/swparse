@@ -286,22 +286,6 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
     return result
 
 
-async def convert_xlsx_to_csv(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
-    s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
-    with s3.open(s3_url, mode="rb") as doc:
-        content = doc.read()
-        csv_content = await convert_xlsx_csv(content)
-    file_name = get_file_name(s3_url)
-    csv_file_name = change_file_ext(file_name, "csv")
-    csv_file_path = save_file_s3(s3, csv_file_name, csv_content)
-    return {"csv": csv_file_path}
-
-
 async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     s3 = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
