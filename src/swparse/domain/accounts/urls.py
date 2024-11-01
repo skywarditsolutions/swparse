@@ -9,3 +9,5 @@ ACCOUNT_UPDATE = "/api/users/{user_id:uuid}"
 ACCOUNT_CREATE = "/api/users"
 ACCOUNT_ASSIGN_ROLE = "/api/roles/{role_slug:str}/assign"
 ACCOUNT_REVOKE_ROLE = "/api/roles/{role_slug:str}/revoke"
+
+API_KEY_GENERATE = "/api/keys/{key_name:str}/create"

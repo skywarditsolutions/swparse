@@ -14,8 +14,8 @@ from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOCon
 from litestar import Controller, get, post
 from litestar.datastructures import UploadFile
 from litestar.di import Provide
-from litestar.enums import MediaType, RequestEncodingType
-from litestar.exceptions import HTTPException
+from litestar.enums import RequestEncodingType
+from litestar.exceptions import HTTPException, NotAuthorizedException
 from litestar.pagination import OffsetPagination
 from litestar.params import Body
 from litestar.repository.filters import CollectionFilter, LimitOffset
@@ -154,12 +154,22 @@ class DocumentController(Controller):
     ) -> Document:
         content = await data.read()
         url = f"{os.environ.get('APP_URL')}/api/parsing/upload"  # URL of the upload_and_parse_que endpoint
+        api_key = os.environ.get("PARSER_API_KEY")
+        api_key_header = os.environ.get("PARSER_API_HEADER")
         async with httpx.AsyncClient() as client:
-            response = await client.post(
+            try:
+                response = await client.post(
                 url,
                 files={"data": (data.filename, data.file, data.content_type)},
-                headers={"Content-Type": "multipart/form-data; boundary=0xc0d3kywt"},
-            )
+                headers={
+                    "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
+                     f"{api_key_header}":f"{api_key}",
+                     },
+                )
+            except NotAuthorizedException as err:
+                raise NotAuthorizedException(detail=err.detail, status_code=403)
+            except Exception as err:
+                raise HTTPException(detail="Document upload failed", status_code=500)
         stats = JobStatus(**(response.json()))
         file_size = len(content)
         return await doc_service.create(

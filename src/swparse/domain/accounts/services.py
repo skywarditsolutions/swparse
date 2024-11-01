@@ -15,10 +15,15 @@ from advanced_alchemy.service import (
 from litestar.exceptions import PermissionDeniedException
 
 from swparse.config import constants
-from swparse.db.models import Role, User, UserOauthAccount, UserRole
+from swparse.db.models import ApiKeys, ApiKeyStatus, Role, User, UserOauthAccount, UserRole
+from swparse.domain.accounts.repositories import (
+    ApiKeyRepository,
+    RoleRepository,
+    UserOauthAccountRepository,
+    UserRepository,
+    UserRoleRepository,
+)
 from swparse.lib import crypt
-
-from .repositories import RoleRepository, UserOauthAccountRepository, UserRepository, UserRoleRepository
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -207,3 +212,55 @@ class UserOAuthAccountService(SQLAlchemyAsyncRepositoryService[UserOauthAccount]
     """Handles database operations for user roles."""
 
     repository_type = UserOauthAccountRepository
+
+
+class ApiKeyService(SQLAlchemyAsyncRepositoryService[ApiKeys]):
+    """Handles database operations for api keys."""
+
+    repository_type = ApiKeyRepository
+
+    def __init__(self, **repo_kwargs: Any) -> None:
+        self.repository: ApiKeyRepository = self.repository_type(**repo_kwargs)
+        self.model_type = self.repository.model_type
+
+    async def create(
+        self,
+        data: ModelDictT[ApiKeys],
+        *,
+        auto_commit: bool | None = None,
+        auto_expunge: bool | None = None,
+        auto_refresh: bool | None = None,
+        error_messages: ErrorMessages | None | EmptyType = Empty,
+    ) -> ApiKeys:
+        """Create a new API key."""
+        return await super().create(
+            data=data,
+            auto_commit=auto_commit,
+            auto_expunge=auto_expunge,
+            auto_refresh=auto_refresh,
+            error_messages=error_messages,
+        )
+
+    async def authenticate(self, api_key: str) -> ApiKeys:
+        """Authenticate api key.
+
+        Args:
+            api_key (str): a key to authorized api requests
+
+        Raises:
+            NotAuthorizedException: Raised when the api key doesn't exist, is expired, or is revoked.
+
+        Returns:
+            User: The api-key object
+        """
+        db_obj = await self.get_one_or_none(api_key=api_key)
+        if db_obj is None:
+            msg = "API-key not found or password invalid"
+            raise PermissionDeniedException(detail=msg)
+        if db_obj.status == ApiKeyStatus.REVOKED.value:
+            msg = "API is revoked."
+            raise PermissionDeniedException(detail=msg)
+        if db_obj.status == ApiKeyStatus.EXPIRED.value:
+            msg = "API is expired."
+            raise PermissionDeniedException(detail=msg)
+        return db_obj

@@ -2,17 +2,22 @@
 
 from __future__ import annotations
 
+import secrets
 from typing import TYPE_CHECKING, Annotated
 
-from litestar import Controller, delete, get, patch, post
+import structlog
+from litestar import Controller, Response, delete, get, patch, post
 from litestar.di import Provide
+from litestar.exceptions import InternalServerException
 from litestar.params import Dependency, Parameter
 
+from swparse.db.models import ApiKeys, ApiKeyStatus
+from swparse.db.models import User as UserModel
 from swparse.domain.accounts import urls
-from swparse.domain.accounts.dependencies import provide_users_service
-from swparse.domain.accounts.guards import requires_superuser
+from swparse.domain.accounts.dependencies import provide_api_key_service, provide_users_service
+from swparse.domain.accounts.guards import requires_active_user, requires_superuser
 from swparse.domain.accounts.schemas import User, UserCreate, UserUpdate
-from swparse.domain.accounts.services import UserService
+from swparse.domain.accounts.services import ApiKeyService, UserService
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -20,14 +25,15 @@ if TYPE_CHECKING:
     from advanced_alchemy.filters import FilterTypes
     from advanced_alchemy.service import OffsetPagination
 
+logger = structlog.get_logger()
 
 class UserController(Controller):
     """User Account Controller."""
 
     tags = ["User Accounts"]
     guards = [requires_superuser]
-    dependencies = {"users_service": Provide(provide_users_service)}
-    signature_namespace = {"UserService": UserService}
+    dependencies = {"users_service": Provide(provide_users_service),"api_key_service":Provide(provide_api_key_service)}
+    signature_namespace = {"UserService": UserService, "ApiKeyService":ApiKeyService}
     dto = None
     return_dto = None
 
@@ -68,6 +74,35 @@ class UserController(Controller):
         """Get a user."""
         db_obj = await users_service.get(user_id)
         return users_service.to_schema(db_obj, schema_type=User)
+
+    @get(
+        operation_id="APIkeyGenerate",
+        name="keys:get",
+        path=urls.API_KEY_GENERATE,
+        summary="Generate a key.",
+        guards=[requires_active_user]
+    )
+    async def generate_api_key(
+        self,
+        api_key_service: ApiKeyService,
+        current_user: UserModel,
+        key_name: str
+    ) -> Response:
+        """Generate an API key."""
+        key_len = 32
+        user_id = current_user.id
+        api_key = secrets.token_hex(key_len)
+        logger.error("current_user.id")
+        api_key_obj = await api_key_service.create(ApiKeys(api_key=api_key, name= key_name, user_id= user_id, status =ApiKeyStatus.ACTIVE ))
+
+        if not api_key_obj:
+            raise InternalServerException(detail="Failed to generate api-key", status_code=500)
+
+        return Response(
+            content={"api_key":api_key_obj.api_key},
+            status_code=201,
+        )
+
 
     @post(
         operation_id="CreateUser",

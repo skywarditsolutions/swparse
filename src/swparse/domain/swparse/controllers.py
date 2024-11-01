@@ -15,6 +15,7 @@ from s3fs import S3FileSystem
 
 from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
+from swparse.domain.swparse.middlewares import ApiKeyAuthMiddleware
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
 from swparse.domain.swparse.utils import extract_tables_from_html
 
@@ -36,7 +37,7 @@ def _raise_http_exception(detail: str, status_code: int) -> None:
 class ParserController(Controller):
     tags = ["Parsers"]
     path = PARSER_BASE
-
+    middleware = [ApiKeyAuthMiddleware]
 
 
     @post(

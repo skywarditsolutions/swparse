@@ -5,9 +5,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy.orm import joinedload, load_only, selectinload
+
 from swparse.db.models import Role, Team, TeamMember, UserOauthAccount, UserRole
 from swparse.db.models import User as UserModel
-from swparse.domain.accounts.services import RoleService, UserOAuthAccountService, UserRoleService, UserService
+from swparse.domain.accounts.services import (
+    ApiKeyService,
+    RoleService,
+    UserOAuthAccountService,
+    UserRoleService,
+    UserService,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -26,6 +33,12 @@ async def provide_user(request: Request[UserModel, Any, Any]) -> UserModel:
         User
     """
     return request.user
+
+
+async def provide_api_key_service(db_session: AsyncSession) -> AsyncGenerator[ApiKeyService, None]:
+    """Construct repository and service objects for the request."""
+    async with ApiKeyService.new(session=db_session) as service:
+        yield service
 
 
 async def provide_users_service(db_session: AsyncSession) -> AsyncGenerator[UserService, None]:

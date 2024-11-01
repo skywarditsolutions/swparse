@@ -92,9 +92,15 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
 
     async def check_job_status(self, job_id: str) -> bool:
         url = f"{os.environ.get('APP_URL')}/api/parsing/job/{job_id}"
+        api_key = os.environ.get("PARSER_API_KEY")
+        api_key_header = os.environ.get("PARSER_API_HEADER")
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 url,
+                headers={
+                "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
+                f"{api_key_header}":f"{api_key}",
+                },
             )
         job_status = JobStatus(**(response.json()))
         return job_status.status == Status.complete
@@ -106,7 +112,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
         if not job:
             raise HTTPException(detail=f"Job {job_id} is not found", status_code=404)
         return job.result
-    
+
     async def get_presigned_url(self, s3_url: str) -> str | None:
         expiry_time = 3600
         s3 = S3FileSystem(

@@ -6,8 +6,7 @@ from uuid import UUID
 from advanced_alchemy.base import UUIDAuditBase
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
-# from sqlalchemy.dialects.postgresql import JSONB
-# from .content_type import ContentType
+
 
 class Document(UUIDAuditBase):
     __tablename__ = "documents"

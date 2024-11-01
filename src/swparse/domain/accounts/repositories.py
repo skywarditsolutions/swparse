@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from advanced_alchemy.repository import SQLAlchemyAsyncRepository, SQLAlchemyAsyncSlugRepository
-from swparse.db.models import Role, User, UserOauthAccount, UserRole
+
+from swparse.db.models import ApiKeys, Role, User, UserOauthAccount, UserRole
 
 
 class UserRepository(SQLAlchemyAsyncRepository[User]):
@@ -26,3 +27,10 @@ class UserRoleRepository(SQLAlchemyAsyncRepository[UserRole]):
     """User Role SQLAlchemy Repository."""
 
     model_type = UserRole
+
+
+
+class ApiKeyRepository(SQLAlchemyAsyncRepository[ApiKeys]):
+    """API keys SQLAlchemy Repository."""
+
+    model_type = ApiKeys
