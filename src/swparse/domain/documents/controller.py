@@ -130,9 +130,9 @@ class DocumentController(Controller):
                 logger.error(f"Failed to retrieve the extracted file {e}")
                 _raise_http_exception(detail=f"Failed to retrieve the extracted file {e}", status_code=404)
         extracted_file_paths = db_obj.extracted_file_paths
-        extracted_file_paths = base64.b64decode(extracted_file_paths).decode("utf-8")
+        db_obj.extracted_file_paths = json.loads(base64.b64decode(extracted_file_paths).decode("utf-8"))
 
-        return json.loads(extracted_file_paths)
+        return db_obj
 
     @get(path=urls.LIST_DIR, guards=[requires_active_user])
     async def list_bucket_dirs(self) -> list[str]:
@@ -158,12 +158,12 @@ class DocumentController(Controller):
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
-                url,
-                files={"data": (data.filename, data.file, data.content_type)},
-                headers={
-                    "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
-                     f"{api_key_header}":f"{api_key}",
-                     },
+                    url,
+                    files={"data": (data.filename, data.file, data.content_type)},
+                    headers={
+                        "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
+                        f"{api_key_header}": f"{api_key}",
+                    },
                 )
             except NotAuthorizedException as err:
                 raise NotAuthorizedException(detail=err.detail, status_code=403)
@@ -260,7 +260,7 @@ class DocumentController(Controller):
         )
         if result_type not in extracted_file_paths:
 
-            #advanced extraction content type
+            # advanced extraction content type
             if result_type not in (ContentType.TABLE.value, ContentType.MARKDOWN_TABLE.value):
                 # Extracted file type does not exit
                 return None
