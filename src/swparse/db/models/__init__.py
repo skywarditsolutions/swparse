@@ -10,6 +10,7 @@ from .team_tag import team_tag
 from .user import User
 from .user_role import UserRole
 from .content_type import ContentType
+from .api_keys import ApiKeys, ApiKeyStatus
 
 __all__ = (
     "User",
@@ -23,5 +24,7 @@ __all__ = (
     "TeamMember",
     "TeamRoles",
     "Document",
-    "ContentType"
+    "ContentType",
+    "ApiKeys",
+    "ApiKeyStatus"
 )
