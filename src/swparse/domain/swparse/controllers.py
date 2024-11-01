@@ -294,11 +294,14 @@ class ParserController(Controller):
                         dfs = pd.read_html(result_html)
                         markdown_tbls = ""
                         for i, df in enumerate(dfs):
-                            markdown_tbls += (f"## Table {i + 1}\n\n")
-                            markdown_tbls +=df.to_markdown()
-                            markdown_tbls += "\n\n" 
+                            markdown_tbls += f"## Table {i + 1}\n\n"
+                            markdown_tbls += df.to_markdown()
+                            markdown_tbls += "\n\n"
 
-                        return JobResult(markdown="", html="", text="", table_md = markdown_tbls, job_metadata=jm)
+                        return JobResult(markdown="", html="", text="", table_md=markdown_tbls, job_metadata=jm)
+                    case ContentType.IMAGES.value:
+                        images = results.get("images")
+                        return JobResult(markdown="", html="", text="", images=images)
                     case _:
                         unsupported = f"Format {result_type} is currently unsupported."
                         raise HTTPException(unsupported)

@@ -51,6 +51,7 @@ class JobResult:
     text: str
     table: str | None = ""
     table_md: str | None = ""
+    images: str | None = None
     job_metadata: JobMetadata | None = None
 
 
