@@ -1,3 +1,23 @@
+## v0.5.0 (2024-11-02)
+
+### Feat
+
+- extract images from docx, store images for pdf, image, docx
+- API-key middleware auth for swparse route
+- new model for API key migrated
+- merge pptx parser
+- table markdown for advanced extraction and fix: extra index col in xlsx
+- add tables output to parsing api
+- add pptx to markdown parser
+
+### Fix
+
+- header error?
+- fix document detail api
+- xlsx, csv malformed headers when passing no header documents
+- replace html2text with pandas for markdown extraction in xlsx, advanced table extraction
+- remove default inserted indexing col when converting csv to html
+
 ## v0.4.1 (2024-10-29)
 
 ## v0.4.0 (2024-10-29)
