@@ -11,6 +11,7 @@ from swparse.domain.documents.controller import DocumentController
 from swparse.domain.swparse.controllers import ParserController
 from swparse.domain.tags.controllers import TagController
 from swparse.domain.teams.controllers import TeamController, TeamMemberController
+from swparse.domain.extractions.controller import ExtractionController
 
 if TYPE_CHECKING:
     from litestar.types import ControllerRouterHandler
@@ -25,6 +26,7 @@ route_handlers: list[ControllerRouterHandler] = [
     ParserController,
     AccessController,
     DocumentController,
+    ExtractionController,
     UserController,
     TeamController,
     UserRoleController,

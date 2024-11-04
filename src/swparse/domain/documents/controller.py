@@ -5,7 +5,7 @@ import json
 import mimetypes
 import os
 import tempfile
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, TypeVar
+from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
 import httpx
 import pandas as pd

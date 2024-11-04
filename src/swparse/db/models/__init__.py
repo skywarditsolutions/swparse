@@ -11,6 +11,7 @@ from .user import User
 from .user_role import UserRole
 from .content_type import ContentType
 from .api_keys import ApiKeys, ApiKeyStatus
+from .extraction import Extraction
 
 __all__ = (
     "User",
@@ -26,5 +27,6 @@ __all__ = (
     "Document",
     "ContentType",
     "ApiKeys",
-    "ApiKeyStatus"
+    "ApiKeyStatus",
+    "Extraction",
 )

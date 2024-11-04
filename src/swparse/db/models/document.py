@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from uuid import UUID
@@ -10,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 class Document(UUIDAuditBase):
     __tablename__ = "documents"
-    extracted_file_paths: Mapped[dict|None] = mapped_column(default=None, nullable=True)
+    extracted_file_paths: Mapped[dict | None] = mapped_column(default=None, nullable=True)
     file_name: Mapped[str] = mapped_column(index=True, nullable=False)
     file_size: Mapped[int | None] = mapped_column(nullable=True, default=None)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user_account.id", ondelete="cascade"), nullable=False)
