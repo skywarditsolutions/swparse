@@ -8,14 +8,14 @@ from s3fs import S3FileSystem
 from xls2xlsx import XLS2XLSX
 from pptx import Presentation
 from swparse.config.app import settings
-import re
 from pptx.shapes.base import BaseShape
-from mdutils.mdutils import MdUtils
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.shapes.shapetree import SlideShapes
 from logging import getLogger
-from mdutils.mdutils import MdUtils
 from operator import attrgetter
+from snakemd import Document as SnakeMdDocument
+from snakemd.elements import MDList
+from itertools import islice
 
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
@@ -128,39 +128,53 @@ def is_list_block(shape: BaseShape) -> bool:
             return True
     return False
 
+def is_list_nested(shape: BaseShape) -> bool:
+    levels = []
+    for para in shape.text_frame.paragraphs:
+        if para.level not in levels:
+            levels.append(para.level)
+        if len(levels) > 1:
+            return True
+    return False
 
-def add_to_list(nested_list: list, level: int, text: str):
+def add_to_list(nested_list: MDList, level: int, text: str):
     if level == 0:
-        nested_list.append(text)
+        nested_list._items.append(text) # type: ignore
     else:
-        if not nested_list or not isinstance(nested_list[-1], list):
-            nested_list.append([])
-        add_to_list(nested_list[-1], level - 1, text)
+        if not nested_list._items or not isinstance(nested_list._items[-1], list): # type: ignore
+            nested_list._items.append(MDList([])) # type: ignore
+        add_to_list(nested_list._items[-1], level - 1, text) # type: ignore
 
 
-def process_shapes(shapes: list[BaseShape], file: MdUtils):
+
+def process_shapes(shapes: list[BaseShape], file: SnakeMdDocument):
     try:
         for shape in shapes:
             if is_title(shape):
-                file.new_header(level=1, title=shape.text_frame.text)
+                file.add_heading(text=shape.text_frame.text, level=1)
             elif is_text_block(shape):
                 if is_list_block(shape):
-                    items = []
-                    for paragraph in shape.text_frame.paragraphs:
-                        add_to_list(items, paragraph.level, paragraph.text)
-                    file.new_list(items)
+                    if is_list_nested(shape):
+                        items = MDList([])
+                        for paragraph in shape.text_frame.paragraphs:
+                            add_to_list(items, paragraph.level, paragraph.text)
+                        file.add_block(items)
+                    else:
+                        items = []
+                        for paragraph in shape.text_frame.paragraphs:
+                            add_to_list(items, paragraph.level, paragraph.text)
+                        file.add_unordered_list(items=items)
                 else:
                     for paragraph in shape.text_frame.paragraphs:
-                        file.new_paragraph(text=paragraph.text)
+                        file.add_paragraph(text=paragraph.text)
             elif shape.shape_type == MSO_SHAPE_TYPE.PICTURE:
                 pass
             elif shape.shape_type == MSO_SHAPE_TYPE.TABLE:
-                cells = [cell.text for row in shape.table.rows for cell in row.cells]
-                file.new_table(
-                    columns=len(shape.table.columns),
-                    rows=len(shape.table.rows),
-                    text=cells,
-                    text_align="center",
+                column_names = [cell.text for cell in shape.table.rows[0].cells]
+                data = [[cell.text for cell in row.cells] for row in islice(shape.table.rows, 1, None)]
+                file.add_table(
+                    header=column_names,
+                    data=data,
                 )
             else:
                 pass
@@ -181,12 +195,12 @@ def process_shapes(shapes: list[BaseShape], file: MdUtils):
 def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
     try:
         prs = Presentation(pptx_content)
-        md_file = MdUtils(pptx_filename)
+        md_file = SnakeMdDocument()
         for idx, slide in enumerate(prs.slides):
             shapes = []
             shapes = sorted(ungroup_shapes(slide.shapes), key=attrgetter("top", "left"))
             process_shapes(shapes, md_file)
-        return md_file.get_md_text()
+        return str(md_file)
     except Exception as e:
         raise Exception
         
