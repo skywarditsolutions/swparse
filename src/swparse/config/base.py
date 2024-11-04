@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import binascii
 import json
 import os
@@ -109,7 +110,7 @@ class DatabaseSettings:
                 def decoder(bin_value: bytes) -> Any:
                     # the byte is the \x01 prefix for jsonb used by PostgreSQL.
                     # asyncpg returns it when format='binary'
-                    return decode_json(bin_value[1:])
+                    return decode_json(base64.b64decode(bin_value[1:]))
 
                 dbapi_connection.await_(
                     dbapi_connection.driver_connection.set_type_codec(
@@ -129,6 +130,7 @@ class DatabaseSettings:
                         format="binary",
                     ),
                 )
+
         elif self.URL.startswith("sqlite+aiosqlite"):
             engine = create_async_engine(
                 url=self.URL,
@@ -154,6 +156,7 @@ class DatabaseSettings:
             def _sqla_on_begin(dbapi_connection: Any) -> Any:  # pragma: no cover
                 """Emits a custom begin"""
                 dbapi_connection.exec_driver_sql("BEGIN")
+
         else:
             engine = create_async_engine(
                 url=self.URL,
