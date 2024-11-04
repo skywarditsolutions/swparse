@@ -5,12 +5,11 @@ import json
 import mimetypes
 import os
 import tempfile
-from typing import TYPE_CHECKING, Annotated, Literal, Optional, TypeVar
+from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
 import httpx
 import pandas as pd
 import structlog
-from advanced_alchemy.extensions.litestar import SQLAlchemyDTO, SQLAlchemyDTOConfig
 from litestar import Controller, get, post
 from litestar.datastructures import UploadFile
 from litestar.di import Provide
@@ -24,9 +23,10 @@ from s3fs import S3FileSystem
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType, User
-from swparse.db.models.document import Document
+from swparse.db.models.document import Document as DocumentModel
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
+from swparse.domain.documents.schemas import Document
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus
 from swparse.domain.swparse.utils import change_file_ext, extract_tables_from_html, get_file_name, save_file_s3
@@ -46,19 +46,6 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET
 
-config = SQLAlchemyDTOConfig(
-    exclude={"id", "created_at", "updated_at"},
-)
-WriteDTO = SQLAlchemyDTO[Annotated[Document, config]]
-ReadDTO = SQLAlchemyDTO[
-    Annotated[
-        Document,
-        SQLAlchemyDTOConfig(
-            exclude={"user_id"},
-        ),
-    ]
-]
-
 
 def _raise_http_exception(detail: str, status_code: int) -> None:
     raise HTTPException(detail=detail, status_code=status_code)
@@ -70,7 +57,6 @@ class DocumentController(Controller):
         "doc_service": Provide(provide_document_service),
     }
     signature_namespace = {"DocumentService": DocumentService}
-    return_dto = ReadDTO
 
     @get(
         operation_id="ListDocuments",
@@ -87,17 +73,16 @@ class DocumentController(Controller):
     ) -> OffsetPagination[Document]:
         """List documents."""
         user_id = current_user.id
-        docs, total = await doc_service.list_and_count(
+        filters = [
             CollectionFilter("user_id", values=[user_id]),
             limit_offset,
+        ]
+        docs, total = await doc_service.list_and_count(
+            *filters,
             order_by=[("updated_at", True)],
         )
-        return OffsetPagination[Document](
-            items=docs,
-            total=total,
-            limit=limit_offset.limit,
-            offset=limit_offset.offset,
-        )
+
+        return doc_service.to_schema(docs,  total=total, filters=filters, schema_type=Document)
 
     @get(
         operation_id="GetDocument",
@@ -118,21 +103,18 @@ class DocumentController(Controller):
     ) -> Document:
         """Get a Document."""
         db_obj = await doc_service.get(id)
-        logger.error("db_obj.extracted_file_paths")
 
         if db_obj.extracted_file_paths is None:
             try:
                 if await doc_service.check_job_status(db_obj.job_id):
                     extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
-                    await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
-                    db_obj = await doc_service.get(id)
+                    db_obj = await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
+
             except Exception as e:
                 logger.error(f"Failed to retrieve the extracted file {e}")
                 _raise_http_exception(detail=f"Failed to retrieve the extracted file {e}", status_code=404)
-        extracted_file_paths = db_obj.extracted_file_paths
-        db_obj.extracted_file_paths = json.loads(base64.b64decode(extracted_file_paths).decode("utf-8"))
 
-        return db_obj
+        return doc_service.to_schema(db_obj, schema_type=Document)
 
     @get(path=urls.LIST_DIR, guards=[requires_active_user])
     async def list_bucket_dirs(self) -> list[str]:
@@ -144,7 +126,7 @@ class DocumentController(Controller):
         )
         return s3.ls(f"{BUCKET}")  # type: ignore
 
-    @post(path=urls.DOCUMENT_UPLOAD, guards=[requires_active_user], return_dto=ReadDTO)
+    @post(path=urls.DOCUMENT_UPLOAD, guards=[requires_active_user])
     async def upload_document(
         self,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
@@ -171,18 +153,19 @@ class DocumentController(Controller):
                 raise HTTPException(detail="Document upload failed", status_code=500)
         stats = JobStatus(**(response.json()))
         file_size = len(content)
-        return await doc_service.create(
-            Document(
+        document= await doc_service.create(
+            DocumentModel(
                 file_name=data.filename,
                 file_size=file_size,
                 file_path=stats.s3_url,
                 user_id=current_user.id,
                 job_id=stats.id,
-                # extracted_file_paths=None,
             ),
         )
 
-    @get(path=urls.DOCUMENT_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
+        return doc_service.to_schema(document, schema_type=Document)
+
+    @get(path=urls.DOCUMENT_CONTENT, guards=[requires_active_user])
     async def get_document_content(
         self,
         doc_service: DocumentService,
@@ -224,7 +207,7 @@ class DocumentController(Controller):
             _raise_http_exception(f"Failed to read document: {e!s}", status_code=500)
         return None
 
-    @get(path=urls.EXTRACTED_CONTENT, guards=[requires_active_user], return_dto=WriteDTO)
+    @get(path=urls.EXTRACTED_CONTENT, guards=[requires_active_user])
     async def get_extracted_content(
         self,
         doc_service: DocumentService,
@@ -249,8 +232,6 @@ class DocumentController(Controller):
             extracted_file_paths = await doc_service.get_extracted_file_paths(db_obj.job_id)
             db_obj = await doc_service.update(item_id=db_obj.id, data={"extracted_file_paths": extracted_file_paths})
 
-        raw_file_paths = base64.b64decode(db_obj.extracted_file_paths).decode()
-        extracted_file_paths = json.loads(raw_file_paths)
 
         s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -306,7 +287,6 @@ class DocumentController(Controller):
             if not image_key:
                 _raise_http_exception("image_key is required", status_code=400)
             images = json.loads(extracted_file_path)
-            print(images)
             image_path = images.get(image_key)
             if image_path:
                 with s3fs.open(image_path, "rb") as f:
@@ -319,29 +299,3 @@ class DocumentController(Controller):
             content: bytes = f.read()
 
         return content.decode(encoding="utf-8", errors="ignore")
-
-    @get(path=urls.EXTRACTED_CONTENT_PRESIGNED_URL, guards=[requires_active_user])
-    async def get_extracted_file_presigned_url(
-        self,
-        doc_service: DocumentService,
-        doc_id: Annotated[UUID, Parameter(title="Document ID", description="The document to retrieve.")],
-        result_type: str = "markdown",
-    ) -> str | None:
-        doc_obj = await doc_service.get(doc_id)
-        if not doc_obj:
-            _raise_http_exception(detail=f"Document {id} is not found", status_code=404)
-
-        if doc_obj.extracted_file_paths is None and not await doc_service.check_job_status(doc_obj.job_id):
-            _raise_http_exception("Uploaded document is not extracted yet.", status_code=400)
-
-        if doc_obj.extracted_file_paths is None and await doc_service.check_job_status(doc_obj.job_id):
-            extracted_file_paths = await doc_service.get_extracted_file_paths(doc_obj.job_id)
-            await doc_service.update(item_id=doc_obj.id, data={"extracted_file_paths": extracted_file_paths})
-            doc_obj = await doc_service.get(id)
-
-        extracted_file_paths: dict = doc_obj.extracted_file_paths
-        if result_type not in extracted_file_paths:
-            # Extracted file does not exit
-            return None
-        extracted_file_path = extracted_file_paths[result_type]
-        return await doc_service.get_presigned_url(extracted_file_path)()
