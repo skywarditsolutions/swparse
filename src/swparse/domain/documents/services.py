@@ -3,7 +3,6 @@ from __future__ import annotations
 import httpx
 import os
 from typing import TYPE_CHECKING, Any
-from s3fs import S3FileSystem
 from swparse.config.app import settings
 
 from advanced_alchemy.repository import Empty, EmptyType, ErrorMessages
@@ -12,7 +11,6 @@ from advanced_alchemy.service import (
     SQLAlchemyAsyncRepositoryService,
 )
 from litestar_saq import Queue
-from litestar.exceptions import HTTPException
 from swparse.db.models import Document
 from swparse.domain.swparse.schemas import JobStatus, Status
 
@@ -98,27 +96,9 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
             response = await client.get(
                 url,
                 headers={
-                "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
-                f"{api_key_header}":f"{api_key}",
+                    "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
+                    f"{api_key_header}": f"{api_key}",
                 },
             )
         job_status = JobStatus(**(response.json()))
         return job_status.status == Status.complete
-
-
-    async def get_extracted_file_paths(self, job_id: str) -> dict[str, str]:
-        job_key = queue.job_key_from_id(job_id=job_id)
-        job = await queue.job(job_key=job_key)
-        if not job:
-            raise HTTPException(detail=f"Job {job_id} is not found", status_code=404)
-        return job.result
-
-    async def get_presigned_url(self, s3_url: str) -> str | None:
-        expiry_time = 3600
-        s3 = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-        return s3.url(path=s3_url, expires=expiry_time)

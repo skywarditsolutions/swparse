@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 from uuid import UUID
 from swparse.lib.schema import CamelizedBaseStruct
 from swparse.db.models.extraction import ExtractionStatus
@@ -15,3 +16,4 @@ class Extraction(CamelizedBaseStruct):
     job_id: str
     file_path: str
     status: ExtractionStatus
+    document_id: Optional[UUID]

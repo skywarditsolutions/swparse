@@ -6,7 +6,7 @@ from uuid import UUID
 import httpx
 import structlog
 
-from litestar import Controller, get, post
+from litestar import Controller, get, post, delete
 from litestar.di import Provide
 from litestar.pagination import OffsetPagination
 from litestar.repository.filters import CollectionFilter, LimitOffset
@@ -17,6 +17,10 @@ from litestar.exceptions import HTTPException, NotAuthorizedException
 
 from swparse.db.models.user import User
 from swparse.db.models.extraction import Extraction as ExtractionModel, ExtractionStatus
+from swparse.db.models.document import Document as DocumentModel
+from swparse.domain.accounts.guards import requires_active_user
+from swparse.domain.documents.dependencies import provide_document_service
+from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus, Status
 
 from .dependencies import provide_extraction_serivice
@@ -34,8 +38,13 @@ class ExtractionController(Controller):
     tags = ["Extractions"]
     dependencies = {
         "extraction_service": Provide(provide_extraction_serivice),
+        "document_service": Provide(provide_document_service),
     }
-    signature_namespace = {"ExtractionService": ExtractionService}
+    signature_namespace = {
+        "ExtractionService": ExtractionService,
+        "DocumentSerivce": DocumentService,
+    }
+    guards = [requires_active_user]
     dto = None
     return_dto = None
     path = "/api/extractions"
@@ -92,11 +101,21 @@ class ExtractionController(Controller):
         path="/{extraction_id:uuid}",
     )
     async def check_extraction_status(
-        self, extraction_id: UUID, current_user: User, extraction_service: ExtractionService
+        self,
+        extraction_id: UUID,
+        current_user: User,
+        extraction_service: ExtractionService,
+        document_service: DocumentService,
     ) -> Extraction:
-        extraction = await extraction_service.get(extraction_id)
-        if extraction.user_id != current_user.id:
+        extraction = await extraction_service.get_one_or_none(
+            CollectionFilter("id", [extraction_id]),
+            CollectionFilter("user_id", [current_user.id]),
+        )
+        if not extraction:
             raise HTTPException(detail="Extraction not found", status_code=404)
+
+        if extraction.status in [ExtractionStatus.FAILED, ExtractionStatus.COMPLETE]:
+            raise HTTPException(detail="Unsupported by state", status_code=409)
 
         async with httpx.AsyncClient() as client:
             try:
@@ -109,7 +128,9 @@ class ExtractionController(Controller):
             except NotAuthorizedException as err:
                 raise NotAuthorizedException(detail=err.detail, status_code=403)
             except Exception as err:
-                raise HTTPException(detail="Failed to get status", status_code=500)
+                extraction.status = ExtractionStatus.FAILED
+                extraction = await extraction_service.update(extraction)
+                return extraction_service.to_schema(extraction, schema_type=Extraction)
 
         job = JobStatus(**(response.json()))
 
@@ -117,8 +138,20 @@ class ExtractionController(Controller):
 
         if job.status == Status.complete:
             extraction.status = ExtractionStatus.COMPLETE
+            extracted_file_paths = await extraction_service.get_extracted_file_paths(extraction.job_id)
+            document = await document_service.create(
+                DocumentModel(
+                    file_name=extraction.file_name,
+                    file_size=extraction.file_size,
+                    file_path=extraction.file_path,
+                    user_id=current_user.id,
+                    job_id=extraction.job_id,
+                    extracted_file_paths=extracted_file_paths,
+                )
+            )
+            extraction.document_id = document.id
             updated = True
-            # TODO: Create document
+
         elif job.status == Status.failed:
             extraction.status = ExtractionStatus.FAILED
             updated = True
@@ -127,3 +160,51 @@ class ExtractionController(Controller):
             extraction = await extraction_service.update(extraction)
 
         return extraction_service.to_schema(extraction, schema_type=Extraction)
+
+    # TODO
+    # @post(
+    #     operation_id="RetryExtraction",
+    #     name="extraction:retry",
+    #     description="Retry a failed extraction",
+    #     path="/{extraction_id:uuid}",
+    # )
+    # async def retry_extraction(
+    #     self,
+    #     extraction_id: UUID,
+    #     extraction_service: ExtractionService,
+    #     current_user: User,
+    # ) -> Extraction:
+    #     extraction = await extraction_service.get_one_or_none(
+    #         CollectionFilter("id", [extraction_id]),
+    #         CollectionFilter("user_id", [current_user.id]),
+    #     )
+    #     if not extraction:
+    #         raise HTTPException(detail="Extraction not found", status_code=404)
+    #     if extraction.status != ExtractionStatus.FAILED:
+    #         raise HTTPException(detail="Unsupported by state", status_code=409)
+
+    #     await extraction_service.create_job()
+    #     extraction.status = ExtractionStatus.PENDING
+
+    #     return extraction_service.to_schema(extraction, schema_type=Extraction)
+
+    @delete(
+        operation_id="DeleteExtraction",
+        name="extraction:delete",
+        description="Delete an extraction",
+        path="/{extraction_id:uuid}",
+    )
+    async def delete_extraction(
+        self,
+        extraction_id: UUID,
+        current_user: User,
+        extraction_service: ExtractionService,
+    ) -> None:
+        extraction = await extraction_service.get_one_or_none(
+            CollectionFilter("id", [extraction_id]),
+            CollectionFilter("user_id", [current_user.id]),
+        )
+        if not extraction:
+            raise HTTPException(detail="Extraction not found", status_code=404)
+
+        await extraction_service.delete(extraction.id)

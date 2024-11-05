@@ -10,4 +10,4 @@ class Document(BaseStruct):
     file_size: int
     job_id: str
     file_path: str
-    extracted_file_paths: dict[str, str] | None = None
+    extracted_file_paths: dict[str, str]
