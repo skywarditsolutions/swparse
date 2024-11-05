@@ -145,20 +145,23 @@ class ExtractionController(Controller):
         if job.status == Status.complete:
             extraction.status = ExtractionStatus.COMPLETE
             extracted_file_paths = await extraction_service.get_extracted_file_paths(extraction.job_id)
-            document = await document_service.create(
-                DocumentModel(
-                    file_name=extraction.file_name,
-                    file_size=extraction.file_size,
-                    file_path=extraction.file_path,
-                    user_id=current_user.id,
-                    job_id=extraction.job_id,
-                    extracted_file_paths=extracted_file_paths,
+            if extracted_file_paths:
+                document = await document_service.create(
+                    DocumentModel(
+                        file_name=extraction.file_name,
+                        file_size=extraction.file_size,
+                        file_path=extraction.file_path,
+                        user_id=current_user.id,
+                        job_id=extraction.job_id,
+                        extracted_file_paths=extracted_file_paths,
+                    )
                 )
-            )
-            extraction.document_id = document.id
+                extraction.document_id = document.id
+            else:
+                extraction.status = ExtractionStatus.FAILED
             updated = True
 
-        elif job.status == Status.failed:
+        elif job.status in (Status.failed, Status.aborted):
             extraction.status = ExtractionStatus.FAILED
             updated = True
 
@@ -205,7 +208,8 @@ class ExtractionController(Controller):
             file_data=content,
             content_type=content_type
             )
-        await extraction_service.create_job(old_file)
+        job = await extraction_service.create_job(old_file)
+        extraction.job_id = job.id
         extraction.status = ExtractionStatus.PENDING
 
         return extraction_service.to_schema(extraction, schema_type=Extraction)
