@@ -1,38 +1,44 @@
 from __future__ import annotations
 
+import mimetypes
 import os
 from typing import Annotated
 from uuid import UUID
+
 import httpx
 import structlog
-
-from litestar import Controller, get, post, delete
-from litestar.di import Provide
-from litestar.pagination import OffsetPagination
-from litestar.repository.filters import CollectionFilter, LimitOffset
+from litestar import Controller, delete, get, post
 from litestar.datastructures import UploadFile
-from litestar.params import Body
+from litestar.di import Provide
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException, NotAuthorizedException
+from litestar.pagination import OffsetPagination
+from litestar.params import Body
+from litestar.repository.filters import CollectionFilter, LimitOffset
+from s3fs import S3FileSystem
 
-from swparse.db.models.user import User
-from swparse.db.models.extraction import Extraction as ExtractionModel, ExtractionStatus
+from swparse.config.app import settings
 from swparse.db.models.document import Document as DocumentModel
+from swparse.db.models.extraction import Extraction as ExtractionModel
+from swparse.db.models.extraction import ExtractionStatus
+from swparse.db.models.user import User
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus, Status
 
 from .dependencies import provide_extraction_serivice
-from .services import ExtractionService
 from .schemas import Extraction
+from .services import ExtractionService
 
 logger = structlog.get_logger()
 
 SWPARSE_URL = f"{os.environ.get('APP_URL')}"
 SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
 SWPARSE_API_HEADER = os.environ.get("PARSER_API_HEADER")
-
+MINIO_ROOT_USER = settings.storage.ROOT_USER
+MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+BUCKET = settings.storage.BUCKET
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -162,31 +168,47 @@ class ExtractionController(Controller):
         return extraction_service.to_schema(extraction, schema_type=Extraction)
 
     # TODO
-    # @post(
-    #     operation_id="RetryExtraction",
-    #     name="extraction:retry",
-    #     description="Retry a failed extraction",
-    #     path="/{extraction_id:uuid}",
-    # )
-    # async def retry_extraction(
-    #     self,
-    #     extraction_id: UUID,
-    #     extraction_service: ExtractionService,
-    #     current_user: User,
-    # ) -> Extraction:
-    #     extraction = await extraction_service.get_one_or_none(
-    #         CollectionFilter("id", [extraction_id]),
-    #         CollectionFilter("user_id", [current_user.id]),
-    #     )
-    #     if not extraction:
-    #         raise HTTPException(detail="Extraction not found", status_code=404)
-    #     if extraction.status != ExtractionStatus.FAILED:
-    #         raise HTTPException(detail="Unsupported by state", status_code=409)
+    @post(
+        operation_id="RetryExtraction",
+        name="extraction:retry",
+        description="Retry a failed extraction",
+        path="/{extraction_id:uuid}",
+    )
+    async def retry_extraction(
+        self,
+        extraction_id: UUID,
+        extraction_service: ExtractionService,
+        document_service: DocumentService,
+        current_user: User,
+    ) -> Extraction:
+        extraction = await extraction_service.get_one_or_none(
+            CollectionFilter("id", [extraction_id]),
+            CollectionFilter("user_id", [current_user.id]),
+        )
+        if not extraction:
+            raise HTTPException(detail="Extraction not found", status_code=404)
+        if extraction.status != ExtractionStatus.FAILED:
+            raise HTTPException(detail="Unsupported by state", status_code=409)
 
-    #     await extraction_service.create_job()
-    #     extraction.status = ExtractionStatus.PENDING
+        s3fs = S3FileSystem(
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
 
-    #     return extraction_service.to_schema(extraction, schema_type=Extraction)
+        with s3fs.open(extraction.file_path, "rb") as f:
+            content: bytes = f.read()
+        content_type, _ = mimetypes.guess_type(url=extraction.file_path) 
+        old_file = UploadFile(
+            filename=extraction.file_name,
+            file_data=content,
+            content_type=content_type
+            )
+        await extraction_service.create_job(old_file)
+        extraction.status = ExtractionStatus.PENDING
+
+        return extraction_service.to_schema(extraction, schema_type=Extraction)
 
     @delete(
         operation_id="DeleteExtraction",
