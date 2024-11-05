@@ -106,7 +106,7 @@ class DocumentService(SQLAlchemyAsyncRepositoryService[Document]):
         return job_status.status == Status.complete
 
 
-    async def get_extracted_file_paths(self, job_id: str) -> dict:
+    async def get_extracted_file_paths(self, job_id: str) -> dict[str, str]:
         job_key = queue.job_key_from_id(job_id=job_id)
         job = await queue.job(job_key=job_key)
         if not job:
