@@ -43,6 +43,7 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
                         f"{SWPARSE_API_HEADER}": f"{SWPARSE_API_KEY}",
                     },
                 )
+                response.raise_for_status()
             except NotAuthorizedException as err:
                 raise NotAuthorizedException(detail=err.detail, status_code=403)
             except Exception as err:

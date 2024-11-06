@@ -22,6 +22,7 @@ class Status(enum.StrEnum):
     deferred = "PENDING"
     failed = "ERROR"
     aborted = "ERROR"
+    aborting = "ERROR"
     new = "PENDING"
     queued = "PENDING"
     active = "PENDING"
