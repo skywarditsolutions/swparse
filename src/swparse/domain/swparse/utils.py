@@ -2,6 +2,7 @@ import io
 import os
 from uuid import uuid4
 from typing import IO
+import hashlib
 
 from lxml import html
 from s3fs import S3FileSystem
@@ -205,3 +206,7 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
         raise Exception
         
 
+def get_hashed_file_name(filename:str, content:bytes)->str:
+    file_ext = filename.split(".")[-1]
+    check_sum = hashlib.md5(content).hexdigest()
+    return f"{check_sum}.{file_ext}"
