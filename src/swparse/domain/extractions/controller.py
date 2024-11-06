@@ -9,7 +9,7 @@ import structlog
 from litestar import Controller, get, post, delete
 from litestar.di import Provide
 from litestar.pagination import OffsetPagination
-from litestar.repository.filters import CollectionFilter, LimitOffset
+from litestar.repository.filters import CollectionFilter
 from litestar.datastructures import UploadFile
 from litestar.params import Body
 from litestar.enums import RequestEncodingType
@@ -59,14 +59,12 @@ class ExtractionController(Controller):
         self,
         extraction_service: ExtractionService,
         current_user: User,
-        limit_offset: LimitOffset,
     ) -> OffsetPagination[Extraction]:
         filters = [
             CollectionFilter("user_id", [current_user.id]),
-            limit_offset,
         ]
         results, count = await extraction_service.list_and_count(*filters)
-        return extraction_service.to_schema(data=results, total=count, schema_type=Extraction, filters=filters)
+        return extraction_service.to_schema(data=results, total=count, schema_type=Extraction)
 
     @post(
         operation_id="CreateExtraction",

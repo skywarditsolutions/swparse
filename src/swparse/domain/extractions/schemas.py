@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from swparse.lib.schema import CamelizedBaseStruct
@@ -17,3 +18,5 @@ class Extraction(CamelizedBaseStruct):
     file_path: str
     status: ExtractionStatus
     document_id: Optional[UUID]
+    created_at: datetime
+    updated_at: datetime
