@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import mimetypes
 import os
 from typing import Annotated
 from uuid import UUID
 
-import boto3
 import httpx
 import structlog
 from litestar import Controller, delete, get, post
@@ -29,7 +26,6 @@ from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus, Status
-from swparse.domain.swparse.utils import get_hashed_file_name
 
 from .dependencies import provide_extraction_serivice
 from .schemas import Extraction
@@ -98,37 +94,14 @@ class ExtractionController(Controller):
         current_user: User,
     ) -> Extraction:
         content = await data.read()
-
-        hashed_filename = get_hashed_file_name(data.filename, content)
-
-        s3_url = f"{BUCKET}/{hashed_filename}"
-
-        file_size=len(content)
-        # if s3fs.exists(s3_url):
-        file_info = s3fs.info(s3_url)
-        if file_info and file_info.get("Metadata"):
-            pass
-            # raw_json = file_info["Metadata"].get("metadata_dict")
-            # retrieved_metadata_dict = json.loads(raw_json)
-            # extraction = ExtractionModel(
-            #         file_name=data.filename,
-            #         file_size = file_size,
-            #         file_path=s3_url,
-            #         user_id=current_user.id,
-            #         job_id=retrieved_metadata_dict["json_id"],
-            #         document_id = retrieved_metadata_dict["document_id"],
-            #         status = ExtractionStatus.COMPLETE
-            #     )
-
-        else:
-             job = await extraction_service.create_job(data)
-             extraction = ExtractionModel(
-                    file_name=data.filename,
-                    file_size=file_size,
-                    file_path=job.s3_url,
-                    user_id=current_user.id,
-                    job_id=job.id,
-                )
+        job = await extraction_service.create_job(data)
+        extraction = ExtractionModel(
+            file_name=data.filename,
+            file_size=len(content),
+            file_path=job.s3_url,
+            user_id=current_user.id,
+            job_id=job.id,
+        )
 
         extraction = await extraction_service.create(extraction)
 
@@ -190,14 +163,7 @@ class ExtractionController(Controller):
                         extracted_file_paths=extracted_file_paths,
                     )
                 )
-
-                boto_s3 = boto3.client(
-                    's3',
-                    endpoint_url=settings.storage.ENDPOINT_URL,
-                    aws_access_key_id=MINIO_ROOT_USER,
-                    aws_secret_access_key=MINIO_ROOT_PASSWORD,
-                )
-                boto_s3.put
+                
 
                 extraction.document_id = document.id
             else:

@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeVar
 from uuid import uuid4
 
-import hashlib
 import pandas as pd
 import structlog
 from litestar import Controller, MediaType, get, post
@@ -52,7 +51,6 @@ class ParserController(Controller):
     ) -> JobStatus:
         content = await data.read()
         filename = data.filename
-        new_uuid = uuid4()
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -62,17 +60,32 @@ class ParserController(Controller):
         )
         hashed_filename = get_hashed_file_name(filename, content)
         s3_url = f"{BUCKET}/{hashed_filename}"
+
+        if s3.exists(s3_url):
+            job = await queue.enqueue(
+                Job(
+                    "get_extracted_url",
+                    kwargs={
+                        "s3_url": s3_url,
+                    },
+                    timeout=0,
+                ),
+            ) 
+            return JobStatus(id=job.id, status=Status.complete, s3_url=s3_url)
         
         with s3.open(s3_url, "wb") as f:
             f.write(content)
+
+        kwargs = {
+            "s3_url": s3_url,
+            "ext":data.content_type
+        }
 
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 Job(
                     "parse_pdf_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -80,10 +93,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_image_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -91,10 +101,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "extract_text_files",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -105,10 +112,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -117,9 +121,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_docx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -128,9 +130,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_doc_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -139,9 +139,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_ppt_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -150,9 +148,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_pptx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -160,10 +156,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "extract_string",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )

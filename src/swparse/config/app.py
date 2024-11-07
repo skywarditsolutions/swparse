@@ -47,6 +47,7 @@ saq = SAQConfig(
                 "swparse.domain.swparse.tasks.parse_docx_s3",
                 "swparse.domain.swparse.tasks.parse_image_s3",
                 "swparse.domain.swparse.tasks.parse_pdf_s3",
+                "swparse.domain.swparse.tasks.get_extracted_url",
                 "swparse.domain.swparse.tasks.parse_pdf_page_s3",
                 "swparse.domain.swparse.tasks.parse_xlsx_s3",
                 "swparse.domain.swparse.tasks.extract_string",
