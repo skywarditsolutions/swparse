@@ -16,6 +16,9 @@ from operator import attrgetter
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
 from itertools import islice
+from lark import Lark, Transformer
+
+import re
 
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
@@ -110,14 +113,13 @@ def is_title(shape: BaseShape) -> bool:
 def is_text_block(shape: BaseShape) -> bool:
     if shape.has_text_frame:
         if (
-            shape.is_placeholder
-            and shape.placeholder_format.type == PP_PLACEHOLDER.BODY
-        ) or (
-            shape.is_placeholder
-            and shape.placeholder_format.type == PP_PLACEHOLDER.OBJECT
-        ) or shape.shape_type == MSO_SHAPE_TYPE.TEXT_BOX:
+            (shape.is_placeholder and shape.placeholder_format.type == PP_PLACEHOLDER.BODY)
+            or (shape.is_placeholder and shape.placeholder_format.type == PP_PLACEHOLDER.OBJECT)
+            or shape.shape_type == MSO_SHAPE_TYPE.TEXT_BOX
+        ):
             return True
     return False
+
 
 def is_list_block(shape: BaseShape) -> bool:
     levels = []
@@ -128,6 +130,7 @@ def is_list_block(shape: BaseShape) -> bool:
             return True
     return False
 
+
 def is_list_nested(shape: BaseShape) -> bool:
     levels = []
     for para in shape.text_frame.paragraphs:
@@ -137,14 +140,14 @@ def is_list_nested(shape: BaseShape) -> bool:
             return True
     return False
 
+
 def add_to_list(nested_list: MDList, level: int, text: str):
     if level == 0:
-        nested_list._items.append(text) # type: ignore
+        nested_list._items.append(text)  # type: ignore
     else:
-        if not nested_list._items or not isinstance(nested_list._items[-1], list): # type: ignore
-            nested_list._items.append(MDList([])) # type: ignore
-        add_to_list(nested_list._items[-1], level - 1, text) # type: ignore
-
+        if not nested_list._items or not isinstance(nested_list._items[-1], list):  # type: ignore
+            nested_list._items.append(MDList([]))  # type: ignore
+        add_to_list(nested_list._items[-1], level - 1, text)  # type: ignore
 
 
 def process_shapes(shapes: list[BaseShape], file: SnakeMdDocument):
@@ -180,14 +183,10 @@ def process_shapes(shapes: list[BaseShape], file: SnakeMdDocument):
                 pass
             try:
                 ph = shape.placeholder_format
-                if (
-                    ph.type == PP_PLACEHOLDER.OBJECT
-                    and hasattr(shape, "image")
-                    and getattr(shape, "image")
-                ):
+                if ph.type == PP_PLACEHOLDER.OBJECT and hasattr(shape, "image") and getattr(shape, "image"):
                     pass
             except:
-                pass  
+                pass
     except Exception as e:
         raise Exception
 
@@ -203,5 +202,44 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
         return str(md_file)
     except Exception as e:
         raise Exception
-        
 
+
+
+class TreeToJson(Transformer):
+    def start(self, items):  
+        return [items]
+
+    def instruction(self, items):
+        return {"table_name": items[0], "labels": items[1:]}
+
+    def table_ident(self, items):
+        return items[0].value
+
+    def value(self, items):
+        if len(items) == 1:
+            return {"name": items[0]}
+        return {"name": items[0], "type": items[1]}
+
+    def field(self, items):
+        return items[0].value
+
+    def type(self, items):
+        return items[0].value
+
+
+def syntax_parser(extraction_query: str):
+    lang = """start: instruction+
+        instruction: table_ident value+ ";"?
+        table_ident: WORD "="
+        value: field type?
+        field: WORD","?
+        type: ":" DATATYPES ","?
+        DATATYPES: DATATYPE"[]"?
+        DATATYPE: "string" | "integer" | "float" | "date" | "boolean"
+        %import common.WORD
+        %import common.WS
+        %ignore WS
+        """
+    lang_parser = Lark(lang)
+    tree = lang_parser.parse(extraction_query)
+    return TreeToJson().transform(tree)
