@@ -202,12 +202,13 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
         return str(md_file)
     except Exception as e:
         raise Exception
+    
 
 
 
 class TreeToJson(Transformer):
     def start(self, items):  
-        return [items]
+        return items
 
     def instruction(self, items):
         return {"table_name": items[0], "labels": items[1:]}
@@ -217,7 +218,7 @@ class TreeToJson(Transformer):
 
     def value(self, items):
         if len(items) == 1:
-            return {"name": items[0]}
+            return {"name": items[0], "type": "string"}
         return {"name": items[0], "type": items[1]}
 
     def field(self, items):
@@ -225,6 +226,7 @@ class TreeToJson(Transformer):
 
     def type(self, items):
         return items[0].value
+
 
 
 def syntax_parser(extraction_query: str):
