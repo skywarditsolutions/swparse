@@ -17,7 +17,7 @@ from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.middlewares import ApiKeyAuthMiddleware
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
-from swparse.domain.swparse.utils import extract_tables_from_html
+from swparse.domain.swparse.utils import extract_tables_from_html, get_hashed_file_name
 
 from .urls import PARSER_BASE
 
@@ -29,10 +29,8 @@ BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
-
 # def _raise_http_exception(detail: str, status_code: int) -> None:
 #     raise HTTPException(detail=detail, status_code=status_code)
-
 
 class ParserController(Controller):
     tags = ["Parsers"]
@@ -52,8 +50,7 @@ class ParserController(Controller):
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
         content = await data.read()
-        file_name = data.filename
-        new_uuid = uuid4()
+        filename = data.filename
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -61,17 +58,34 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-        s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+        hashed_filename = get_hashed_file_name(filename, content)
+        s3_url = f"{BUCKET}/{hashed_filename}"
+
+        if s3.exists(s3_url):
+            job = await queue.enqueue(
+                Job(
+                    "get_extracted_url",
+                    kwargs={
+                        "s3_url": s3_url,
+                    },
+                    timeout=0,
+                ),
+            ) 
+            return JobStatus(id=job.id, status=Status.complete, s3_url=s3_url)
+        
         with s3.open(s3_url, "wb") as f:
             f.write(content)
+
+        kwargs = {
+            "s3_url": s3_url,
+            "ext":data.content_type
+        }
 
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 Job(
                     "parse_pdf_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -79,10 +93,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_image_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -90,10 +101,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "extract_text_files",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -104,10 +112,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -116,9 +121,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_docx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -127,9 +130,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_doc_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -138,9 +139,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_ppt_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -149,9 +148,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_pptx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -159,10 +156,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "extract_string",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
