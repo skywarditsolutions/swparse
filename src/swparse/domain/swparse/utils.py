@@ -210,6 +210,7 @@ class TreeToJson(Transformer):
     def __init__(self, visit_tokens = True):
         super().__init__(visit_tokens)
         self.fields = set()
+        self.tables = set()
     def start(self, items):  
         return items
 
@@ -217,6 +218,10 @@ class TreeToJson(Transformer):
         return {"table_name": items[0], "labels": items[1:]}
 
     def table_ident(self, items):
+        table_name = items[0].value
+        if table_name in self.tables:
+            raise Exception(f"Duplicate table name: {table_name}")
+        self.tables.add(table_name)
         return items[0].value
 
     def value(self, items):
