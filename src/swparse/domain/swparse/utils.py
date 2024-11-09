@@ -207,6 +207,9 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
 
 
 class TreeToJson(Transformer):
+    def __init__(self, visit_tokens = True):
+        super().__init__(visit_tokens)
+        self.fields = set()
     def start(self, items):  
         return items
 
@@ -222,6 +225,10 @@ class TreeToJson(Transformer):
         return {"name": items[0], "type": items[1]}
 
     def field(self, items):
+        field_name = items[0].value
+        if field_name in self.fields:
+            raise Exception(f"Duplicate field name: {field_name}")
+        self.fields.add(field_name)
         return items[0].value
 
     def type(self, items):
@@ -232,13 +239,13 @@ class TreeToJson(Transformer):
 def syntax_parser(extraction_query: str):
     lang = """start: instruction+
         instruction: table_ident value+ ";"?
-        table_ident: WORD "="
+        table_ident: SNAKECASE "="
         value: field type?
-        field: WORD","?
+        field: SNAKECASE ","?
+        SNAKECASE: /[a-z0-9]+(_[a-z0-9]+)*/
         type: ":" DATATYPES ","?
         DATATYPES: DATATYPE"[]"?
         DATATYPE: "string" | "integer" | "float" | "date" | "boolean"
-        %import common.WORD
         %import common.WS
         %ignore WS
         """
