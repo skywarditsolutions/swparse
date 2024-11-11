@@ -210,13 +210,22 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
 
 
 class TreeToJson(Transformer):
-    def start(self, items: dict[str, str]):
+    def __init__(self, visit_tokens: bool = True):
+        super().__init__(visit_tokens)
+        self.fields = set()
+        self.tables = set()
+
+    def start(self, items: dict):
         return items
 
     def instruction(self, items: dict[str, str]):
         return {"table_name": items[0], "labels": items[1:]}
 
-    def table_ident(self, items: dict[str, str]):
+    def table_ident(self, items: dict):
+        table_name = items[0].value
+        if table_name in self.tables:
+            raise Exception(f"Duplicate table name: {table_name}")
+        self.tables.add(table_name)
         return items[0].value
 
     def value(self, items: dict[str, str]):
@@ -224,7 +233,11 @@ class TreeToJson(Transformer):
             return {"name": items[0], "type": "string"}
         return {"name": items[0], "type": items[1]}
 
-    def field(self, items: dict[str, str]):
+    def field(self, items: dict):
+        field_name = items[0].value
+        if field_name in self.fields:
+            raise Exception(f"Duplicate field name: {field_name}")
+        self.fields.add(field_name)
         return items[0].value
 
     def type(self, items: dict[str, str]):
@@ -291,12 +304,12 @@ def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
                 continue
 
             for entity in entities:
-                if entity["label"] in int_labels:
-                    match = re.search(r"-?\d+", entity["text"])
-                    entity["text"] = int(match.group()) if match else None
-                elif entity["label"] in float_labels:
+                if entity["label"] in int_labels or entity["label"] in float_labels:
                     match = re.search(r"-?\d+(\.\d+)?", entity["text"])
-                    entity["text"] = float(match.group()) if match else None
+                    if entity["label"] in int_labels:
+                        entity["text"] = int(match.group()) if match else None
+                    else:
+                        entity["text"] = float(match.group()) if match else None
 
                 if entity["text"]:
                     if entity["label"] in list_labels:
