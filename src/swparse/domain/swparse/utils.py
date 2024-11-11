@@ -219,7 +219,20 @@ class TreeToJson(Transformer):
         return items
 
     def instruction(self, items: dict[str, str]):
-        return {"table_name": items[0], "labels": items[1:]}
+        return {"mode": items[-1], "table_name": items[0], "labels": items[1:-1]}
+
+    def mode(self, items: dict):
+        mode_map = {
+            "by_sentence": "sent",
+            "sent": "sent",
+            "bysentence": "sent",
+            "by_line": "ln",
+            "ln": "ln",
+            "byline": "ln",
+        }
+        if not len(items):
+            return "sent"
+        return mode_map[items[0].value.replace(" ", "_").lower()]
 
     def table_ident(self, items: dict):
         table_name = items[0].value
@@ -229,9 +242,10 @@ class TreeToJson(Transformer):
         return items[0].value
 
     def value(self, items: dict[str, str]):
+        name = items[0].replace(" ", "_").lower()
         if len(items) == 1:
-            return {"name": items[0], "type": "string"}
-        return {"name": items[0], "type": items[1]}
+            return {"name": name, "type": "string"}
+        return {"name": name, "type": items[1]}
 
     def field(self, items: dict):
         field_name = items[0].value
@@ -244,16 +258,18 @@ class TreeToJson(Transformer):
         return items[0].value
 
 
-def syntax_parser(extraction_query: str):
+def syntax_parser(extraction_query: str) -> list[dict]:
     lang = """start: instruction+
-        instruction: table_ident value+ ";"?
-        table_ident: SNAKECASE "="
+        instruction: table_ident value+ mode ";"?
+        table_ident: FIELD_NAME "="
         value: field type?
-        field: SNAKECASE ","?
-        SNAKECASE: /[a-z0-9]+(_[a-z0-9]+)*/
+        field: FIELD_NAME ","?
+        mode: ("-"MODE)?
+        MODE: /by( |_)?sentence|by( |_)?line|ln|sent/i
+        FIELD_NAME: /[a-zA-Z0-9_]+((_| )[a-zA-Z0-9_]+)*/
         type: ":" DATATYPES ","?
         DATATYPES: DATATYPE"[]"?
-        DATATYPE: "str" | "int" | "float" | "date" | "bool"
+        DATATYPE: "str" | "string" | "text" | "int" | "integer" | "number" | "float" | "date" | "bool"
         %import common.WS
         %ignore WS
         """
@@ -264,10 +280,13 @@ def syntax_parser(extraction_query: str):
 
 def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
     download("punkt_tab")
-    model = GLiNER.from_pretrained("urchade/gliner_medium-v2.1")
+    model = GLiNER.from_pretrained("gliner-community/gliner_large-v2.5")
 
     text = html_text.extract_text(mistletoe.markdown(markdownText))
-    tokens = tokenize.sent_tokenize(text)
+    sent_tokens = tokenize.sent_tokenize(text)
+    ln_tokens = tokenize.line_tokenize(text)
+
+    print(ln_tokens)
 
     results = []
 
@@ -280,9 +299,9 @@ def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
             if label["type"][-2:] == "[]":
                 list_labels.append(label["name"])
                 label["type"] = label["type"][:-2]
-            if label["type"] == "int":
+            if label["type"] in ["int", "integer", "number"]:
                 int_labels.append(label["name"])
-            elif label["type"] == "float":
+            elif label["type"] in ["float"]:
                 float_labels.append(label["name"])
             labels.append(label["name"])
 
@@ -291,6 +310,8 @@ def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
             "headers": labels,
             "rows": [],
         }
+
+        tokens = sent_tokens if query["mode"] == "sent" else ln_tokens
 
         for token in tokens:
             entities = model.predict_entities(token, labels, threshold=0.5)
@@ -305,11 +326,11 @@ def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
 
             for entity in entities:
                 if entity["label"] in int_labels or entity["label"] in float_labels:
-                    match = re.search(r"-?\d+(\.\d+)?", entity["text"])
+                    match = re.search(r"\b\d{1,3}(?:,\d{3})*(?:\.\d+)?\b", entity["text"])
                     if entity["label"] in int_labels:
                         entity["text"] = int(match.group()) if match else None
                     else:
-                        entity["text"] = float(match.group()) if match else None
+                        entity["text"] = float(match.group().replace(",", "")) if match else None
 
                 if entity["text"]:
                     if entity["label"] in list_labels:
