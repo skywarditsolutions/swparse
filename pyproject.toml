@@ -36,6 +36,8 @@ dependencies = [
     "python-pptx>=1.0.2",
     "snakemd>=2.2.0",
     "lark>=1.2.2",
+    "gliner>=0.2.13",
+    "nltk>=3.9.1",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]

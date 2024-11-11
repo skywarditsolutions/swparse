@@ -17,7 +17,7 @@ from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.middlewares import ApiKeyAuthMiddleware
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
-from swparse.domain.swparse.utils import extract_tables_from_html
+from swparse.domain.swparse.utils import extract_labels, extract_tables_from_html, syntax_parser
 
 from .urls import PARSER_BASE
 
@@ -237,6 +237,16 @@ class ParserController(Controller):
             raise HTTPException(detail="JOB ERROR", status_code=400)
         return JobStatus(id=job.id, status=Status[job.status])
 
+    @get(path="job/test")
+    async def job_test(self, test: str) -> list[dict]:
+        try:
+            result = syntax_parser(test)
+        except:
+            raise HTTPException(detail="Invalid query syntax", status_code=400)
+
+        mdText = """Jake Turner is a 27-year-old midfielder wearing jersey number 8, earning a salary of $1.2 million annually. At 22, Alex Costa plays as a forward with number 10 and brings in a yearly income of $2 million. Liam Rivera, the 25-year-old center back wearing number 4, is paid $900,000 per year. The experienced 30-year-old goalkeeper, Mark Hughes, dons number 1 and earns $1.5 million annually. Known for his versatility, Ryan Lee is a 24-year-old right back wearing number 2, with a yearly salary of $850,000. With jersey number 7, Jordan Baker plays as a winger at 23 years old, making $1.1 million each year. Defensive stalwart Tom Fernandez, a 28-year-old left back wearing number 3, takes home $950,000 annually. Chris Yamada, 26, serves as the team’s attacking midfielder in jersey 11, earning $1.3 million a season. Sam Bennett, the 21-year-old center forward with number 9, is compensated $1.8 million per year. At 29, Ethan Patel plays defensive midfield with number 6 and earns $1 million annually. Tyler Green, a 20-year-old left winger with number 17, brings youthful energy to the team and a $750,000 salary. Center-back Oscar White, aged 27 and wearing number 5, has a contract worth $950,000 per year. Max Liu, the team’s 23-year-old right winger with jersey number 14, earns $1.2 million yearly. Playing as a defensive midfielder, Leo Park is 25, wears number 15, and brings in $800,000 annually. Noah Hill, the 31-year-old backup goalkeeper, wears number 16 and takes home $600,000 each year. At 24, Damian Cruz plays as a central midfielder with number 12, earning a $1 million salary. Jack Foster, a 29-year-old forward in jersey 19, is paid $1.5 million per season. Ben Murphy, the versatile 26-year-old center-back with number 18, earns $925,000 per season. Mason Evans, a promising 19-year-old right back, wears number 20 and makes $600,000 annually. Finally, Charlie Bell, a 28-year-old forward with number 21, contributes to the attack while earning $1.4 million each season."""
+        return extract_labels(result, mdText)
+
     @get(
         path="job/{job_id:str}/result/{result_type:str}",
     )
@@ -304,6 +314,7 @@ class ParserController(Controller):
                         images = results.get("images")
                         return JobResult(markdown="", html="", text="", images=images)
                     case _:
+                        # TODO: parse syntax
                         unsupported = f"Format {result_type} is currently unsupported."
                         raise HTTPException(unsupported)
             except KeyError:

@@ -1,5 +1,7 @@
 import io
+import math
 import os
+import re
 from uuid import uuid4
 from typing import IO
 
@@ -18,7 +20,10 @@ from snakemd.elements import MDList
 from itertools import islice
 from lark import Lark, Transformer
 
-import re
+import html_text
+import mistletoe
+from gliner import GLiNER
+from nltk import tokenize, download
 
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
@@ -202,46 +207,105 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
         return str(md_file)
     except Exception as e:
         raise Exception
-    
-
 
 
 class TreeToJson(Transformer):
-    def start(self, items):  
+    def start(self, items: dict[str, str]):
         return items
 
-    def instruction(self, items):
+    def instruction(self, items: dict[str, str]):
         return {"table_name": items[0], "labels": items[1:]}
 
-    def table_ident(self, items):
+    def table_ident(self, items: dict[str, str]):
         return items[0].value
 
-    def value(self, items):
+    def value(self, items: dict[str, str]):
         if len(items) == 1:
             return {"name": items[0], "type": "string"}
         return {"name": items[0], "type": items[1]}
 
-    def field(self, items):
+    def field(self, items: dict[str, str]):
         return items[0].value
 
-    def type(self, items):
+    def type(self, items: dict[str, str]):
         return items[0].value
-
 
 
 def syntax_parser(extraction_query: str):
     lang = """start: instruction+
         instruction: table_ident value+ ";"?
-        table_ident: WORD "="
+        table_ident: SNAKECASE "="
         value: field type?
-        field: WORD","?
+        field: SNAKECASE ","?
+        SNAKECASE: /[a-z0-9]+(_[a-z0-9]+)*/
         type: ":" DATATYPES ","?
         DATATYPES: DATATYPE"[]"?
-        DATATYPE: "string" | "integer" | "float" | "date" | "boolean"
-        %import common.WORD
+        DATATYPE: "str" | "int" | "float" | "date" | "bool"
         %import common.WS
         %ignore WS
         """
     lang_parser = Lark(lang)
     tree = lang_parser.parse(extraction_query)
     return TreeToJson().transform(tree)
+
+
+def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
+    download("punkt_tab")
+    model = GLiNER.from_pretrained("urchade/gliner_medium-v2.1")
+
+    text = html_text.extract_text(mistletoe.markdown(markdownText))
+    tokens = tokenize.sent_tokenize(text)
+
+    results = []
+
+    for query in table_queries:
+        list_labels = []
+        int_labels = []
+        float_labels = []
+        labels = []
+        for label in query["labels"]:
+            if label["type"][-2:] == "[]":
+                list_labels.append(label["name"])
+                label["type"] = label["type"][:-2]
+            if label["type"] == "int":
+                int_labels.append(label["name"])
+            elif label["type"] == "float":
+                float_labels.append(label["name"])
+            labels.append(label["name"])
+
+        table = {
+            "table_name": query["table_name"],
+            "headers": labels,
+            "rows": [],
+        }
+
+        for token in tokens:
+            entities = model.predict_entities(token, labels, threshold=0.5)
+            row = {}
+            for list_label in list_labels:
+                row[list_label] = []
+
+            extracted_labels = list(dict.fromkeys([entity["label"] for entity in entities]))
+
+            if len(extracted_labels) < math.floor(len(labels) * 0.8):
+                continue
+
+            for entity in entities:
+                if entity["label"] in int_labels:
+                    match = re.search(r"-?\d+", entity["text"])
+                    entity["text"] = int(match.group()) if match else None
+                elif entity["label"] in float_labels:
+                    match = re.search(r"-?\d+(\.\d+)?", entity["text"])
+                    entity["text"] = float(match.group()) if match else None
+
+                if entity["text"]:
+                    if entity["label"] in list_labels:
+                        row[entity["label"]].append(entity["text"])
+                    else:
+                        row[entity["label"]] = entity["text"]
+
+            table["rows"].append(row)
+
+        results.append(table)
+
+    return results

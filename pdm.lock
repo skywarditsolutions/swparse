@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "linting", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:df2b68fbe53f6d48a90cbc4da1e1208e3133aea629bc47bb583a059b1876b76a"
+content_hash = "sha256:bc851d9c7b31bee7941ce8c9bdc80127ee9b228ed1d73797833efbb92c3f4370"
 
 [[metadata.targets]]
 requires_python = "==3.12.6"
@@ -1136,6 +1136,26 @@ dependencies = [
 files = [
     {file = "GitPython-3.1.43-py3-none-any.whl", hash = "sha256:eec7ec56b92aad751f9912a73404bc02ba212a23adb2c7098ee668417051a1ff"},
     {file = "GitPython-3.1.43.tar.gz", hash = "sha256:35f314a9f878467f5453cc1fee295c3e18e52f1b99f10f6cf5b1682e968a9e7c"},
+]
+
+[[package]]
+name = "gliner"
+version = "0.2.13"
+requires_python = ">=3.8"
+summary = "Generalist model for NER (Extract any entity types from texts)"
+groups = ["default"]
+marker = "python_full_version == \"3.12.6\""
+dependencies = [
+    "huggingface-hub>=0.21.4",
+    "onnxruntime",
+    "sentencepiece",
+    "torch>=2.0.0",
+    "tqdm",
+    "transformers>=4.38.2",
+]
+files = [
+    {file = "gliner-0.2.13-py3-none-any.whl", hash = "sha256:a8798aef78b8a7322dc4f785c15d58c526f86698ec95feb892b500b5be507437"},
+    {file = "gliner-0.2.13.tar.gz", hash = "sha256:0afa0aa82f7f31dcc1befb667cb69d1a9760173078d770517381bf7c3c6b378f"},
 ]
 
 [[package]]
@@ -3329,6 +3349,17 @@ dependencies = [
 files = [
     {file = "scipy-1.14.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8f9ea80f2e65bdaa0b7627fb00cbeb2daf163caa015e59b7516395fe3bd1e066"},
     {file = "scipy-1.14.1.tar.gz", hash = "sha256:5a275584e726026a5699459aa72f828a610821006228e841b94275c4a7c08417"},
+]
+
+[[package]]
+name = "sentencepiece"
+version = "0.2.0"
+summary = "SentencePiece python wrapper"
+groups = ["default"]
+marker = "python_full_version == \"3.12.6\""
+files = [
+    {file = "sentencepiece-0.2.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f295105c6bdbb05bd5e1b0cafbd78ff95036f5d3641e7949455a3f4e5e7c3109"},
+    {file = "sentencepiece-0.2.0.tar.gz", hash = "sha256:a52c19171daaf2e697dc6cbe67684e0fa341b1248966f6aebb541de654d15843"},
 ]
 
 [[package]]

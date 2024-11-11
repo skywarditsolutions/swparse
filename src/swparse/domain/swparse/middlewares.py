@@ -25,7 +25,7 @@ api_key_header = os.environ.get("PARSER_API_HEADER")
 
 
 class ApiKeyAuthMiddleware(AbstractMiddleware):
-    exclude = [API_KEY_GENERATE]
+    exclude = [API_KEY_GENERATE, "/job/test"]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if api_key_header is None:

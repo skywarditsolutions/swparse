@@ -84,7 +84,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
         md_file_path = save_file_s3(s3, md_file_name, markdown)
 
         # Parsing to Text
-        text_content = html_text.extract_text(html_content, guess_layout=False)
+        text_content = html_text.extract_text(html_content)
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3, text_file_name, text_content)
 
@@ -210,7 +210,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     md_file_path = save_file_s3(s3, md_file_name, markdown)
 
     # Parsing to Text
-    text_content = html_text.extract_text(htmlData, guess_layout=False)
+    text_content = html_text.extract_text(htmlData, guess_layout=True)
     text_file_name = change_file_ext(file_name, "txt")
     txt_file_path = save_file_s3(s3, text_file_name, text_content)
 
