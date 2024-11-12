@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Annotated, Any, Literal, TypeVar
 from uuid import uuid4
 
@@ -319,7 +320,10 @@ class ParserController(Controller):
                             raise HTTPException(detail="Invalid query syntax", status_code=400)
                         with s3.open(results["markdown"], mode="r") as out_file_md:
                             markdown = out_file_md.read()
-                            return {result_type: extract_labels(result, markdown), "job_metadata": jm.__dict__}
+                            return {
+                                result_type: json.dumps(extract_labels(result, markdown)),
+                                "job_metadata": jm.__dict__,
+                            }
             except KeyError:
                 unsupported = f"Format {result_type} is currently unsupported for {job_key}"
                 raise HTTPException(detail=unsupported, status_code=400)

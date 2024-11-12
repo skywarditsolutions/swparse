@@ -241,7 +241,7 @@ class ApiKeyService(SQLAlchemyAsyncRepositoryService[ApiKeys]):
             error_messages=error_messages,
         )
 
-    async def authenticate(self, api_key: str) -> ApiKeys:
+    async def authenticate(self, api_key: str) -> ApiKeys | None:
         """Authenticate api key.
 
         Args:
@@ -253,7 +253,10 @@ class ApiKeyService(SQLAlchemyAsyncRepositoryService[ApiKeys]):
         Returns:
             User: The api-key object
         """
-        db_obj = await self.get_one_or_none(api_key=api_key)
+        prefix, token = api_key.split(" ")
+        if prefix != "Bearer":
+            return None
+        db_obj = await self.get_one_or_none(api_key=token)
         if db_obj is None:
             msg = "API-key not found or password invalid"
             raise PermissionDeniedException(detail=msg)
