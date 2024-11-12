@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import base64
 import io
-import os
-import tempfile
 import json
-from logging import getLogger
+import os
 import re
+import tempfile
+from io import BytesIO
+from logging import getLogger
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -16,6 +18,7 @@ import mistletoe
 import pandas as pd
 import pypdfium2 as pdfium
 from html2text import html2text
+from litestar.exceptions import HTTPException
 from markdownify import markdownify as md
 from PIL import Image
 from s3fs import S3FileSystem
@@ -31,8 +34,6 @@ from swparse.domain.swparse.utils import (
     get_file_name,
     save_file_s3,
 )
-import base64
-from io import BytesIO
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -96,7 +97,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
         }
         metadata = json.dumps(result)
         logger.error(metadata)
-        s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+        s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
@@ -129,7 +130,7 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, st
     
     metadata = json.dumps(result)
     logger.error(metadata)
-    s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     return result
 
@@ -232,7 +233,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext:str) -> dict[str, str]
     }
     metadata = json.dumps(result)
     logger.error(metadata)
-    s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     return result
 
@@ -329,7 +330,7 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
             }
             metadata = json.dumps(result)
             logger.error(metadata)
-            s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+            s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
 
     except Exception as e:
@@ -378,7 +379,7 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext:str) -> dict[str, str]:
 
         metadata = json.dumps(results)
         logger.error(metadata)
-        s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+        s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     return results
 
@@ -429,7 +430,7 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str,ext:str) -> dict[str, str]:
         }
         metadata = json.dumps(results)
         logger.error(metadata)
-        s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+        s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
         return results
 
@@ -464,7 +465,7 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext:str) -> dict[str, str]
 
     metadata = json.dumps(results)
     logger.error(metadata)
-    s3.setxattr(s3_url, copy_kwargs={'ContentType': ext}, metadata=metadata)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     return results
 

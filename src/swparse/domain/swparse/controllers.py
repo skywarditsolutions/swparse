@@ -3,21 +3,24 @@ from __future__ import annotations
 from typing import Annotated, Literal, TypeVar
 from uuid import uuid4
 
-import pandas as pd
 import structlog
 from litestar import Controller, MediaType, get, post
-from litestar.datastructures import UploadFile  # noqa: TCH002
-from litestar.enums import RequestEncodingType  # noqa: TCH002
+from litestar.datastructures import UploadFile
+from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
-from litestar.params import Body  # noqa: TCH002
+from litestar.params import Body
 from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
 
 from swparse.config.app import settings
-from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.middlewares import ApiKeyAuthMiddleware
 from swparse.domain.swparse.schemas import JobMetadata, JobResult, JobStatus, Status
-from swparse.domain.swparse.utils import extract_tables_from_html, get_hashed_file_name
+from swparse.domain.swparse.utils import (
+    get_hashed_file_name,
+    get_job_metadata,
+    handle_result_type,
+    save_job_metadata,
+)
 
 from .urls import PARSER_BASE
 
@@ -72,7 +75,7 @@ class ParserController(Controller):
                 ),
             ) 
             return JobStatus(id=job.id, status=Status.complete, s3_url=s3_url)
-        
+
         with s3.open(s3_url, "wb") as f:
             f.write(content)
 
@@ -235,8 +238,6 @@ class ParserController(Controller):
         path="job/{job_id:str}/result/{result_type:str}",
     )
     async def get_result(self, job_id: str, result_type: str = "markdown") -> JobResult:
-        job_key = queue.job_key_from_id(job_id)
-        job = await queue.job(job_key)
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -251,57 +252,24 @@ class ParserController(Controller):
             job_pages=0,
             job_is_cache_hit=False,
         )
-        if job:
-            await job.refresh(1)
+
+        job_key = queue.job_key_from_id(job_id)
+        job = await queue.job(job_key)
+        if not job:
+            job_metadata = get_job_metadata(s3)
+            results = job_metadata.get(job_id)
+            logger.error(results)
+            if results is None:
+                raise HTTPException(detail="Job not found", status_code=204)
+
+        else:
             results = job.result
-            try:
-                match result_type:
-                    case ContentType.MARKDOWN.value:
-                        with s3.open(results["markdown"], mode="r") as out_file_md:
-                            markdown = out_file_md.read()
-                            return JobResult(markdown=markdown, html="", text="", job_metadata=jm)
-
-                    case ContentType.HTML.value:
-                        with s3.open(results["html"], mode="r") as out_file_html:
-                            html = out_file_html.read()
-                            return JobResult(markdown="", html=html, text="", job_metadata=jm)
-
-                    case ContentType.TEXT.value:
-                        with s3.open(results["text"], mode="r") as out_file_txt:
-                            text = out_file_txt.read()
-                            return JobResult(markdown="", html="", text=text, job_metadata=jm)
-                    case ContentType.TABLE.value:
-                        html = extract_tables_from_html(s3, results["html"])
-                        result_html = "<br><br>"
-                        if html:
-                            result_html = result_html.join(html)
-                        return JobResult(markdown="", html="", text="", table=result_html, job_metadata=jm)
-
-                    case ContentType.MARKDOWN_TABLE.value:
-                        table_file_path = results.get("table")
-                        if table_file_path:
-                            with s3.open(results["table"], mode="r") as out_file_html:
-                                result_html = out_file_html.read()
-                        else:
-                            html = extract_tables_from_html(s3, results["html"])
-                            result_html = "<br><br>".join(html)
-
-                        dfs = pd.read_html(result_html)
-                        markdown_tbls = ""
-                        for i, df in enumerate(dfs):
-                            markdown_tbls += f"## Table {i + 1}\n\n"
-                            markdown_tbls += df.to_markdown()
-                            markdown_tbls += "\n\n"
-
-                        return JobResult(markdown="", html="", text="", table_md=markdown_tbls, job_metadata=jm)
-                    case ContentType.IMAGES.value:
-                        images = results.get("images")
-                        return JobResult(markdown="", html="", text="", images=images)
-                    case _:
-                        unsupported = f"Format {result_type} is currently unsupported."
-                        raise HTTPException(unsupported)
-            except KeyError:
-                unsupported = f"Format {result_type} is currently unsupported for {job_key}"
-                raise HTTPException(unsupported)
-
-        raise HTTPException(f"No Such Job {job_id} ")
+            await job.refresh(1)
+            if results is None:
+                raise HTTPException(detail="Job not found", status_code=204)
+            save_job_metadata(s3, job_id, results)
+        try:
+            return handle_result_type(result_type, results, s3, jm)
+        except Exception as err:
+            logger.error(err)
+            raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")
