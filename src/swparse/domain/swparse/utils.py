@@ -265,11 +265,11 @@ def syntax_parser(extraction_query: str) -> list[dict]:
         value: field type?
         field: FIELD_NAME ","?
         mode: ("-"MODE)?
-        MODE: /by( |_)?sentence|by( |_)?line|ln|sent/i
+        MODE: /by( |_)?sentence|by( |_)?line|ln|sent|sentence|line/i
         FIELD_NAME: /[a-zA-Z0-9_]+((_| )[a-zA-Z0-9_]+)*/
         type: ":" DATATYPES ","?
         DATATYPES: DATATYPE"[]"?
-        DATATYPE: "str" | "string" | "text" | "int" | "integer" | "number" | "float" | "date" | "bool"
+        DATATYPE: "str" | "string" | "text" | "int" | "integer" | "number" | "float" | "date" | "bool" | "boolean"
         %import common.WS
         %ignore WS
         """
