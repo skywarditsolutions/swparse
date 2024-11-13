@@ -1,29 +1,24 @@
 import hashlib
 import io
+import json
 import math
 import os
 import re
-from uuid import uuid4
-from typing import IO
-
-from lxml import html
-from s3fs import S3FileSystem
-from xls2xlsx import XLS2XLSX
-from pptx import Presentation
-from swparse.config.app import settings
-from pptx.shapes.base import BaseShape
-from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
-from pptx.shapes.shapetree import SlideShapes
-import json
+from datetime import UTC, datetime, timezone
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
 from typing import IO
 from uuid import uuid4
 
+import html_text
+import mistletoe
 import pandas as pd
+from gliner import GLiNER
+from lark import Lark, Token, Transformer
 from litestar.exceptions import HTTPException
 from lxml import html
+from nltk import download, tokenize
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.shapes.base import BaseShape
@@ -31,14 +26,6 @@ from pptx.shapes.shapetree import SlideShapes
 from s3fs import S3FileSystem
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
-from itertools import islice
-from lark import Lark, Token, Transformer
-import pandas as pd
-
-import html_text
-import mistletoe
-from gliner import GLiNER
-from nltk import tokenize, download
 from xls2xlsx import XLS2XLSX
 
 from swparse.config.app import settings
@@ -49,6 +36,8 @@ logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+
+JOB_FOLDER = settings.storage.JOB_FOLDER
 
 s3 = S3FileSystem(
     endpoint_url=settings.storage.ENDPOINT_URL,
@@ -412,24 +401,36 @@ def get_hashed_file_name(filename: str, content: bytes) -> str:
     return f"{check_sum}.{file_ext}"
 
 
-def get_job_metadata(s3: S3FileSystem) -> dict[str, dict[str, str]]:
-    job_file_path = f"{BUCKET}/job_metadata.json"
+
+def get_job_metadata(s3: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]:
+    job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
     content = {}
     if s3.exists(job_file_path):
         with s3.open(job_file_path, mode="r") as f:
             content = json.loads(f.read())
     return content
 
+def save_job_metadata(s3: S3FileSystem, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
+    job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
+    job_folder_path = f"{BUCKET}/{JOB_FOLDER}/"
 
-def save_job_metadata(s3: S3FileSystem, job_id: str, results: dict[str, str]) -> None:
-    job_file_path = f"{BUCKET}/job_metadata.json"
-    existing_job_metadata = get_job_metadata(s3)
-    existing_job_metadata[job_id] = results
+    existing_job_metadata:dict[str, dict] = {"metadata": {}}
+    if not s3.exists(job_folder_path):
+        s3.mkdir(job_folder_path)
+
+    if not s3.exists(job_file_path):
+        existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
+    else:
+        existing_job_metadata = get_job_metadata(s3, job_id)
+ 
+    existing_job_metadata["metadata"].update(metadata)
+
     try:
         with s3.open(job_file_path, mode="w") as f:
-            f.write(json.dumps(existing_job_metadata))
+            f.write(json.dumps(existing_job_metadata, indent=4))
+        return existing_job_metadata
     except Exception as err:
-        raise HTTPException(f"Save job metadata error: {err}")
+        raise HTTPException(status_code=500, detail=f"Save job metadata error: {err}")
 
 
 def get_file_content(s3: S3FileSystem, file_path: str) -> str:
