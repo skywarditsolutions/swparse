@@ -239,7 +239,18 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
 
 async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     logger.error("Started parse_pdf_s3")
+    s3 = S3FileSystem(
+        # asynchronous=True,
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
     results = _pdf_exchange(s3_url)
+
+    metadata = json.dumps(results)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
     return results
 
 
@@ -275,9 +286,12 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, st
     with s3.open(s3_url, "wb") as output:
         pdf.save(output)
 
-    logger.error("parse_image_s3")
-    logger.error(s3_url)
-    return _pdf_exchange(s3_url)
+    results = _pdf_exchange(s3_url)
+
+    metadata = json.dumps(results)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
+    return results
 
 
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
