@@ -40,6 +40,12 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET
 
+s3fs = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -87,16 +93,16 @@ class ExtractionController(Controller):
     ) -> Extraction:
         content = await data.read()
         job = await extraction_service.create_job(data)
-
-        extraction = await extraction_service.create(
-            ExtractionModel(
-                file_name=data.filename,
-                file_size=len(content),
-                file_path=job.s3_url,
-                user_id=current_user.id,
-                job_id=job.id,
-            )
+        extraction = ExtractionModel(
+            file_name=data.filename,
+            file_size=len(content),
+            file_path=job.s3_url,
+            user_id=current_user.id,
+            job_id=job.id,
         )
+
+        extraction = await extraction_service.create(extraction)
+
         return extraction_service.to_schema(data=extraction, schema_type=Extraction)
 
     @get(
@@ -156,6 +162,8 @@ class ExtractionController(Controller):
                         extracted_file_paths=extracted_file_paths,
                     )
                 )
+                
+
                 extraction.document_id = document.id
             else:
                 extraction.status = ExtractionStatus.FAILED

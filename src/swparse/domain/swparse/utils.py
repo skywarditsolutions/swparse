@@ -1,3 +1,4 @@
+import hashlib
 import io
 import math
 import os
@@ -13,8 +14,21 @@ from swparse.config.app import settings
 from pptx.shapes.base import BaseShape
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.shapes.shapetree import SlideShapes
+import json
+from itertools import islice
 from logging import getLogger
 from operator import attrgetter
+from typing import IO
+from uuid import uuid4
+
+import pandas as pd
+from litestar.exceptions import HTTPException
+from lxml import html
+from pptx import Presentation
+from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
+from pptx.shapes.base import BaseShape
+from pptx.shapes.shapetree import SlideShapes
+from s3fs import S3FileSystem
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
 from itertools import islice
@@ -25,6 +39,11 @@ import html_text
 import mistletoe
 from gliner import GLiNER
 from nltk import tokenize, download
+from xls2xlsx import XLS2XLSX
+
+from swparse.config.app import settings
+from swparse.db.models.content_type import ContentType
+from swparse.domain.swparse.schemas import JobMetadata
 
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
@@ -32,7 +51,6 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
 s3 = S3FileSystem(
-    # asynchronous=True,
     endpoint_url=settings.storage.ENDPOINT_URL,
     key=MINIO_ROOT_USER,
     secret=MINIO_ROOT_PASSWORD,
@@ -386,3 +404,101 @@ def extract_labels(table_queries: list[dict], markdownText: str, output: str):
                 md_result += df.to_markdown() + "\n"
 
         return csv_result if output == "csv" else md_result
+
+
+def get_hashed_file_name(filename: str, content: bytes) -> str:
+    file_ext = filename.split(".")[-1]
+    check_sum = hashlib.md5(content).hexdigest()
+    return f"{check_sum}.{file_ext}"
+
+
+def get_job_metadata(s3: S3FileSystem) -> dict[str, dict[str, str]]:
+    job_file_path = f"{BUCKET}/job_metadata.json"
+    content = {}
+    if s3.exists(job_file_path):
+        with s3.open(job_file_path, mode="r") as f:
+            content = json.loads(f.read())
+    return content
+
+
+def save_job_metadata(s3: S3FileSystem, job_id: str, results: dict[str, str]) -> None:
+    job_file_path = f"{BUCKET}/job_metadata.json"
+    existing_job_metadata = get_job_metadata(s3)
+    existing_job_metadata[job_id] = results
+    try:
+        with s3.open(job_file_path, mode="w") as f:
+            f.write(json.dumps(existing_job_metadata))
+    except Exception as err:
+        raise HTTPException(f"Save job metadata error: {err}")
+
+
+def get_file_content(s3: S3FileSystem, file_path: str) -> str:
+    with s3.open(file_path, mode="r") as f:
+        content = f.read()
+        if isinstance(content, bytes):
+            content = content.decode()
+    return content
+
+
+def handle_result_type(
+    result_type: str, results: dict[str, str], s3: S3FileSystem, jm: JobMetadata, job_key: str
+) -> dict:
+    try:
+        result = {"job_metadata": jm.__dict__}
+        if result_type == ContentType.MARKDOWN.value:
+            markdown = get_file_content(s3, results["markdown"])
+            result["markdown"] = markdown
+
+        elif result_type == ContentType.HTML.value:
+            html = get_file_content(s3, results["html"])
+            result["html"] = html
+
+        elif result_type == ContentType.TEXT.value:
+            text = get_file_content(s3, results["text"])
+            result["text"] = text
+
+        elif result_type == ContentType.TABLE.value:
+            html = extract_tables_from_html(s3, results["html"])
+            result_html = "<br><br>"
+            if html:
+                result_html = result_html.join(html)
+            result["table"] = result_html
+
+        elif result_type == ContentType.MARKDOWN_TABLE.value:
+            table_file_path = results.get("table")
+            if table_file_path:
+                with s3.open(results["table"], mode="r") as out_file_html:
+                    result_html = out_file_html.read()
+            else:
+                html = extract_tables_from_html(s3, results["html"])
+                result_html = "<br><br>".join(html)
+
+            dfs = pd.read_html(result_html)
+            markdown_tbls = ""
+            for i, df in enumerate(dfs):
+                markdown_tbls += f"## Table {i + 1}\n\n"
+                markdown_tbls += df.to_markdown()
+                markdown_tbls += "\n\n"
+
+            result["table_md"] = markdown_tbls
+
+        elif result_type == ContentType.IMAGES.value:
+            images = results.get("images")
+
+            result["images"] = images
+        else:
+            try:
+                table_queries = syntax_parser(result_type)
+            except:
+                raise HTTPException(detail="Invalid query syntax", status_code=400)
+            with s3.open(results["markdown"], mode="r") as out_file_md:
+                markdown = out_file_md.read()
+                result[result_type] = (extract_labels(table_queries["tables"], markdown, table_queries["output"]),)
+
+        if len(result) > 1:
+            return result
+
+        raise HTTPException(f"Format {result_type} is currently unsupported for {job_key}")
+
+    except Exception as e:
+        raise HTTPException(f"Format {result_type} is currently unsupported for {job_key}")

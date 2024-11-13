@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import base64
 import io
-import os
-import tempfile
 import json
-from logging import getLogger
+import os
 import re
+import tempfile
+from io import BytesIO
+from logging import getLogger
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -31,8 +33,6 @@ from swparse.domain.swparse.utils import (
     get_file_name,
     save_file_s3,
 )
-import base64
-from io import BytesIO
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -94,6 +94,9 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
             ContentType.HTML.value: html_file_path,
             ContentType.TEXT.value: txt_file_path,
         }
+        metadata = json.dumps(result)
+        logger.error(metadata)
+        s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
@@ -122,7 +125,13 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str) -> dict[str, st
         except UnicodeDecodeError:
             out_txt = str(byte_string)
             text_file_path = save_file_s3(s3, txt_file_name, out_txt)
-        return {ContentType.TEXT.value: text_file_path}
+    result = {ContentType.TEXT.value: text_file_path}
+
+    metadata = json.dumps(result)
+    logger.error(metadata)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
+    return result
 
 
 def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[str, str]:
@@ -171,7 +180,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     }
 
 
-async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     logger.error("Started parse_docx_s3")
     s3 = S3FileSystem(
         # asynchronous=True,
@@ -214,15 +223,20 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
     text_file_name = change_file_ext(file_name, "txt")
     txt_file_path = save_file_s3(s3, text_file_name, text_content)
 
-    return {
+    result = {
         ContentType.HTML.value: html_file_path,
         ContentType.MARKDOWN.value: md_file_path,
         ContentType.TEXT.value: txt_file_path,
         ContentType.IMAGES.value: json.dumps(images),
     }
+    metadata = json.dumps(result)
+    logger.error(metadata)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
+    return result
 
 
-async def parse_pdf_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     logger.error("Started parse_pdf_s3")
     results = _pdf_exchange(s3_url)
     return results
@@ -311,6 +325,9 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
                 ContentType.TEXT.value: text_file_path,
                 ContentType.HTML.value: html_file_path,
             }
+            metadata = json.dumps(result)
+            logger.error(metadata)
+            s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
@@ -318,7 +335,7 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str) -> dict[str
     return result
 
 
-async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
         key=MINIO_ROOT_USER,
@@ -356,10 +373,14 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
             md_file_path = save_file_s3(s3, md_file_name, markdown)
         results[ContentType.MARKDOWN.value] = md_file_path
 
+        metadata = json.dumps(results)
+        logger.error(metadata)
+        s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
     return results
 
 
-async def parse_ppt_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
         key=MINIO_ROOT_USER,
@@ -403,10 +424,14 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
             ContentType.HTML.value: html_file_path,
             ContentType.TEXT.value: txt_file_path,
         }
+        metadata = json.dumps(results)
+        logger.error(metadata)
+        s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
         return results
 
 
-async def parse_pptx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
+async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str]:
     s3 = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
         key=MINIO_ROOT_USER,
@@ -433,4 +458,25 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str) -> dict[str, str]:
         ContentType.HTML.value: html_file_path,
         ContentType.TEXT.value: txt_file_path,
     }
+
+    metadata = json.dumps(results)
+    logger.error(metadata)
+    s3.setxattr(s3_url, copy_kwargs={"ContentTyp": ext}, metadata=metadata)
+
     return results
+
+
+async def get_extracted_url(ctx: Context, *, s3_url: str) -> dict[str, str]:
+    s3fs = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
+
+    metadata_json_str = s3fs.getxattr(s3_url, "metadata")
+    metadata = json.loads(metadata_json_str)
+
+    logger.error(metadata_json_str)
+
+    return metadata

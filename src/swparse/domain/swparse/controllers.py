@@ -1,23 +1,27 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, Literal, TypeVar
+from typing import Annotated, Literal, TypeVar
 from uuid import uuid4
 
-import pandas as pd
 import structlog
 from litestar import Controller, MediaType, get, post
-from litestar.datastructures import UploadFile  # noqa: TCH002
-from litestar.enums import RequestEncodingType  # noqa: TCH002
+from litestar.datastructures import UploadFile
+from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
-from litestar.params import Body  # noqa: TCH002
+from litestar.params import Body
 from litestar_saq import Job, Queue
 from s3fs import S3FileSystem
 
 from swparse.config.app import settings
-from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.middlewares import ApiKeyAuthMiddleware
 from swparse.domain.swparse.schemas import JobMetadata, JobStatus, Status
-from swparse.domain.swparse.utils import extract_labels, extract_tables_from_html, syntax_parser
+from swparse.domain.swparse.utils import (
+    get_hashed_file_name,
+    get_job_metadata,
+    handle_result_type,
+    save_job_metadata,
+    syntax_parser,
+)
 
 from .urls import PARSER_BASE
 
@@ -28,7 +32,6 @@ queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
 
 # def _raise_http_exception(detail: str, status_code: int) -> None:
 #     raise HTTPException(detail=detail, status_code=status_code)
@@ -52,8 +55,7 @@ class ParserController(Controller):
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
         content = await data.read()
-        file_name = data.filename
-        new_uuid = uuid4()
+        filename = data.filename
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -61,17 +63,31 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-        s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+        hashed_filename = get_hashed_file_name(filename, content)
+        s3_url = f"{BUCKET}/{hashed_filename}"
+
+        if s3.exists(s3_url):
+            job = await queue.enqueue(
+                Job(
+                    "get_extracted_url",
+                    kwargs={
+                        "s3_url": s3_url,
+                    },
+                    timeout=0,
+                ),
+            )
+            return JobStatus(id=job.id, status=Status.complete, s3_url=s3_url)
+
         with s3.open(s3_url, "wb") as f:
             f.write(content)
+
+        kwargs = {"s3_url": s3_url, "ext": data.content_type}
 
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 Job(
                     "parse_pdf_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -79,10 +95,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_image_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -90,10 +103,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "extract_text_files",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -104,10 +114,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -116,9 +123,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_docx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -127,9 +132,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_doc_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -138,9 +141,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_ppt_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -149,9 +150,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_pptx_s3",
-                    kwargs={
-                        "s3_url": s3_url,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -159,10 +158,7 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "extract_string",
-                    kwargs={
-                        "s3_url": s3_url,
-                        "ext": data.content_type,
-                    },
+                    kwargs=kwargs,
                     timeout=0,
                 ),
             )
@@ -249,9 +245,7 @@ class ParserController(Controller):
     @get(
         path="job/{job_id:str}/result/{result_type:str}",
     )
-    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict[str, Any]:
-        job_key = queue.job_key_from_id(job_id)
-        job = await queue.job(job_key)
+    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict:
         s3 = S3FileSystem(
             # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
@@ -266,65 +260,24 @@ class ParserController(Controller):
             job_pages=0,
             job_is_cache_hit=False,
         )
-        if job:
-            await job.refresh(1)
+
+        job_key = queue.job_key_from_id(job_id)
+        job = await queue.job(job_key)
+        if not job:
+            job_metadata = get_job_metadata(s3)
+            results = job_metadata.get(job_id)
+            logger.error(results)
+            if results is None:
+                raise HTTPException(detail="Job not found", status_code=204)
+
+        else:
             results = job.result
-            try:
-                match result_type:
-                    case ContentType.MARKDOWN.value:
-                        with s3.open(results["markdown"], mode="r") as out_file_md:
-                            markdown = out_file_md.read()
-                            return {"markdown": markdown, "job_metadata": jm.__dict__}
-
-                    case ContentType.HTML.value:
-                        with s3.open(results["html"], mode="r") as out_file_html:
-                            html = out_file_html.read()
-                            return {"html": html, "job_metadata": jm.__dict__}
-
-                    case ContentType.TEXT.value:
-                        with s3.open(results["text"], mode="r") as out_file_txt:
-                            text = out_file_txt.read()
-                            return {"text": text, "job_metadata": jm.__dict__}
-                    case ContentType.TABLE.value:
-                        html = extract_tables_from_html(s3, results["html"])
-                        result_html = "<br><br>"
-                        if html:
-                            result_html = result_html.join(html)
-                            return {"table": result_html, "job_metadata": jm.__dict__}
-
-                    case ContentType.MARKDOWN_TABLE.value:
-                        table_file_path = results.get("table")
-                        if table_file_path:
-                            with s3.open(results["table"], mode="r") as out_file_html:
-                                result_html = out_file_html.read()
-                        else:
-                            html = extract_tables_from_html(s3, results["html"])
-                            result_html = "<br><br>".join(html)
-
-                        dfs = pd.read_html(result_html)
-                        markdown_tbls = ""
-                        for i, df in enumerate(dfs):
-                            markdown_tbls += f"## Table {i + 1}\n\n"
-                            markdown_tbls += df.to_markdown()
-                            markdown_tbls += "\n\n"
-
-                        return {"table_md": markdown_tbls, "job_metadata": jm.__dict__}
-                    case ContentType.IMAGES.value:
-                        images = results.get("images")
-                        return {"images": images, "job_metadata": jm.__dict__}
-                    case _:
-                        try:
-                            result = syntax_parser(result_type)
-                        except:
-                            raise HTTPException(detail="Invalid query syntax", status_code=400)
-                        with s3.open(results["markdown"], mode="r") as out_file_md:
-                            markdown = out_file_md.read()
-                            return {
-                                result_type: extract_labels(result["tables"], markdown, result["output"]),
-                                "job_metadata": jm.__dict__,
-                            }
-            except KeyError:
-                unsupported = f"Format {result_type} is currently unsupported for {job_key}"
-                raise HTTPException(detail=unsupported, status_code=400)
-
-        raise HTTPException(detail=f"No Such Job {job_id}", status_code=404)
+            await job.refresh(1)
+            if results is None:
+                raise HTTPException(detail="Job not found", status_code=204)
+            save_job_metadata(s3, job_id, results)
+        try:
+            return handle_result_type(result_type, results, s3, jm, job_key)
+        except Exception as err:
+            logger.error(err)
+            raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")

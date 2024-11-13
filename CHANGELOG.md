@@ -1,3 +1,24 @@
+## Unreleased
+
+### Feat
+
+- caching results with jobId in minio bucket
+- merge with hm3-file-checksum branch
+- return extracted result from existing files if the uploaded file is already exist
+- retry failed extraction API
+- integrate extractions with documents
+- add extraction module
+
+### Fix
+
+- **wip**: return extracted result if the file is already uploaded
+- minor fixes
+- fix job status handling for retry extraction API
+- remove pagination from extraction list, add created_at update_at in schema
+- fixed return document serialize with schema
+- fix json decoder
+- replace mdutils with snakemd
+
 ## v0.5.0 (2024-11-02)
 
 ### Feat
