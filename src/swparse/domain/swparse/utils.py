@@ -18,7 +18,8 @@ from operator import attrgetter
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
 from itertools import islice
-from lark import Lark, Transformer
+from lark import Lark, Token, Transformer
+import pandas as pd
 
 import html_text
 import mistletoe
@@ -212,16 +213,18 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
 class TreeToJson(Transformer):
     def __init__(self, visit_tokens: bool = True):
         super().__init__(visit_tokens)
-        self.fields = set()
         self.tables = set()
 
-    def start(self, items: dict):
-        return items
+    def start(self, items: list[Token]):
+        return {"tables": items[0:-1], "output": items[-1].lower()}
 
-    def instruction(self, items: dict[str, str]):
+    def instruction(self, items: list[Token]):
+        headers = [label["name"] for label in items[1:-1]]
+        if len(headers) != len(dict.fromkeys(headers)):
+            raise ValueError("Duplicate labels")
         return {"mode": items[-1], "table_name": items[0], "labels": items[1:-1]}
 
-    def mode(self, items: dict):
+    def mode(self, items: list[Token]):
         mode_map = {
             "by_sentence": "sent",
             "sent": "sent",
@@ -234,37 +237,40 @@ class TreeToJson(Transformer):
             return "sent"
         return mode_map[items[0].value.replace(" ", "_").lower()]
 
-    def table_ident(self, items: dict):
-        table_name = items[0].value
+    def output(self, items: list[Token]):
+        if not len(items):
+            return "json"
+        return items[0].value.lower()
+
+    def table_ident(self, items: list[Token]):
+        table_name = items[0].value.replace(" ", "_").lower()
         if table_name in self.tables:
             raise Exception(f"Duplicate table name: {table_name}")
         self.tables.add(table_name)
-        return items[0].value
+        return table_name
 
-    def value(self, items: dict[str, str]):
+    def value(self, items: list[Token]):
         name = items[0].replace(" ", "_").lower()
         if len(items) == 1:
             return {"name": name, "type": "string"}
         return {"name": name, "type": items[1]}
 
-    def field(self, items: dict):
-        field_name = items[0].value
-        if field_name in self.fields:
-            raise Exception(f"Duplicate field name: {field_name}")
-        self.fields.add(field_name)
+    def field(self, items: list[Token]):
         return items[0].value
 
-    def type(self, items: dict[str, str]):
+    def type(self, items: list[Token]):
         return items[0].value
 
 
 def syntax_parser(extraction_query: str) -> list[dict]:
-    lang = """start: instruction+
-        instruction: table_ident value+ mode ";"?
+    lang = """start: instruction+ output
+        instruction: table_ident value+ mode ";"
         table_ident: FIELD_NAME "="
         value: field type?
         field: FIELD_NAME ","?
         mode: ("-"MODE)?
+        output: (("as "|"AS ")OUTPUT)?
+        OUTPUT: /csv|md|json/i
         MODE: /by( |_)?sentence|by( |_)?line|ln|sent|sentence|line/i
         FIELD_NAME: /[a-zA-Z0-9_]+((_| )[a-zA-Z0-9_]+)*/
         type: ":" DATATYPES ","?
@@ -278,15 +284,13 @@ def syntax_parser(extraction_query: str) -> list[dict]:
     return TreeToJson().transform(tree)
 
 
-def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
+def extract_labels(table_queries: list[dict], markdownText: str, output: str):
     download("punkt_tab")
     model = GLiNER.from_pretrained("gliner-community/gliner_large-v2.5")
 
     text = html_text.extract_text(mistletoe.markdown(markdownText))
     sent_tokens = tokenize.sent_tokenize(text)
     ln_tokens = tokenize.line_tokenize(text)
-
-    print(ln_tokens)
 
     results = []
 
@@ -342,4 +346,43 @@ def extract_labels(table_queries: list[dict], markdownText: str) -> list[dict]:
 
         results.append(table)
 
-    return results
+    if output == "json":
+        return results
+    else:
+        data_frames = []
+        table_names = []
+        max_header = 0
+        for table in results:
+            rows = []
+            for row in table["rows"]:
+                processed_row = {
+                    col: ", ".join(value) if isinstance(value, list) else value for col, value in row.items()
+                }
+                rows.append(processed_row)
+
+            if max_header < len(table["headers"]):
+                max_header = len(table["headers"])
+            df = pd.DataFrame(rows, columns=table["headers"])
+
+            data_frames.append(df)
+            table_names.append(table["table_name"])
+
+        csv_result = ""
+        md_result = ""
+
+        for i, df in enumerate(data_frames):
+            if output == "csv":
+                csv_buffer = io.StringIO()
+                df.to_csv(csv_buffer, index=False)
+                csv_string = csv_buffer.getvalue()
+
+                if i != 0:
+                    csv_result += f"\n============={',' * (max_header - 1)}\n\n"
+
+                csv_result += f"{table_names[i]}{',' * (max_header - 1)}\n"
+                csv_result += csv_string
+            elif output == "md":
+                md_result += f"# {table_names[i]}\n"
+                md_result += df.to_markdown() + "\n"
+
+        return csv_result if output == "csv" else md_result
