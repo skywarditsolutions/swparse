@@ -343,7 +343,7 @@ def extract_labels(table_queries: list[dict], markdownText: str, output: str):
 
             extracted_labels = list(dict.fromkeys([entity["label"] for entity in entities]))
 
-            if len(extracted_labels) < math.floor(len(labels) * 0.8):
+            if len(extracted_labels) < (math.floor(len(labels) * 0.8) if len(labels) > 1 else 1):
                 continue
 
             for entity in entities:
@@ -382,7 +382,7 @@ def extract_labels(table_queries: list[dict], markdownText: str, output: str):
                 max_header = len(table["headers"])
             df = pd.DataFrame(rows, columns=table["headers"])
 
-            data_frames.append(df)
+            data_frames.append(df.fillna(""))
             table_names.append(table["table_name"])
 
         csv_result = ""
@@ -401,7 +401,7 @@ def extract_labels(table_queries: list[dict], markdownText: str, output: str):
                 csv_result += csv_string
             elif output == "md":
                 md_result += f"# {table_names[i]}\n"
-                md_result += df.to_markdown() + "\n"
+                md_result += df.to_markdown(index=False) + "\n"
 
         return csv_result if output == "csv" else md_result
 
@@ -493,7 +493,7 @@ def handle_result_type(
                 raise HTTPException(detail="Invalid query syntax", status_code=400)
             with s3.open(results["markdown"], mode="r") as out_file_md:
                 markdown = out_file_md.read()
-                result[result_type] = (extract_labels(table_queries["tables"], markdown, table_queries["output"]),)
+                result[result_type] = extract_labels(table_queries["tables"], markdown, table_queries["output"])
 
         if len(result) > 1:
             return result

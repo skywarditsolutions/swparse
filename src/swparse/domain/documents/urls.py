@@ -8,3 +8,4 @@ LIST_DIR = "/api/bucket/dirs"
 
 DOCUMENT_CONTENT = "/api/documents/content/{id:uuid}"
 EXTRACTED_CONTENT = "/api/documents/extracted_content/{id:uuid}/result/{result_type:str}"
+EXTRACT_ADVANCED_TABLES = "/api/documents/{document_id:uuid}/advanced_table"

@@ -3,12 +3,14 @@ from __future__ import annotations
 import base64
 import json
 import mimetypes
+import os
 import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
+import httpx
 import pandas as pd
 import structlog
-from litestar import Controller, get
+from litestar import Controller, get, post
 from litestar.di import Provide
 from litestar.exceptions import HTTPException
 from litestar.pagination import OffsetPagination
@@ -20,11 +22,17 @@ from swparse.config.app import settings
 from swparse.db.models import ContentType, User
 from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
-from swparse.domain.documents.schemas import Document
+from swparse.domain.documents.schemas import Document, ExtractAdvancedTablesBody
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.extractions.dependencies import provide_extraction_serivice
 from swparse.domain.extractions.services import ExtractionService
-from swparse.domain.swparse.utils import change_file_ext, extract_tables_from_html, get_file_name, save_file_s3
+from swparse.domain.swparse.utils import (
+    change_file_ext,
+    extract_tables_from_html,
+    get_file_name,
+    save_file_s3,
+    syntax_parser,
+)
 
 from . import urls
 
@@ -32,7 +40,8 @@ if TYPE_CHECKING:
     from uuid import UUID
     from litestar.params import Parameter
 
-
+SWPARSE_URL = os.environ.get("APP_URL")
+SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
 logger = structlog.get_logger()
 OnlineOffline = TypeVar("OnlineOffline", bound=Literal["online", "offline"])
 
@@ -244,3 +253,44 @@ class DocumentController(Controller):
             content: bytes = f.read()
 
         return content.decode(encoding="utf-8", errors="ignore")
+
+    @post(path=urls.EXTRACT_ADVANCED_TABLES)
+    async def extract_advanced_tables(
+        self,
+        doc_service: DocumentService,
+        document_id: Annotated[
+            UUID,
+            Parameter(
+                title="Document ID",
+                description="The document to retrieve.",
+            ),
+        ],
+        data: ExtractAdvancedTablesBody,
+        current_user: User,
+    ) -> dict:
+        document = await doc_service.get_one_or_none(
+            CollectionFilter("id", [document_id]),
+            CollectionFilter("user_id", [current_user.id]),
+        )
+
+        if not document:
+            raise HTTPException(detail=f"Document {id} is not found", status_code=404)
+        try:
+            syntax_parser(data.query)
+        except:
+            raise HTTPException(detail="Invalid query", status_code=400)
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{SWPARSE_URL}/api/parsing/job/{document.job_id}/result/{data.query}",
+                    timeout=1000,
+                    headers={
+                        "Authorization": f"Bearer {SWPARSE_API_KEY}",
+                    },
+                )
+                response.raise_for_status()
+            except Exception:
+                raise HTTPException(detail="Something went wrong", status_code=400)
+
+            return response.json()[data.query][0]

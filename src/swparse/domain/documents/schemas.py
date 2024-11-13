@@ -15,3 +15,7 @@ class Document(CamelizedBaseStruct):
     extracted_file_paths: dict[str, str]
     created_at: datetime
     updated_at: datetime
+
+
+class ExtractAdvancedTablesBody(CamelizedBaseStruct):
+    query: str

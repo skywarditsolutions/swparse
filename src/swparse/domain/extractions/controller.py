@@ -33,19 +33,19 @@ from .services import ExtractionService
 
 logger = structlog.get_logger()
 
-SWPARSE_URL = f"{os.environ.get('APP_URL')}"
+SWPARSE_URL = os.environ.get("APP_URL")
 SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
-SWPARSE_API_HEADER = os.environ.get("PARSER_API_HEADER")
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET
 
 s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
+    endpoint_url=settings.storage.ENDPOINT_URL,
+    key=MINIO_ROOT_USER,
+    secret=MINIO_ROOT_PASSWORD,
+    use_ssl=False,
+)
+
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -133,7 +133,7 @@ class ExtractionController(Controller):
                 response = await client.get(
                     f"{SWPARSE_URL}/api/parsing/job/{extraction.job_id}",
                     headers={
-                        f"{SWPARSE_API_HEADER}": f"{SWPARSE_API_KEY}",
+                        "Authorization": f"Bearer {SWPARSE_API_KEY}",
                     },
                 )
                 response.raise_for_status()
@@ -162,7 +162,6 @@ class ExtractionController(Controller):
                         extracted_file_paths=extracted_file_paths,
                     )
                 )
-                
 
                 extraction.document_id = document.id
             else:

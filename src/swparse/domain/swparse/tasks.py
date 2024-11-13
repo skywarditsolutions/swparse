@@ -194,6 +194,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str) -> dict[str, str
     with s3.open(s3_url, mode="rb") as byte_content:
         result = mammoth.convert_to_html(byte_content)  # type: ignore
         htmlData: str = result.value  # type: ignore
+        # TODO: refactor using a html tree
         img_tags = re.findall(r'<img\s+[^>]*src=[\'"].+?[\'"][^>]*>', htmlData)
 
         images = {}

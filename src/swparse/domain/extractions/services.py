@@ -18,7 +18,6 @@ from .repositories import ExtractionRepository
 
 SWPARSE_URL = f"{os.environ.get('APP_URL')}"
 SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
-SWPARSE_API_HEADER = os.environ.get("PARSER_API_HEADER")
 
 queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 
@@ -40,7 +39,7 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
                     files={"data": (data.filename, data.file, data.content_type)},
                     headers={
                         "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
-                        f"{SWPARSE_API_HEADER}": f"{SWPARSE_API_KEY}",
+                        "Authorization": f"Bearer {SWPARSE_API_KEY}",
                     },
                 )
                 response.raise_for_status()

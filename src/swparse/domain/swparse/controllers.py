@@ -37,6 +37,11 @@ MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 #     raise HTTPException(detail=detail, status_code=status_code)
 
 
+# class UploadBody(BaseStruct):
+#     file: UploadFile
+#     parsing_instruction: Optional[str]
+
+
 class ParserController(Controller):
     tags = ["Parsers"]
     path = PARSER_BASE
@@ -82,6 +87,14 @@ class ParserController(Controller):
             f.write(content)
 
         kwargs = {"s3_url": s3_url, "ext": data.content_type}
+
+        # if data.parsing_instruction:
+        #     if data.parsing_instruction not in ContentType:
+        #         try:
+        #             syntax_parser(data.parsing_instruction)
+        #         except:
+        #             raise HTTPException(detail="Invalid result type", status_code=400)
+        #         kwargs["result_type"] = data.parsing_instruction
 
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
