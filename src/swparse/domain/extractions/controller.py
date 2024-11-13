@@ -133,7 +133,7 @@ class ExtractionController(Controller):
                 response = await client.get(
                     f"{SWPARSE_URL}/api/parsing/job/{extraction.job_id}",
                     headers={
-                        f"{SWPARSE_API_HEADER}": f"{SWPARSE_API_KEY}",
+                        "Authorization": f"Bearer {SWPARSE_API_KEY}",
                     },
                 )
                 response.raise_for_status()

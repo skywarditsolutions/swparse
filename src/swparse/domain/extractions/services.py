@@ -40,7 +40,7 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
                     files={"data": (data.filename, data.file, data.content_type)},
                     headers={
                         "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
-                        f"{SWPARSE_API_HEADER}": f"{SWPARSE_API_KEY}",
+                        "Authorization": f"Bearer {SWPARSE_API_KEY}",
                     },
                 )
                 response.raise_for_status()

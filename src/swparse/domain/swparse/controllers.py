@@ -76,10 +76,13 @@ class ParserController(Controller):
                     timeout=0,
                 ),
             )
+            metadata = {"instruction":""}
+            save_job_metadata(s3, job.id, metadata)
             return JobStatus(id=job.id, status=Status.complete, s3_url=s3_url)
 
         with s3.open(s3_url, "wb") as f:
             f.write(content)
+
 
         kwargs = {"s3_url": s3_url, "ext": data.content_type}
 
@@ -165,6 +168,8 @@ class ParserController(Controller):
 
         if not job:
             raise HTTPException(detail="JOB ERROR", status_code=400)
+        metadata = {"instruction":""}
+        save_job_metadata(s3, job.id, metadata)
 
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
@@ -247,7 +252,6 @@ class ParserController(Controller):
     )
     async def get_result(self, job_id: str, result_type: str = "markdown") -> dict:
         s3 = S3FileSystem(
-            # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
@@ -264,20 +268,21 @@ class ParserController(Controller):
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)
         if not job:
-            job_metadata = get_job_metadata(s3)
-            results = job_metadata.get(job_id)
-            logger.error(results)
-            if results is None:
-                raise HTTPException(detail="Job not found", status_code=204)
-
+            results = get_job_metadata(s3, job_id)
+            metadata: dict[str, str] = results["metadata"]
         else:
-            results = job.result
+            metadata = job.result
             await job.refresh(1)
-            if results is None:
-                raise HTTPException(detail="Job not found", status_code=204)
-            save_job_metadata(s3, job_id, results)
+        results = save_job_metadata(s3, job_id, metadata)
+        metadata: dict[str, str] = results["metadata"]
+
+        if metadata is None:
+            raise HTTPException(detail="Job not found", status_code=204)
+
+        logger.error("Meta Data")
+        logger.error(metadata)
         try:
-            return handle_result_type(result_type, results, s3, jm, job_key)
+            return handle_result_type(result_type, metadata, s3, jm, job_key)
         except Exception as err:
             logger.error(err)
             raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")
