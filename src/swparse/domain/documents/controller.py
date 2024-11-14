@@ -31,7 +31,7 @@ from swparse.domain.swparse.utils import (
     extract_tables_from_html,
     get_file_name,
     save_file_s3,
-    syntax_parser,
+    parse_table_query,
 )
 
 from . import urls
@@ -276,7 +276,7 @@ class DocumentController(Controller):
         if not document:
             raise HTTPException(detail=f"Document {id} is not found", status_code=404)
         try:
-            syntax_parser(data.query)
+            parse_table_query(data.query)
         except:
             raise HTTPException(detail="Invalid query", status_code=400)
 
