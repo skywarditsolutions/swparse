@@ -30,22 +30,22 @@ class ApiKeyAuthMiddleware(AbstractMiddleware):
     exclude = [API_KEY_GENERATE, "/api/parsing/query_syntax"]
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        #     request = Request(scope)
-        #     headers = request.headers
+        request = Request(scope)
+        headers = request.headers
 
-        #     api_key = headers.get("authorization")
-        #     if not api_key:
-        #         raise NotAuthorizedException(status_code=403, detail="Forbidden missing API key")
+        api_key = headers.get("authorization")
+        if not api_key:
+            raise NotAuthorizedException(status_code=403, detail="Forbidden missing API key")
 
-        #     connection: ASGIConnection = ASGIConnection(scope=scope, receive=receive, send=send)
-        #     api_key_service = await anext(
-        #         provide_api_key_service(alchemy.provide_session(connection.app.state, connection.scope))
-        #     )
-        #     if api_key != DEFAULT_API_KEY:
-        #         is_authorized = bool(await api_key_service.authenticate(api_key))
-        #         logger.error("API key authentication")
-        #         logger.error(is_authorized)
+        connection: ASGIConnection = ASGIConnection(scope=scope, receive=receive, send=send)
+        api_key_service = await anext(
+            provide_api_key_service(alchemy.provide_session(connection.app.state, connection.scope))
+        )
+        if api_key != DEFAULT_API_KEY:
+            is_authorized = bool(await api_key_service.authenticate(api_key))
+            logger.error("API key authentication")
+            logger.error(is_authorized)
 
-        #         if not is_authorized:
-        #             raise NotAuthorizedException(status_code=403, detail="Forbidden: Invalid API key")
+            if not is_authorized:
+                raise NotAuthorizedException(status_code=403, detail="Forbidden: Invalid API key")
         await self.app(scope, receive, send)
