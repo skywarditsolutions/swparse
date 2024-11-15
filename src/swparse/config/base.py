@@ -402,6 +402,7 @@ class MinioSettings:
     ROOT_PASSWORD: str = field(default_factory=lambda: os.getenv("MINIO_ROOT_PASSWORD", "password"))
     BUCKET: str = field(default_factory=lambda: os.getenv("MINIO_BUCKET", "swparse"))
     ENDPOINT_URL: str = field(default_factory=lambda: os.getenv("MINIO_ENDPOINT", "http://minio:9000/"))
+    JOB_FOLDER: str = field(default_factory=lambda: os.getenv("MINIO_JOB_FOLDER", "JOB"))
 
 
 @dataclass
