@@ -36,7 +36,7 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
             try:
                 response = await client.post(
                     f"{SWPARSE_URL}/api/parsing/upload",
-                    files={"data": (data.filename, data.file, data.content_type)},
+                    files={"file": (data.filename, data.file, data.content_type)},
                     headers={
                         "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
                         "Authorization": f"Bearer {SWPARSE_API_KEY}",

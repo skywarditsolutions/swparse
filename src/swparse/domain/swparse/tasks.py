@@ -519,3 +519,7 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
         metadata[table_query["raw"]] = tables_file_path
 
     return metadata
+
+
+async def extract_advanced_tables(ctx: Context, *, markdown: str, table_query: dict) -> dict[str, str]:
+    return extract_tables_gliner(table_query, markdown)

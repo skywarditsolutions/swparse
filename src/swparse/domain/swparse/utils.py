@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
-from typing import IO
+from typing import IO, Any
 from uuid import uuid4
 
 import html_text
@@ -291,7 +291,7 @@ def parse_table_query(extraction_query: str) -> list[dict]:
     return TreeToJson().transform(tree)
 
 
-def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: str) -> str:
+def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: str | None = None) -> Any:
     download("punkt_tab")
     model = GLiNER.from_pretrained("gliner-community/gliner_large-v2.5")
 
@@ -353,51 +353,61 @@ def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: 
 
         results.append(table)
 
+    data_frames = []
+    table_names = []
+    max_header = 0
+    for table in results:
+        rows = []
+        for row in table["rows"]:
+            processed_row = {col: ", ".join(value) if isinstance(value, list) else value for col, value in row.items()}
+            rows.append(processed_row)
+
+        if max_header < len(table["headers"]):
+            max_header = len(table["headers"])
+        df = pd.DataFrame(rows, columns=table["headers"])
+
+        data_frames.append(df.fillna(""))
+        table_names.append(table["table_name"])
+
+    json_result = json.dumps(results)
+    csv_result = ""
+    md_result = ""
+
+    for i, df in enumerate(data_frames):
+        # MARKDOWN
+        md_result += f"# {table_names[i]}\n"
+        md_result += df.to_markdown(index=False) + "\n"
+
+        # CSV
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_string = csv_buffer.getvalue()
+
+        if i != 0:
+            csv_result += f"\n============={',' * (max_header - 1)}\n\n"
+
+        csv_result += f"{table_names[i]}{',' * (max_header - 1)}\n"
+        csv_result += csv_string
+
+    # HTML
+    html_result = mistletoe.markdown(md_result)
+
     if output == "json":
-        return json.dumps(results)
-    else:
-        data_frames = []
-        table_names = []
-        max_header = 0
-        for table in results:
-            rows = []
-            for row in table["rows"]:
-                processed_row = {
-                    col: ", ".join(value) if isinstance(value, list) else value for col, value in row.items()
-                }
-                rows.append(processed_row)
+        return json_result
+    elif output == "csv":
+        return csv_result
+    elif output == "md":
+        return md_result
+    elif output == "html":
+        return html_result
 
-            if max_header < len(table["headers"]):
-                max_header = len(table["headers"])
-            df = pd.DataFrame(rows, columns=table["headers"])
-
-            data_frames.append(df.fillna(""))
-            table_names.append(table["table_name"])
-
-        csv_result = ""
-        md_result = ""
-
-        for i, df in enumerate(data_frames):
-            if output == "csv":
-                csv_buffer = io.StringIO()
-                df.to_csv(csv_buffer, index=False)
-                csv_string = csv_buffer.getvalue()
-
-                if i != 0:
-                    csv_result += f"\n============={',' * (max_header - 1)}\n\n"
-
-                csv_result += f"{table_names[i]}{',' * (max_header - 1)}\n"
-                csv_result += csv_string
-            elif output == "md" or output == "html":
-                md_result += f"# {table_names[i]}\n"
-                md_result += df.to_markdown(index=False) + "\n"
-
-        if output == "csv":
-            return csv_result
-        elif output == "md":
-            return md_result
-        else:
-            return mistletoe.markdown(md_result)
+    if output is None:
+        return {
+            "csv": csv_result,
+            "md": md_result,
+            "html": html_result,
+            "json": json_result,
+        }
 
 
 def get_hashed_file_name(filename: str, content: bytes) -> str:

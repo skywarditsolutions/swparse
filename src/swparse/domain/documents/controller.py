@@ -7,8 +7,8 @@ import os
 import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
-import httpx
 import pandas as pd
+from saq import Job, Queue
 import structlog
 from litestar import Controller, get, post
 from litestar.di import Provide
@@ -26,6 +26,7 @@ from swparse.domain.documents.schemas import Document, ExtractAdvancedTablesBody
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.extractions.dependencies import provide_extraction_serivice
 from swparse.domain.extractions.services import ExtractionService
+from swparse.domain.swparse.schemas import JobStatus, Status
 from swparse.domain.swparse.utils import (
     change_file_ext,
     extract_tables_from_html,
@@ -44,6 +45,8 @@ SWPARSE_URL = os.environ.get("APP_URL")
 SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
 logger = structlog.get_logger()
 OnlineOffline = TypeVar("OnlineOffline", bound=Literal["online", "offline"])
+
+queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
@@ -267,30 +270,73 @@ class DocumentController(Controller):
         ],
         data: ExtractAdvancedTablesBody,
         current_user: User,
-    ) -> dict:
+    ) -> JobStatus:
         document = await doc_service.get_one_or_none(
             CollectionFilter("id", [document_id]),
             CollectionFilter("user_id", [current_user.id]),
         )
-
         if not document:
-            raise HTTPException(detail=f"Document {id} is not found", status_code=404)
+            raise HTTPException(detail="Document not found", status_code=404)
+
         try:
-            parse_table_query(data.query)
+            result = parse_table_query(data.query)
         except:
             raise HTTPException(detail="Invalid query", status_code=400)
 
-        async with httpx.AsyncClient() as client:
-            try:
-                response = await client.get(
-                    f"{SWPARSE_URL}/api/parsing/job/{document.job_id}/result/{data.query}",
-                    timeout=1000,
-                    headers={
-                        "Authorization": f"Bearer {SWPARSE_API_KEY}",
-                    },
-                )
-                response.raise_for_status()
-            except Exception:
-                raise HTTPException(detail="Something went wrong", status_code=400)
+        s3fs = S3FileSystem(
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
 
-            return response.json()[data.query][0]
+        with s3fs.open(document.extracted_file_paths["markdown"], "r") as f:
+            markdown_content = f.read()
+
+            job = await queue.enqueue(
+                Job(
+                    "extract_advanced_tables",
+                    kwargs={
+                        "table_query": result["tables"],
+                        "markdown": markdown_content,
+                    },
+                    timeout=0,
+                )
+            )
+
+            return JobStatus(id=job.id, status=Status[job.status])
+
+    @get(path=urls.CHECK_ADVANCED_TABLES)
+    async def check_advanced_table_extraction(
+        self,
+        doc_service: DocumentService,
+        document_id: Annotated[
+            UUID,
+            Parameter(
+                title="Document ID",
+                description="The document to retrieve.",
+            ),
+        ],
+        job_id: str,
+        current_user: User,
+    ) -> dict[str, str]:
+        # TODO: store in db
+        document = await doc_service.get_one_or_none(
+            CollectionFilter("id", [document_id]),
+            CollectionFilter("user_id", [current_user.id]),
+        )
+        if not document:
+            raise HTTPException(detail="Document not found", status_code=404)
+
+        job_key = queue.job_key_from_id(job_id)
+        job = await queue.job(job_key)
+
+        if not job:
+            raise HTTPException(detail="Job not found", status_code=404)
+
+        if job.status == "complete":
+            return job.result
+        elif job.status in ["failed", "aborted"]:
+            raise HTTPException(detail="Job Error", status_code=500)
+
+        return {}
