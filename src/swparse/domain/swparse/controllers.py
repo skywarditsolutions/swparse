@@ -67,6 +67,14 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
+
+        s3fs = S3FileSystem(
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
+
         hashed_filename = get_hashed_file_name(filename, content)
         s3_url = f"{BUCKET}/{hashed_filename}"
 
@@ -84,16 +92,18 @@ class ParserController(Controller):
             metadata["result_type"] = data.parsing_instruction
 
         if s3.exists(s3_url):
-            del kwargs["ext"]
-            job = await queue.enqueue(
-                Job(
-                    "get_extracted_url",
-                    kwargs=kwargs,
-                    timeout=0,
-                ),
-            )
-            save_job_metadata(s3, job.id, metadata)
-            return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
+            metadata_json_str = s3fs.getxattr(s3_url, "metadata")
+            if metadata_json_str:
+                del kwargs["ext"]
+                job = await queue.enqueue(
+                    Job(
+                        "get_extracted_url",
+                        kwargs=kwargs,
+                        timeout=0,
+                    ),
+                )
+                save_job_metadata(s3, job.id, metadata)
+                return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
 
         with s3.open(s3_url, "wb") as f:
             f.write(content)
