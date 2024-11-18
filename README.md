@@ -101,8 +101,8 @@ pdm run stop-infra
 
 ## **DEMO Endpoints**
 
-- New Documentation System : [http://localhost:8000//schema](http://localhost:8000//schema)
-- Old Documentation System : [http://localhost:8000//schema/docs](http://localhost:8000//schema/docs)
+- New Documentation System : [http://localhost:8000//schema](http://localhost:8000/schema)
+- Old Documentation System : [http://localhost:8000//schema/docs](http://localhost:8000/schema/docs)
 - base_url : [http://localhost:8000/](http://localhost:8000/)
 - llama_parse Compatibility :
 
