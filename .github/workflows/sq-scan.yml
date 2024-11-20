@@ -28,9 +28,23 @@ jobs:
         uses: actions/setup-python@v2
         with:
             python-version: '3.11'
+
       - name: Install Poetry
         run: |
           pip install poetry
+          poetry config virtualenvs.create false
+
+      - name: Setup pyproject.toml (if missing)
+        run: |
+          if [ ! -f pyproject.toml ]; then
+            echo "[tool.poetry]" >> pyproject.toml
+            echo "name = 'swparse'" >> pyproject.toml
+            echo "version = '0.1.0'" >> pyproject.toml
+            echo "description = 'A sample Python project'" >> pyproject.toml
+            echo "authors = ['Your Name <you@example.com>']" >> pyproject.toml
+            echo "[tool.poetry.dependencies]" >> pyproject.toml
+            echo "python = '^3.11'" >> pyproject.toml
+          fi
 
       - name: Install dependencies
         run: poetry install
@@ -53,7 +67,7 @@ jobs:
         run: |
           docker run --rm -v $PWD:/usr/src \
           sonarsource/sonar-scanner-cli \
-          -Dsonar.projectKey=skyward-mist-recompete \
+          -Dsonar.projectKey=swparse-mist \
           -Dsonar.sources=. \
           -Dsonar.host.url=http://172.17.0.1:9000 \
           -Dsonar.login=admin \
@@ -62,17 +76,19 @@ jobs:
           -Dsonar.python.coverage.reportPaths=/usr/src/coverage.xml
           sleep 30
           echo "Waiting for SQ to process the reports"
-          curl -sSf "http://localhost:9000/api/measures/component?component=skyward-mist-recompete&metricKeys=alert_status,bugs,vulnerabilities,code_smells,duplicated_lines_density,coverage,test_success_density" -o "sonarqube_report.json"
-          curl -sSf "http://localhost:9000/api/measures/component_tree?component=skyward-mist-recompete&strategy=children&metricKeys=alert_status,bugs,vulnerabilities,code_smells,duplicated_lines_density,coverage,test_success_density" -o "sonarqube_report.html"
+          curl -sSf "http://localhost:9000/api/measures/component?component=swparse-mist&metricKeys=alert_status,bugs,vulnerabilities,code_smells,duplicated_lines_density,coverage,test_success_density" -o "sonarqube_report.json"
+          curl -sSf "http://localhost:9000/api/measures/component_tree?component=swparse-mist&strategy=children&metricKeys=alert_status,bugs,vulnerabilities,code_smells,duplicated_lines_density,coverage,test_success_density" -o "sonarqube_report.html"
+
       - name: SonarQube Quality Gate check
         run: |
-            response=$(curl -sSf "http://localhost:9000/api/qualitygates/project_status?projectKey=skyward-mist-recompete")
+            response=$(curl -sSf "http://localhost:9000/api/qualitygates/project_status?projectKey=swparse-mist")
             quality_gate_status=$(echo "${response}" | jq -r '.projectStatus.status')
             echo $quality_gate_status
             if [ "${quality_gate_status}" != "OK" ]; then
             echo "Quality gate status is not OK. Failing workflow."
             exit 0
             fi
+
       - name: Report Quality Gate Status to GitHub
         run: |
               conclusion="success"
@@ -90,6 +106,7 @@ jobs:
                   }
                 }' \
                 "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs"
+
       - name: Upload SonarQube HTML report
         uses: actions/upload-artifact@v3
         with:
