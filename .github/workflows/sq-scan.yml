@@ -29,33 +29,20 @@ jobs:
         with:
             python-version: '3.12'
 
-      - name: Install Poetry
+      - name: Install Hatch
         run: |
-          pip install poetry
-          poetry config virtualenvs.create false
+          pip install hatch
 
-      - name: Setup pyproject.toml (if missing)
+      - name: Install dependencies using Hatch
         run: |
-          if [ ! -f pyproject.toml ]; then
-            echo "[tool.poetry]" >> pyproject.toml
-            echo "name = 'swparse'" >> pyproject.toml
-            echo "version = '0.1.0'" >> pyproject.toml
-            echo "description = 'A sample Python project'" >> pyproject.toml
-            echo "authors = ['Your Name <you@example.com>']" >> pyproject.toml
-            echo "[tool.poetry.dependencies]" >> pyproject.toml
-            echo "python = '^3.11'" >> pyproject.toml
-          fi
+          hatch env create myenv --no-activate
+          hatch shell myenv -- pip install -r requirements.txt
 
-      - name: Install dependencies
-        run: poetry install
-        continue-on-error: true
-
-      - name: Run Coverage and generate reports
+      - name: Run Tests and Generate Coverage Reports
         run: |
-          poetry run coverage run -m pytest
-          poetry run coverage xml -o coverage.xml
+          hatch run test_coverage
 
-      - name: Wait for server to be ready
+      - name: Wait for SonarQube server to be ready
         run: |
           until curl -sSf "http://localhost:9000" | grep -q "window.serverStatus = 'UP';"; do
           echo "SonarQube host is not yet available. Waiting..."
