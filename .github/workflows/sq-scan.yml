@@ -1,0 +1,97 @@
+# Workflow for SonarQube Scan of https://github.com/skywarditsolutions/swparse/
+
+name: SonarQube Scan
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Bring up SonarQube server using Docker
+        run: |
+            docker run -e SONAR_FORCEAUTHENTICATION=false -d -p 9000:9000 sonarqube:lts-community
+
+      - name: Checkout this repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+            python-version: '3.11'
+      - name: Install Poetry
+        run: |
+          pip install poetry
+
+      - name: Install dependencies
+        run: poetry install
+        continue-on-error: true
+
+      - name: Run Coverage and generate reports
+        run: |
+          poetry run coverage run -m pytest
+          poetry run coverage xml -o coverage.xml
+
+      - name: Wait for server to be ready
+        run: |
+          until curl -sSf "http://localhost:9000" | grep -q "window.serverStatus = 'UP';"; do
+          echo "SonarQube host is not yet available. Waiting..."
+          sleep 5
+          done
+          echo "SonarQube is up and running."
+
+      - name: Run SonarQube scan using Docker
+        run: |
+          docker run --rm -v $PWD:/usr/src \
+          sonarsource/sonar-scanner-cli \
+          -Dsonar.projectKey=skyward-mist-recompete \
+          -Dsonar.sources=. \
+          -Dsonar.host.url=http://172.17.0.1:9000 \
+          -Dsonar.login=admin \
+          -Dsonar.password=admin \
+          -Dsonar.exclusions=**/tests/*.py \
+          -Dsonar.python.coverage.reportPaths=/usr/src/coverage.xml
+          sleep 30
+          echo "Waiting for SQ to process the reports"
+          curl -sSf "http://localhost:9000/api/measures/component?component=skyward-mist-recompete&metricKeys=alert_status,bugs,vulnerabilities,code_smells,duplicated_lines_density,coverage,test_success_density" -o "sonarqube_report.json"
+          curl -sSf "http://localhost:9000/api/measures/component_tree?component=skyward-mist-recompete&strategy=children&metricKeys=alert_status,bugs,vulnerabilities,code_smells,duplicated_lines_density,coverage,test_success_density" -o "sonarqube_report.html"
+      - name: SonarQube Quality Gate check
+        run: |
+            response=$(curl -sSf "http://localhost:9000/api/qualitygates/project_status?projectKey=skyward-mist-recompete")
+            quality_gate_status=$(echo "${response}" | jq -r '.projectStatus.status')
+            echo $quality_gate_status
+            if [ "${quality_gate_status}" != "OK" ]; then
+            echo "Quality gate status is not OK. Failing workflow."
+            exit 0
+            fi
+      - name: Report Quality Gate Status to GitHub
+        run: |
+              conclusion="success"
+              curl -X POST \
+                -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                -H "Accept: application/vnd.github.v3+json" \
+                -d '{
+                  "name": "SonarQube Quality Gate",
+                  "head_sha": "'"${GITHUB_SHA}"'",
+                  "status": "completed",
+                  "conclusion": "'"${conclusion}"'",
+                  "output": {
+                    "title": "SonarQube Quality Gate Status",
+                    "summary": "Quality gate status: '"${quality_gate_status}"'"
+                  }
+                }' \
+                "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs"
+      - name: Upload SonarQube HTML report
+        uses: actions/upload-artifact@v3
+        with:
+            name: sonar-html-report
+            path: sonarqube_report.*
