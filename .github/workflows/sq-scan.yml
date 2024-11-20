@@ -29,22 +29,19 @@ jobs:
         with:
             python-version: '3.12'
 
-      - name: Install Hatch
+      - name: Install Package in Editable Mode and Test Dependencies
         run: |
-          pip install hatch
+          pip install -e .[test]  # This command assumes you have a setup.py or extras defined in pyproject.toml
+          pip install pytest coverage
 
-      - name: Create and activate Hatch environment
+      - name: Run pytest
         run: |
-          hatch env create myenv
-          echo "HATCH_ENV_NAME=myenv" >> $GITHUB_ENV
+          pytest
 
-      - name: Install dependencies
+      - name: Generate Coverage Report
         run: |
-          hatch shell --command "pip install -r requirements.txt"
-
-      - name: Run Tests and Generate Coverage Reports
-        run: |
-          hatch run test_coverage
+          coverage run -m pytest
+          coverage xml -o coverage.xml
 
       - name: Wait for SonarQube server to be ready
         run: |
