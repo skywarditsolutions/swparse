@@ -33,10 +33,14 @@ jobs:
         run: |
           pip install hatch
 
-      - name: Install dependencies using Hatch
+      - name: Create and activate Hatch environment
         run: |
-          hatch env create myenv --no-activate
-          hatch shell myenv -- pip install -r requirements.txt
+          hatch env create myenv
+          echo "HATCH_ENV_NAME=myenv" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          hatch shell --command "pip install -r requirements.txt"
 
       - name: Run Tests and Generate Coverage Reports
         run: |
