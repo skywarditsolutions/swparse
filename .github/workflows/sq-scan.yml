@@ -29,19 +29,22 @@ jobs:
         with:
             python-version: '3.12'
 
-      # - name: Install Package in Editable Mode and Test Dependencies
-      #   run: |
-      #     pip install -e .[test]
-      #     pip install pytest coverage
+      - name: Copy .env.local.example to .env
+        run: cp .env.local.example .env
 
-      # - name: Run pytest
-      #   run: |
-      #     pytest
+      - name: Install Package in Editable Mode and Test Dependencies
+        run: |
+          pip install -e .[test]
+          pip install pytest coverage
 
-      # - name: Generate Coverage Report
-      #   run: |
-      #     coverage run -m pytest
-      #     coverage xml -o coverage.xml
+      - name: Run pytest
+        run: |
+          pytest
+
+      - name: Generate Coverage Report
+        run: |
+          coverage run -m pytest
+          coverage xml -o coverage.xml
 
       - name: Wait for SonarQube server to be ready
         run: |
