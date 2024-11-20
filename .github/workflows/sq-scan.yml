@@ -33,17 +33,9 @@ jobs:
         run: |
           pip install hatch
 
-      - name: Create and activate Hatch environment
+      - name: Install dependencies and run tests
         run: |
-          hatch env create myenv
-          echo "HATCH_ENV_NAME=myenv" >> $GITHUB_ENV
-
-      - name: Install dependencies
-        run: |
-          hatch shell --command "pip install -r requirements.txt"
-
-      - name: Run Tests and Generate Coverage Reports
-        run: |
+          hatch run pip install -r requirements.txt
           hatch run test_coverage
 
       - name: Wait for SonarQube server to be ready
