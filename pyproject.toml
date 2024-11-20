@@ -1,5 +1,5 @@
 [project]
-authors = [{ name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech" }]
+authors = [{ name = "Skyward IT Solutions", email = "info@skywarditsolutions.com" }]
 dependencies = [
   "litestar[full]>=2.11",
   "advanced-alchemy[uuid]>=0.10.0",
@@ -47,11 +47,6 @@ readme = "README.md"
 requires-python = "==3.12.*"
 version = "0.5.0"
 
-# [project.urls]
-# Discord = "https://discord.gg/litestar"
-# Homepage = "https://github.com/skywarditsolutions/skwrdparse"
-# Issue = "https://github.com/skywarditsolutions/skwrdparse/issues/"
-# Source = "https://github.com/skywarditsolutions/skwrdparse"
 
 [project.scripts]
 swparse = "swparse.__main__:run_cli"
