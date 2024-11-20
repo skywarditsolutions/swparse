@@ -29,14 +29,15 @@ jobs:
         with:
             python-version: '3.12'
 
-      - name: Install Hatch
+      - name: Install Package in Editable Mode
         run: |
-          pip install hatch
+          pip install -e .
 
-      - name: Install dependencies and run tests
+      - name: Run Tests and Generate Coverage Reports
         run: |
-          hatch run pip install -r requirements.txt
-          hatch run test_coverage
+          pytest
+          coverage run -m pytest
+          coverage xml -o coverage.xml
 
       - name: Wait for SonarQube server to be ready
         run: |
