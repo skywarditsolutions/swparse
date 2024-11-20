@@ -29,13 +29,17 @@ jobs:
         with:
             python-version: '3.12'
 
-      - name: Install Package in Editable Mode
+      - name: Install Package in Editable Mode and Test Dependencies
         run: |
-          pip install -e .
+          pip install -e .[test]  # This command assumes you have a setup.py or extras defined in pyproject.toml
+          pip install pytest coverage
 
-      - name: Run Tests and Generate Coverage Reports
+      - name: Run pytest
         run: |
           pytest
+
+      - name: Generate Coverage Report
+        run: |
           coverage run -m pytest
           coverage xml -o coverage.xml
 
