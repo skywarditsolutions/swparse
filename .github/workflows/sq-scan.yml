@@ -35,7 +35,7 @@ jobs:
       - name: Install Package in Editable Mode and Test Dependencies
         run: |
           pip install -e .[test]
-          pip install pytest coverage
+          pip install pytest coverage pytest-dotenv
 
       - name: Run pytest
         run: |
