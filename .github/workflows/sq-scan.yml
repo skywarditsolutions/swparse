@@ -29,8 +29,8 @@ jobs:
         with:
             python-version: '3.12'
 
-      - name: Copy .env.local.example to .env
-        run: cp .env.local.example .env
+      - name: Copy .env.infra.example to .env
+        run: cp .env.infra.example .env
 
       - name: Install Package in Editable Mode and Test Dependencies
         run: |
