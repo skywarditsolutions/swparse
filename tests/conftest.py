@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 import pytest
 from redis.asyncio import Redis
 from swparse.config import base
+from httpx import AsyncClient
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -54,3 +55,9 @@ async def fx_redis(valkey_docker_ip: str, valkey_service: None, valkey_port: int
         Redis client instance, function scoped.
     """
     yield Redis(host=valkey_docker_ip, port=valkey_port)
+
+@pytest.fixture(name="client")
+async def fx_client(swparse: Litestar) -> AsyncIterator[AsyncClient]:
+    config = swparse.get_config()
+    async with AsyncClient(base_url="http://localhost", headers=config.headers) as client:
+        yield client
