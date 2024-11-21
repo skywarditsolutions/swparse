@@ -59,5 +59,5 @@ async def fx_redis(valkey_docker_ip: str, valkey_service: None, valkey_port: int
 @pytest.fixture(name="client")
 async def fx_client(swparse: Litestar) -> AsyncIterator[AsyncClient]:
     config = swparse.get_config()
-    async with AsyncClient(base_url="http://localhost", headers=config.headers) as client:
+    async with AsyncClient(base_url="http://0.0.0.0", headers=config.headers) as client:
         yield client
