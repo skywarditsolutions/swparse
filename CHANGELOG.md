@@ -1,17 +1,36 @@
-## Unreleased
+## v0.6.0 (2024-11-22)
 
 ### Feat
 
+- get json result per page with llamaparse datastructure for pdf
+- advanced table extraction from document controller
+- llama parse parsing_instruction support
+- opensource release preparation
+- default/env API key authorization
+- save metadata with dedicated jobid file in minio
+- advanced table extraction from document controller (wip)
 - caching results with jobId in minio bucket
 - merge with hm3-file-checksum branch
 - return extracted result from existing files if the uploaded file is already exist
+- csv, json, md outputs for table extraction
+- table extraction
+- resolve merge
+- sentence split label extractor
+- add default data type in syntax parser
+- **wip**: add syntax parser
 - retry failed extraction API
 - integrate extractions with documents
 - add extraction module
 
 ### Fix
 
+- handle empty metadata
+- re-enable api key auth
+- store metadata for pdf and iamge
 - **wip**: return extracted result if the file is already uploaded
+- change swparse api key header, return table extraction json in string
+- add condition for table name so that table names are unique
+- add condition so that entity labels are unique
 - minor fixes
 - fix job status handling for retry extraction API
 - remove pagination from extraction list, add created_at update_at in schema
