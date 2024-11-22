@@ -1,6 +1,6 @@
 # SWParse : Skyward's Smart parser for image and multi-document parsing for LLMs
 
-Latest Version : 0.6.0
+Latest Version : 0.6.2
 
 ## Summary
 
@@ -25,7 +25,7 @@ With GPU
 
 ```bash
 cp .env.docker.example .env
-docker compose up
+bash start.sh
 ```
 
 Without GPU
