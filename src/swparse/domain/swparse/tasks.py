@@ -156,36 +156,51 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     file_name = get_file_name(s3_url)
 
     with s3.open(s3_url, mode="rb") as doc:
-        markdown, doc_images, out_meta = pdf_markdown(doc.read(), start_page=start_page, max_pages=end_page)
+        content = doc.read()
+
+    markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)
 
     html_results = mistletoe.markdown(markdown)
     text_results = html_text.extract_text(html_results, guess_layout=True)
 
-    images = {}
+    all_images = {}
     # Save Images
-    for image_name, img in doc_images.items():
-        image_name = image_name.lower()
-        buffered = BytesIO()
-        img.save(buffered, format=image_name.split(".")[-1])
-        img_b = buffered.getvalue()
-        img_file_path = save_file_s3(s3, image_name, img_b)
-        images[image_name] = img_file_path
+    for per_page_result in json_result:
+        per_page_images = []
+        doc_images = per_page_result.get("doc_images")
+        if doc_images is None:
+            continue
+        for image_name, img in doc_images.items():
+            image_name = image_name.lower()
+            buffered = BytesIO()
+            img.save(buffered, format=image_name.split(".")[-1])
+            img_b = buffered.getvalue()
+            img_file_path = save_file_s3(s3, image_name, img_b)
+            all_images[image_name] = img_file_path
+            per_page_images.append({image_name:img_file_path})
+        per_page_result.pop("doc_images")
+        per_page_result.update({"images":per_page_images})
 
-    # Markdown Parsing
+    # Markdown saving
     md_file_name = change_file_ext(file_name, "md")
     md_file_path = save_file_s3(s3, md_file_name, markdown)
     # HTML Parsing
     html_file_name = change_file_ext(file_name, "html")
     html_file_path = save_file_s3(s3, html_file_name, html_results)
-    # Markdown Parsing
+    # Text Parsing
     txt_file_name = change_file_ext(file_name, "txt")
     txt_file_path = save_file_s3(s3, txt_file_name, text_results)
+
+    # JSON file saving
+    json_file_name = change_file_ext(file_name, "json")
+    json_file_path = save_file_s3(s3, json_file_name, json.dumps(json_result))
 
     return {
         ContentType.MARKDOWN.value: md_file_path,
         ContentType.HTML.value: html_file_path,
         ContentType.TEXT.value: txt_file_path,
-        ContentType.IMAGES.value: json.dumps(images),
+        ContentType.IMAGES.value: json.dumps(all_images),
+        ContentType.JSON.value: json_file_path,
     }
 
 
