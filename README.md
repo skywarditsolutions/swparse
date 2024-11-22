@@ -1,10 +1,10 @@
 # SWParse : Skyward's Smart parser for image and multi-document parsing for LLMs
 
-Latest Version : 0.5.0
+Latest Version : 0.6.0
 
 ## Summary
 
-The SWParse  system is a smart document parser that integrates well with LLamaIndex RAG  that extracts Structured text from various file types, including images and documents.
+The SWParse  system is a smart document parser that integrates well with LLamaIndex RAG  that extracts Structured text from various file types, including images and documents.
 Features:
 
 - Support for multiple file formats and languages ( PDF , DOCX , XLSX , HTML , Markdown , Images and Several Plain Text files)
@@ -101,12 +101,9 @@ pdm run stop-infra
 
 ## **DEMO Endpoints**
 
-- New Documentation System : <http://http://34.197.47.159//schema>
-
-- Old Documentation System : <http://http://34.197.47.159//schema/docs>
-
-- base_url : <http://http://34.197.47.159/>
-
+- New Documentation System : [http://localhost:8000//schema](http://localhost:8000//schema)
+- Old Documentation System : [http://localhost:8000//schema/docs](http://localhost:8000//schema/docs)
+- base_url : [http://localhost:8000/](http://localhost:8000/)
 - llama_parse Compatibility :
 
 ```python
@@ -116,49 +113,7 @@ parser = LlamaParse(
     num_workers=2,  # if multiple files passed, split in `num_workers` API calls
     verbose=True,
     language="en",  # Optionally you can define a language, default=e
-    base_url="http://http://34.197.47.159/"
-)
-```
-
-## **UAT Endpoints**
-
-- New Documentation System : <http://52.202.108.42/schema>
-
-- Old Documentation System : <http://52.202.108.42/schema/docs>
-
-- base_url : <http://52.202.108.42>
-
-- llama_parse Compatibility :
-
-```python
-parser = LlamaParse(
-    api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
-    result_type="markdown",  # "markdown" and "text" are available
-    num_workers=2,  # if multiple files passed, split in `num_workers` API calls
-    verbose=True,
-    language="en",  # Optionally you can define a language, default=e
-    base_url="http://52.202.108.42"
-)
-```
-
-## **DEV Endpoints**
-
-- New Documentation System : <http://3.215.80.255/schema>
-
-- Old Documentation System : <http://3.215.80.255/schema/docs>
-
-- base_url : <http://3.215.80.255/>
-
-- llama_parse Compatibility :
-
-```python
-parser = LlamaParse(
-    api_key="llx-...",  # can also be set in your env as LLAMA_CLOUD_API_KEY
-    result_type="markdown",  # "markdown" and "text" are available
-    num_workers=2,  # if multiple files passed, split in `num_workers` API calls
-    verbose=True,
-    language="en",  # Optionally you can define a language, default=e
-    base_url="http://3.215.80.255/"
+    base_url="http://localhost:8000"
 )
 ```
 
@@ -293,10 +248,10 @@ The API returns error responses in the following format:
  Litestar CLI.
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --swparse          TEXT       Module path to a Litestar application (TEXT)       │
-│ --swparse-dir      DIRECTORY  Look for APP in the specified directory, by adding │
-│                           this to the PYTHONPATH. Defaults to the current    │
-│                           working directory.                                 │
+│ --swparse          TEXT       Module path to a Litestar application (TEXT)   │
+│ --swparse-dir      DIRECTORY  Look for APP in the specified directory, by    │
+│                           adding this to the PYTHONPATH. Defaults to the     │
+│                           current working directory.                         │
 │                           (DIRECTORY)                                        │
 │ --help     -h             Show this message and exit.                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -305,9 +260,9 @@ Loading environment configuration from .env
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
 │ assets       Manage Vite Tasks.                                              │
 │ database     Manage SQLAlchemy database components.                          │
-│ info         Show information about the detected Litestar swparse.               │
+│ info         Show information about the detected Litestar swparse.           │
 │ routes       Display information about the application's routes.             │
-│ run          Run a Litestar swparse.                                             │
+│ run          Run a Litestar swparse.                                         │
 │ schema       Manage server-side OpenAPI schemas.                             │
 │ sessions     Manage server-side sessions.                                    │
 │ users        Manage application users and roles.                             │
