@@ -5,6 +5,7 @@ import tempfile
 import typing
 import warnings
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 import pandas
 import pypdfium2 as pdfium  # Needs to be at the top to avoid warnings
@@ -33,6 +34,8 @@ from marker.tables.table import format_tables
 from marker.utils import flush_cuda_memory
 from PIL import Image
 
+from marker.schema.page import Page
+
 logger = getLogger(__name__)
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
@@ -49,7 +52,7 @@ def pdf_markdown(
     start_page: int = 0,
     max_pages: int = 40,
     ocr_all_pages: bool = False,
-) -> tuple[str, dict[str, Image.Image], dict]:
+) -> tuple[str, dict[str, Image.Image], dict, list]:
     if len(model_lst) == 0:
         logger.error("Loading Models")
         model_lst.extend(load_all_models())
@@ -58,7 +61,7 @@ def pdf_markdown(
         temp_pdf.write(in_file)
         temp_pdf.seek(0)
         filename = temp_pdf.name
-        full_text, images, out_meta = convert_single_pdf(
+        full_text, images, out_meta, json_result = convert_single_pdf(
             filename,
             model_lst=model_lst,
             langs=langs,
@@ -66,7 +69,8 @@ def pdf_markdown(
             max_pages=max_pages,
             ocr_all_pages=ocr_all_pages,
         )
-    return full_text, images, out_meta
+
+    return full_text, images, out_meta, json_result
 
 
 def convert_single_pdf(
@@ -78,7 +82,7 @@ def convert_single_pdf(
     langs: list[str] | None = None,
     batch_multiplier: int = 1,
     ocr_all_pages: bool = False,
-) -> tuple[str, dict[str, Image.Image], dict]:
+) -> tuple[str, dict[str, Image.Image], dict, list]:
     ocr_all_pages = ocr_all_pages or settings.OCR_ALL_PAGES
 
     if metadata:
@@ -94,6 +98,7 @@ def convert_single_pdf(
     out_meta = {
         "languages": langs,
         "filetype": filetype,
+        "pages_metadata": [],
     }
 
     if filetype == "other":  # We can't process this file
@@ -173,6 +178,8 @@ def convert_single_pdf(
 
     for page in pages:
         for block in page.blocks:
+            logger.info("block")
+            logger.info(block)
             block.filter_spans(bad_span_ids)
             block.filter_bad_span_types()
 
@@ -211,7 +218,50 @@ def convert_single_pdf(
 
     doc_images = images_to_dict(pages)
 
-    return full_text, doc_images, out_meta
+    json_result = []
+    for page_idx, page in enumerate(filtered):
+
+        page_text = get_page_text(page)
+        page_merged_lines = merge_spans([page])
+        page_text_blocks = merge_lines(page_merged_lines)
+        page_text_blocks = filter_common_titles(page_text_blocks)
+        page_md = get_full_text(page_text_blocks)
+
+        page_md = cleanup_text(page_md)
+
+        page_md = replace_bullets(page_md)
+
+        doc_images = images_to_dict([page])
+
+        page_metadata = {
+                "page": page_idx + 1,
+                "text": page_text,
+                "md":page_md,
+                "doc_images":doc_images,
+                "status": "OK",
+                "links": [],
+                "width": page.width,
+                "height": page.height,
+                "triggeredAutoMode": False,
+        }
+        json_result.append(page_metadata)
+
+    return full_text, doc_images, out_meta, json_result
+
+
+
+def get_page_text(page: Page) -> str:
+    page_text = []
+
+    for block in page.blocks:
+
+        for line in block.lines:
+
+            for span in line.spans:
+                if span.text.strip():
+                    page_text.append(span.text.strip())  
+
+    return "\n".join(page_text)
 
 
 async def convert_xlsx_csv(

@@ -55,6 +55,7 @@ saq = SAQConfig(
                 "swparse.domain.swparse.tasks.parse_pptx_s3",
                 "swparse.domain.swparse.tasks.parse_doc_s3",
                 "swparse.domain.swparse.tasks.parse_ppt_s3",
+                "swparse.domain.swparse.tasks.extract_advanced_tables",
             ],
         ),
     ],

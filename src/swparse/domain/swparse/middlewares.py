@@ -16,6 +16,7 @@ from swparse.config.app import alchemy
 from swparse.domain.accounts.dependencies import provide_api_key_service
 from swparse.domain.accounts.urls import API_KEY_GENERATE
 from dotenv import load_dotenv
+
 if TYPE_CHECKING:
     from litestar.types import Receive, Scope, Send
 
@@ -23,6 +24,7 @@ logger = structlog.get_logger()
 
 load_dotenv()
 DEFAULT_API_KEY = os.environ["PARSER_API_KEY"]
+
 
 class ApiKeyAuthMiddleware(AbstractMiddleware):
     exclude = [API_KEY_GENERATE, "/api/parsing/query_syntax"]

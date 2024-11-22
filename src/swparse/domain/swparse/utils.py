@@ -4,11 +4,11 @@ import json
 import math
 import os
 import re
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
-from typing import IO
+from typing import IO, Any
 from uuid import uuid4
 
 import html_text
@@ -269,7 +269,7 @@ class TreeToJson(Transformer):
         return items[0].value
 
 
-def syntax_parser(extraction_query: str) -> list[dict]:
+def parse_table_query(extraction_query: str) -> list[dict]:
     lang = """start: instruction+ output
         instruction: table_ident value+ mode ";"
         table_ident: FIELD_NAME "="
@@ -277,7 +277,7 @@ def syntax_parser(extraction_query: str) -> list[dict]:
         field: FIELD_NAME ","?
         mode: ("-"MODE)?
         output: (("as "|"AS ")OUTPUT)?
-        OUTPUT: /csv|md|json/i
+        OUTPUT: /csv|md|json|html/i
         MODE: /by( |_)?sentence|by( |_)?line|ln|sent|sentence|line/i
         FIELD_NAME: /[a-zA-Z0-9_]+((_| )[a-zA-Z0-9_]+)*/
         type: ":" DATATYPES ","?
@@ -291,7 +291,7 @@ def syntax_parser(extraction_query: str) -> list[dict]:
     return TreeToJson().transform(tree)
 
 
-def extract_labels(table_queries: list[dict], markdownText: str, output: str):
+def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: str | None = None) -> Any:
     download("punkt_tab")
     model = GLiNER.from_pretrained("gliner-community/gliner_large-v2.5")
 
@@ -353,53 +353,67 @@ def extract_labels(table_queries: list[dict], markdownText: str, output: str):
 
         results.append(table)
 
+    data_frames = []
+    table_names = []
+    max_header = 0
+    for table in results:
+        rows = []
+        for row in table["rows"]:
+            processed_row = {col: ", ".join(value) if isinstance(value, list) else value for col, value in row.items()}
+            rows.append(processed_row)
+
+        if max_header < len(table["headers"]):
+            max_header = len(table["headers"])
+        df = pd.DataFrame(rows, columns=table["headers"])
+
+        data_frames.append(df.fillna(""))
+        table_names.append(table["table_name"])
+
+    json_result = json.dumps(results)
+    csv_result = ""
+    md_result = ""
+
+    for i, df in enumerate(data_frames):
+        # MARKDOWN
+        md_result += f"# {table_names[i]}\n"
+        md_result += df.to_markdown(index=False) + "\n"
+
+        # CSV
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_string = csv_buffer.getvalue()
+
+        if i != 0:
+            csv_result += f"\n============={',' * (max_header - 1)}\n\n"
+
+        csv_result += f"{table_names[i]}{',' * (max_header - 1)}\n"
+        csv_result += csv_string
+
+    # HTML
+    html_result = mistletoe.markdown(md_result)
+
     if output == "json":
-        return results
-    else:
-        data_frames = []
-        table_names = []
-        max_header = 0
-        for table in results:
-            rows = []
-            for row in table["rows"]:
-                processed_row = {
-                    col: ", ".join(value) if isinstance(value, list) else value for col, value in row.items()
-                }
-                rows.append(processed_row)
+        return json_result
+    elif output == "csv":
+        return csv_result
+    elif output == "md":
+        return md_result
+    elif output == "html":
+        return html_result
 
-            if max_header < len(table["headers"]):
-                max_header = len(table["headers"])
-            df = pd.DataFrame(rows, columns=table["headers"])
-
-            data_frames.append(df.fillna(""))
-            table_names.append(table["table_name"])
-
-        csv_result = ""
-        md_result = ""
-
-        for i, df in enumerate(data_frames):
-            if output == "csv":
-                csv_buffer = io.StringIO()
-                df.to_csv(csv_buffer, index=False)
-                csv_string = csv_buffer.getvalue()
-
-                if i != 0:
-                    csv_result += f"\n============={',' * (max_header - 1)}\n\n"
-
-                csv_result += f"{table_names[i]}{',' * (max_header - 1)}\n"
-                csv_result += csv_string
-            elif output == "md":
-                md_result += f"# {table_names[i]}\n"
-                md_result += df.to_markdown(index=False) + "\n"
-
-        return csv_result if output == "csv" else md_result
+    if output is None:
+        return {
+            "csv": csv_result,
+            "md": md_result,
+            "html": html_result,
+            "json": json_result,
+        }
 
 
 def get_hashed_file_name(filename: str, content: bytes) -> str:
     file_ext = filename.split(".")[-1]
     check_sum = hashlib.md5(content).hexdigest()
     return f"{check_sum}.{file_ext}"
-
 
 
 def get_job_metadata(s3: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]:
@@ -410,11 +424,12 @@ def get_job_metadata(s3: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]
             content = json.loads(f.read())
     return content
 
+
 def save_job_metadata(s3: S3FileSystem, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
     job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
     job_folder_path = f"{BUCKET}/{JOB_FOLDER}/"
 
-    existing_job_metadata:dict[str, dict] = {"metadata": {}}
+    existing_job_metadata: dict[str, dict] = {"metadata": {}}
     if not s3.exists(job_folder_path):
         s3.mkdir(job_folder_path)
 
@@ -422,7 +437,7 @@ def save_job_metadata(s3: S3FileSystem, job_id: str, metadata: dict[str, str]) -
         existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
     else:
         existing_job_metadata = get_job_metadata(s3, job_id)
- 
+
     existing_job_metadata["metadata"].update(metadata)
 
     try:
@@ -444,28 +459,32 @@ def get_file_content(s3: S3FileSystem, file_path: str) -> str:
 def handle_result_type(
     result_type: str, results: dict[str, str], s3: S3FileSystem, jm: JobMetadata, job_key: str
 ) -> dict:
+    if results.get("result_type"):
+        result_type_check = results["result_type"]
+    else:
+        result_type_check = result_type
     try:
         result = {"job_metadata": jm.__dict__}
-        if result_type == ContentType.MARKDOWN.value:
+        if result_type_check == ContentType.MARKDOWN.value:
             markdown = get_file_content(s3, results["markdown"])
-            result["markdown"] = markdown
+            result[result_type] = markdown
 
-        elif result_type == ContentType.HTML.value:
+        elif result_type_check == ContentType.HTML.value:
             html = get_file_content(s3, results["html"])
-            result["html"] = html
+            result[result_type] = html
 
-        elif result_type == ContentType.TEXT.value:
+        elif result_type_check == ContentType.TEXT.value:
             text = get_file_content(s3, results["text"])
-            result["text"] = text
+            result[result_type] = text
 
-        elif result_type == ContentType.TABLE.value:
+        elif result_type_check == ContentType.TABLE.value:
             html = extract_tables_from_html(s3, results["html"])
             result_html = "<br><br>"
             if html:
                 result_html = result_html.join(html)
-            result["table"] = result_html
+            result[result_type] = result_html
 
-        elif result_type == ContentType.MARKDOWN_TABLE.value:
+        elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")
             if table_file_path:
                 with s3.open(results["table"], mode="r") as out_file_html:
@@ -481,25 +500,21 @@ def handle_result_type(
                 markdown_tbls += df.to_markdown()
                 markdown_tbls += "\n\n"
 
-            result["table_md"] = markdown_tbls
+            result[result_type] = markdown_tbls
 
-        elif result_type == ContentType.IMAGES.value:
+        elif result_type_check == ContentType.IMAGES.value:
             images = results.get("images")
 
-            result["images"] = images
+            result[result_type] = images
         else:
-            try:
-                table_queries = syntax_parser(result_type)
-            except:
-                raise HTTPException(detail="Invalid query syntax", status_code=400)
-            with s3.open(results["markdown"], mode="r") as out_file_md:
-                markdown = out_file_md.read()
-                result[result_type] = extract_labels(table_queries["tables"], markdown, table_queries["output"])
+            with s3.open(results[result_type_check], mode="r") as tables_file:
+                tables_content = tables_file.read()
+                result[result_type] = tables_content
 
         if len(result) > 1:
             return result
 
-        raise HTTPException(f"Format {result_type} is currently unsupported for {job_key}")
+        raise HTTPException(f"Format {result_type_check} is currently unsupported for {job_key}")
 
     except Exception as e:
-        raise HTTPException(f"Format {result_type} is currently unsupported for {job_key}")
+        raise HTTPException(f"Format {result_type_check} is currently unsupported for {job_key}")

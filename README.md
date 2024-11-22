@@ -1,10 +1,12 @@
 # SWParse : Skyward's Smart parser for image and multi-document parsing for LLMs
 
-Latest Version : 0.5.0
+
+Latest Version : 0.6.2
 
 ## Summary
 
-The SWParse  system is a smart document parser that integrates well with LLamaIndex RAG  that extracts Structured text from various file types, including images and documents.
+The SWParse  system is a smart document parser that integrates well with LLamaIndex RAG  that extracts Structured text from various file types, including images and documents.
+
 Features:
 
 - Support for multiple file formats and languages ( PDF , DOCX , XLSX , HTML , Markdown , Images and Several Plain Text files)
@@ -25,7 +27,8 @@ With GPU
 
 ```bash
 cp .env.docker.example .env
-docker compose up
+
+bash start.sh
 ```
 
 Without GPU
@@ -63,9 +66,10 @@ docker compose -f docker-compose.cpu.yml up
 
 as {output_type}
 
-- json (default) = output as json object
+- json (default) = output as json string
 - csv = output as csv string
 - md = output as markdown string
+- html = output as html string
 
 ### Example Queries
 
@@ -96,13 +100,12 @@ pdm run swparse run
 pdm run stop-infra
 ```
 
-
 ## Api Documentation
 
 ## **DEMO Endpoints**
 
-- New Documentation System : [http://localhost:8000/schema](http://localhost:8000/schema)
-- Old Documentation System : [http://localhost:8000/schema/docs](http://localhost:8000/schema/docs)
+- New Documentation System : [http://localhost:8000//schema](http://localhost:8000//schema)
+- Old Documentation System : [http://localhost:8000//schema/docs](http://localhost:8000//schema/docs)
 - base_url : [http://localhost:8000/](http://localhost:8000/)
 - llama_parse Compatibility :
 
