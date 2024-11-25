@@ -508,9 +508,10 @@ def handle_result_type(
             result[result_type] = markdown_tbls
 
         elif result_type_check == ContentType.IMAGES.value:
-            images = results.get("images")
+            with s3.open(results["images"], mode="r") as f:
+                json_image_meta = f.read()
 
-            result[result_type] = images
+            result[result_type] = json.loads(json_image_meta)
         else:
             with s3.open(results[result_type_check], mode="r") as tables_file:
                 tables_content = tables_file.read()

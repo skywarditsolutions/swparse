@@ -242,8 +242,11 @@ class DocumentController(Controller):
 
         if result_type == ContentType.IMAGES.value:
             if not image_key:
-                raise HTTPException("image_key is required", status_code=400)
-            images = json.loads(extracted_file_path)
+                raise HTTPException(detail="image_key is required", status_code=400)
+            with s3fs.open(extracted_file_path, "rb") as f:
+                image_json_str = f.read()
+
+            images = json.loads(image_json_str)
             image_path = images.get(image_key.lower())
             if image_path:
                 with s3fs.open(image_path, "rb") as f:
