@@ -34,6 +34,7 @@ from swparse.domain.swparse.utils import (
     get_file_content,
     get_file_name,
     save_file_s3,
+    extract_md_components
 )
 
 if TYPE_CHECKING:
@@ -167,6 +168,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     # Save Images
     for per_page_result in json_result:
         per_page_images = []
+        per_page_result["items"] = extract_md_components(per_page_result.get("md"))
         doc_images = per_page_result.get("doc_images")
         if doc_images is None:
             continue
