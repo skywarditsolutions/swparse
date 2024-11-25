@@ -216,7 +216,6 @@ class ParserController(Controller):
         filename = data.filename
         new_uuid = uuid4()
         s3 = S3FileSystem(
-            # asynchronous=True,
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,

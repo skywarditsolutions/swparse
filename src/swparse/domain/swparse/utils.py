@@ -10,7 +10,8 @@ from logging import getLogger
 from operator import attrgetter
 from typing import IO, Any
 from uuid import uuid4
-
+from markdown_it import MarkdownIt
+from mdit_plain.renderer import RendererPlain
 import html_text
 import mistletoe
 import pandas as pd
@@ -484,6 +485,10 @@ def handle_result_type(
                 result_html = result_html.join(html)
             result[result_type] = result_html
 
+        elif result_type_check == ContentType.JSON.value:
+            json_str = get_file_content(s3, results["json"])
+            result[result_type] = json.loads(json_str)
+
         elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")
             if table_file_path:
@@ -503,9 +508,10 @@ def handle_result_type(
             result[result_type] = markdown_tbls
 
         elif result_type_check == ContentType.IMAGES.value:
-            images = results.get("images")
+            with s3.open(results["images"], mode="r") as f:
+                json_image_meta = f.read()
 
-            result[result_type] = images
+            result[result_type] = json.loads(json_image_meta)
         else:
             with s3.open(results[result_type_check], mode="r") as tables_file:
                 tables_content = tables_file.read()
@@ -518,3 +524,67 @@ def handle_result_type(
 
     except Exception as e:
         raise HTTPException(f"Format {result_type_check} is currently unsupported for {job_key}")
+
+
+def md_to_text(md: str) -> str:
+    parser = MarkdownIt(renderer_cls=RendererPlain)
+    return parser.render(md)
+
+class MdAnalyser:
+    def __init__(self, markdown_content: str):
+        self.markdown_content = markdown_content
+        self.components = []
+        self.heading_pattern = re.compile(r"^(#{1,6})\s*(.+)$")
+        self.table_row_pattern = re.compile(r"^\|.*\|$")
+        self.paragraph_pattern = re.compile(r"^[^\|#\s].+$")
+        self.lines = markdown_content.splitlines()
+        self.table_row_breakline = re.compile(r"^\|[-|]*\|$")
+
+    def extract_components(self):
+        current_table = []
+        for line in self.lines:
+            if not line.strip():
+                continue
+            if self.heading_pattern.match(line):
+                if current_table:
+                    self.add_table(current_table)
+                self.add_heading(line)
+                continue
+            if self.table_row_pattern.match(line):
+                if not re.match(self.table_row_breakline, line):
+                    current_table.append(line)
+                continue
+            if self.paragraph_pattern.match(line):
+                if current_table:
+                    self.add_table(current_table)
+                self.add_paragraph(line)
+                continue
+
+        return self.components
+
+    def add_table(self, current_table: list):
+        self.components.append(
+            {
+                "type": "table",
+                "md": "\n".join(current_table),
+                "rows": [[cell.strip() for cell in re.findall(r"\|([^|]+)", row)] for row in current_table],
+            }
+        )
+
+    def add_heading(self, line: str):
+        self.components.append(
+            {
+                "type": "heading",
+                "level": len(self.heading_pattern.match(line).group(1)),
+                "md": line,
+                "value": re.sub(r"^#+", "", line).strip(),
+            }
+        )
+
+    def add_paragraph(self, line: str):
+        self.components.append({"type": "paragraph", "md": line, "value": md_to_text(line)})
+
+
+def extract_md_components(markdown_content: str):
+    analyser = MdAnalyser(markdown_content)
+    return analyser.extract_components()
