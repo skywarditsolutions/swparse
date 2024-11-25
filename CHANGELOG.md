@@ -1,3 +1,9 @@
+## v0.6.3 (2024-11-26)
+
+### Fix
+
+- **wip**: API auth token in middleware
+
 ## v0.6.2 (2024-11-25)
 
 ### Feat
