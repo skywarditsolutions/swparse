@@ -1,3 +1,13 @@
+## v0.6.2 (2024-11-25)
+
+### Feat
+
+- add items in json result
+
+### Fix
+
+- images filepath exceeding meta data size, json result JSON dumps
+
 ## v0.6.1 (2024-11-23)
 
 ## v0.6.0 (2024-11-22)
