@@ -36,12 +36,13 @@ class ApiKeyAuthMiddleware(AbstractMiddleware):
         api_key = headers.get("authorization")
         if not api_key:
             raise NotAuthorizedException(status_code=403, detail="Forbidden missing API key")
+        prefix, token = api_key.split(" ")
 
-        connection: ASGIConnection = ASGIConnection(scope=scope, receive=receive, send=send)
-        api_key_service = await anext(
-            provide_api_key_service(alchemy.provide_session(connection.app.state, connection.scope))
-        )
-        if api_key != DEFAULT_API_KEY:
+        if token != DEFAULT_API_KEY:
+            connection: ASGIConnection = ASGIConnection(scope=scope, receive=receive, send=send)
+            api_key_service = await anext(
+                provide_api_key_service(alchemy.provide_session(connection.app.state, connection.scope))
+            )
             is_authorized = bool(await api_key_service.authenticate(api_key))
             logger.error("API key authentication")
             logger.error(is_authorized)
