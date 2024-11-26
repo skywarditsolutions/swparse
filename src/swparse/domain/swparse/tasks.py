@@ -198,17 +198,16 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     json_file_path = save_file_s3(s3, json_file_name, json.dumps(json_result))
 
     # Saving image metadata
- 
-    # img_file_name = change_file_ext(file_name, "json")
-    # logger.info("IMage file name")
-    # logger.info(img_file_name)
-    # img_file_path = save_file_s3(s3, img_file_name, json.dumps(all_images))
+    img_file_name = change_file_ext(file_name, "json")
+    logger.info("IMage file name")
+    logger.info(img_file_name)
+    img_file_path = save_file_s3(s3, img_file_name, json.dumps(all_images))
 
     return {
         ContentType.MARKDOWN.value: md_file_path,
         ContentType.HTML.value: html_file_path,
         ContentType.TEXT.value: txt_file_path,
-        ContentType.IMAGES.value: json.dumps(all_images),
+        ContentType.IMAGES.value: img_file_path,
         ContentType.JSON.value: json_file_path,
     }
 
