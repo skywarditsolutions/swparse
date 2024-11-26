@@ -198,8 +198,10 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     json_file_path = save_file_s3(s3, json_file_name, json.dumps(json_result))
 
     # Saving image metadata
-    file_name = file_name + "_image_metadata"
-    img_file_name = change_file_ext(file_name, "json")
+    img_file_name = file_name + "_image_metadata"
+    img_file_name = change_file_ext(img_file_name, "json")
+    logger.info("IMage file name")
+    logger.info(img_file_name)
     img_file_path = save_file_s3(s3, img_file_name, json.dumps(all_images))
 
     return {
@@ -537,6 +539,24 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | None) -> dict[str, str]:
     metadata_json_str = s3fs.getxattr(s3_url, "metadata")
     metadata = json.loads(metadata_json_str)
+    logger.info("metadata")
+    logger.info(metadata)
+
+    image_file_path = metadata.get("images")
+    # images metadata normalization
+    if image_file_path:
+        try:
+            imageMetadata = json.loads(image_file_path)
+            file_name = get_file_name(s3_url)
+            img_file_name = change_file_ext(file_name, "json")
+            img_file_path = save_file_s3(s3, img_file_name, imageMetadata)
+            metadata["images"]=img_file_path
+            new_meatadata = json.dumps(metadata)
+            s3.setxattr(s3_url, copy_kwargs={"ContentType": "images"}, metadata=new_meatadata)
+        except Exception:
+            # correct filepath
+            pass
+
 
     if table_query:
         file_name = get_file_name(s3_url)

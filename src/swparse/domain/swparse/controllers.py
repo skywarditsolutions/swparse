@@ -292,11 +292,8 @@ class ParserController(Controller):
         results = save_job_metadata(s3, job_id, metadata)
         metadata: dict[str, str] = results["metadata"]
 
-        logger.info("Metadata")
-        logger.info(metadata)
         try:
             result = handle_result_type(result_type, metadata, s3, jm, job_key)
-            logger.info(result)
             return result
         except Exception as err:
             logger.error(err)
