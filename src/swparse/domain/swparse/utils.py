@@ -593,4 +593,4 @@ def extract_md_components(markdown_content: str):
 
 def format_timestamp(timestamp:float) ->str:
     value = datetime.fromtimestamp(timestamp)
-    return value.strftime('%M min:%S sec, %f miliseconds')
+    return value.strftime('%M min, %S sec,') + f" {int(value.strftime('%f')) // 1000} milliseconds"
