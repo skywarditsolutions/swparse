@@ -4,8 +4,8 @@ import tempfile
 import time
 import typing
 import warnings
-from logging import getLogger
 
+import structlog
 import pandas
 import pypdfium2 as pdfium  # Needs to be at the top to avoid warnings
 from marker.cleaners.bullets import replace_bullets
@@ -35,7 +35,7 @@ from marker.utils import flush_cuda_memory
 from PIL import Image
 from .utils import format_timestamp
 
-logger = getLogger(__name__)
+logger = structlog.get_logger()
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
@@ -346,5 +346,5 @@ async def convert_xlsx_csv(
         df = pandas.read_excel(xlsx_data, header=None)
         return df.to_csv(index=False)
     except Exception as e:
-        logger.info(f"info converting XLSX to CSV: {e}")
+        logger.error(f"info converting XLSX to CSV: {e}")
         return ""
