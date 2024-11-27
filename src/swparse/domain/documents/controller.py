@@ -8,7 +8,6 @@ import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
 import pandas as pd
-from saq import Job, Queue
 import structlog
 from litestar import Controller, get, post
 from litestar.di import Provide
@@ -17,6 +16,7 @@ from litestar.pagination import OffsetPagination
 from litestar.repository.filters import CollectionFilter, LimitOffset
 from litestar.response import File
 from s3fs import S3FileSystem
+from saq import Job, Queue
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType, User
@@ -31,14 +31,15 @@ from swparse.domain.swparse.utils import (
     change_file_ext,
     extract_tables_from_html,
     get_file_name,
-    save_file_s3,
     parse_table_query,
+    save_file_s3,
 )
 
 from . import urls
 
 if TYPE_CHECKING:
     from uuid import UUID
+
     from litestar.params import Parameter
 
 SWPARSE_URL = os.environ.get("APP_URL")
