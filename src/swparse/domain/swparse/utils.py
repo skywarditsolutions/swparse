@@ -10,8 +10,7 @@ from logging import getLogger
 from operator import attrgetter
 from typing import IO, Any
 from uuid import uuid4
-from markdown_it import MarkdownIt
-from mdit_plain.renderer import RendererPlain
+
 import html_text
 import mistletoe
 import pandas as pd
@@ -19,6 +18,8 @@ from gliner import GLiNER
 from lark import Lark, Token, Transformer
 from litestar.exceptions import HTTPException
 from lxml import html
+from markdown_it import MarkdownIt
+from mdit_plain.renderer import RendererPlain
 from nltk import download, tokenize
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
@@ -588,3 +589,8 @@ class MdAnalyser:
 def extract_md_components(markdown_content: str):
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
+
+
+def format_timestamp(timestamp:float) ->str:
+    value = datetime.fromtimestamp(timestamp)
+    return value.strftime('%M min:%S sec, %f miliseconds')
