@@ -539,6 +539,8 @@ class MdAnalyser:
         self.paragraph_pattern = re.compile(r"^[^\|#\s].+$")
         self.lines = markdown_content.splitlines()
         self.table_row_breakline = re.compile(r"^\|[-|]*\|$")
+        self.image_pattern = re.compile(r"^\s*!\[([^\]]*)\]\(([^)]+)\)$")
+
 
     def extract_components(self):
         current_table = []
@@ -557,6 +559,8 @@ class MdAnalyser:
             if self.paragraph_pattern.match(line):
                 if current_table:
                     self.add_table(current_table)
+                if self.image_pattern.match(line):
+                    continue
                 self.add_paragraph(line)
                 continue
 
@@ -575,14 +579,14 @@ class MdAnalyser:
         self.components.append(
             {
                 "type": "heading",
-                "level": len(self.heading_pattern.match(line).group(1)),
+                "lvl": len(self.heading_pattern.match(line).group(1)),
                 "md": line,
                 "value": re.sub(r"^#+", "", line).strip(),
             }
         )
 
     def add_paragraph(self, line: str):
-        self.components.append({"type": "paragraph", "md": line, "value": md_to_text(line)})
+        self.components.append({"type": "text", "md": line, "value": md_to_text(line)})
 
 
 def extract_md_components(markdown_content: str):
