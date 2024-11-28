@@ -124,9 +124,7 @@ def convert_single_pdf(
             doc.del_page(0)
 
     # Unpack models from list
-    model_loading_start = time.time()
     texify_model, layout_model, order_model, detection_model, ocr_model, table_rec_model = model_lst
-    model_loading_end = time.time()
     # Identify text lines on pages
     surya_detection_start = time.time()
     surya_detection(doc, pages, detection_model, batch_multiplier=batch_multiplier)
@@ -148,7 +146,7 @@ def convert_single_pdf(
 
     out_meta["ocr_stats"] = ocr_stats
     if len([b for p in pages for b in p.blocks]) == 0:
-        print(f"Could not extract any text blocks for {fname}")
+        logger.info(f"Could not extract any text blocks for {fname}")
         return "", {}, out_meta
 
     surya_laytout_start = time.time()
@@ -268,17 +266,13 @@ def convert_single_pdf(
         json_result.append(page_metadata)
     per_page_end = time.time()
 
-    logger.info(f"Model loading start: {format_timestamp(model_loading_start)}")
-    logger.info(f"Model loading end: {format_timestamp(model_loading_end)}")
-    logger.info(f"Model loading time taken {format_timestamp(model_loading_end - model_loading_start)}\n\n")
-
     logger.info(f"surya_detection_start: {format_timestamp(surya_detection_start)}")
     logger.info(f"surya_detection_start: {format_timestamp(surya_detection_end)}")
     logger.info(f"surya_detection_start time taken {format_timestamp(surya_detection_end - surya_detection_start)}\n\n")
 
     logger.info(f"OCR start: {format_timestamp(OCR_start)}")
     logger.info(f"OCR end: {format_timestamp(OCR_end)}")
-    logger.info(f"OCR taken {format_timestamp(OCR_end - OCR_start)}\n\n")
+    logger.info(f"OCR time taken {format_timestamp(OCR_end - OCR_start)}\n\n")
 
     logger.info(f"surya_laytout start: {format_timestamp(surya_laytout_start)}")
     logger.info(f"surya_laytout end: {format_timestamp(surya_laytout_end)}")

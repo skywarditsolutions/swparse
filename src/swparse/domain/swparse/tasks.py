@@ -204,9 +204,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     with s3.open(s3_url, mode="rb") as doc:
         content = doc.read()
 
-    page_pdf_markdown_start = time.time()
-    markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)
-    page_pdf_markdown_end = time.time()
+    markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)    
     html_results = mistletoe.markdown(markdown)
     text_results = html_text.extract_text(html_results, guess_layout=True)
 
@@ -231,7 +229,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
         per_page_result.update({"images":per_page_images})
 
     per_page_json_image_end = time.time()
-
+    caching_start = time.time()
     # Markdown saving
     md_file_name = change_file_ext(file_name, "md")
     md_file_path = save_file_s3(s3, md_file_name, markdown)
@@ -249,11 +247,11 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     # Saving image metadata
     img_file_name = change_file_ext(file_name, "json")
     img_file_path = save_file_s3(s3, img_file_name, json.dumps(all_images))
+    caching_end = time.time()
 
-
-    logger.info(f"PDF markdown pages start: {format_timestamp(page_pdf_markdown_start)}")
-    logger.info(f"PDF markdown pages end: {format_timestamp(page_pdf_markdown_end)}")
-    logger.info(f"PDF markdown pages time taken {format_timestamp(page_pdf_markdown_end - page_pdf_markdown_start)}\n\n")
+    logger.info(f"Caching start: {format_timestamp(caching_start)}")
+    logger.info(f"Caching end: {format_timestamp(caching_end)}")
+    logger.info(f"Caching time taken {format_timestamp(caching_end - caching_start)}\n\n")
 
     logger.info(f"PDF per page JSON images start: {format_timestamp(per_page_json_image_start)}")
     logger.info(f"PDF per page JSON images end: {format_timestamp(per_page_json_image_end)}")
@@ -372,7 +370,6 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
     logger.info("Started parse_pdf_s3")
     api_start_time = time.time()
     results = _pdf_exchange(s3_url)
-    pdf_end_time = time.time()
 
     if table_query:
         file_name = get_file_name(s3_url)
@@ -391,12 +388,6 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
     metadata = json.dumps(results)
     s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
     api_end_time = time.time()
-
-    logger.info(f"PDF convert start: {format_timestamp(api_start_time)}")
-    logger.info(f"PDF convert end: {format_timestamp(pdf_end_time)}")
-    logger.info(f"PDF convert time taken {format_timestamp(pdf_end_time - api_start_time)}\n\n")
-
-
 
     logger.info(f"api_start_time {format_timestamp(api_start_time)}")
     logger.info(f"api_end_time {format_timestamp(api_end_time)}")
