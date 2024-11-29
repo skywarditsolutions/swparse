@@ -168,7 +168,9 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     # Save Images
     for per_page_result in json_result:
         per_page_images = []
-        per_page_result["items"] = extract_md_components(per_page_result.get("md"))
+        items, links = extract_md_components(per_page_result.get("md"))
+        per_page_result["items"] = items
+        per_page_result["links"] = links
         doc_images = per_page_result.get("doc_images")
         if doc_images is None:
             continue

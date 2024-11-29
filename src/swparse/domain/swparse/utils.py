@@ -540,9 +540,12 @@ class MdAnalyser:
         self.lines = markdown_content.splitlines()
         self.table_row_breakline = re.compile(r"^\|[-|]*\|$")
         self.image_pattern = re.compile(r"^\s*!\[([^\]]*)\]\(([^)]+)\)$")
+        self.link_pattern = re.compile(r'\b((https?://|www\.)?[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})(/[^\s]*)?\b'
+)
+        self.links = []
 
 
-    def extract_components(self):
+    def _extract_components(self):
         current_table = []
         for line in self.lines:
             if not line.strip():
@@ -561,10 +564,15 @@ class MdAnalyser:
                     self.add_table(current_table)
                 if self.image_pattern.match(line):
                     continue
+                if links := re.findall(self.link_pattern, line):
+                    for link in links:
+                        self.add_link(line, link[0])
                 self.add_paragraph(line)
                 continue
 
-        return self.components
+    def get_components_and_links(self):
+        self._extract_components()
+        return self.components, self.links
 
     def add_table(self, current_table: list):
         self.components.append(
@@ -572,6 +580,7 @@ class MdAnalyser:
                 "type": "table",
                 "md": "\n".join(current_table),
                 "rows": [[cell.strip() for cell in re.findall(r"\|([^|]+)", row)] for row in current_table],
+                "bBox": {},
             }
         )
 
@@ -582,13 +591,20 @@ class MdAnalyser:
                 "lvl": len(self.heading_pattern.match(line).group(1)),
                 "md": line,
                 "value": re.sub(r"^#+", "", line).strip(),
+                "bBox": {},
             }
         )
 
     def add_paragraph(self, line: str):
-        self.components.append({"type": "text", "md": line, "value": md_to_text(line)})
+        self.components.append({"type": "text", "md": line, "value": md_to_text(line), "bBox": {}})
+
+    def add_link(self, line: str, link: str):
+        self.links.append({
+            "text": line,
+            "url": link,
+        })
 
 
 def extract_md_components(markdown_content: str):
     analyser = MdAnalyser(markdown_content)
-    return analyser.extract_components()
+    return analyser.get_components_and_links()
