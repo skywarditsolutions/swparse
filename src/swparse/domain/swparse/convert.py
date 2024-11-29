@@ -266,17 +266,17 @@ def convert_single_pdf(
         json_result.append(page_metadata)
     per_page_end = time.time()
 
-    logger.info(f"surya_detection_start: {format_timestamp(surya_detection_start)}")
-    logger.info(f"surya_detection_start: {format_timestamp(surya_detection_end)}")
-    logger.info(f"surya_detection_start time taken {format_timestamp(surya_detection_end - surya_detection_start)}\n\n")
+    logger.info(f"surya text line detection start: {format_timestamp(surya_detection_start)}")
+    logger.info(f"surya text line detection end: {format_timestamp(surya_detection_end)}")
+    logger.info(f"surya text line detection time taken {format_timestamp(surya_detection_end - surya_detection_start)}\n\n")
 
     logger.info(f"OCR start: {format_timestamp(OCR_start)}")
     logger.info(f"OCR end: {format_timestamp(OCR_end)}")
     logger.info(f"OCR time taken {format_timestamp(OCR_end - OCR_start)}\n\n")
 
-    logger.info(f"surya_laytout start: {format_timestamp(surya_laytout_start)}")
-    logger.info(f"surya_laytout end: {format_timestamp(surya_laytout_end)}")
-    logger.info(f"surya_laytout time taken {format_timestamp(surya_laytout_end - surya_laytout_start)}\n\n")
+    logger.info(f"surya_layout start: {format_timestamp(surya_laytout_start)}")
+    logger.info(f"surya_layout end: {format_timestamp(surya_laytout_end)}")
+    logger.info(f"surya_layout time taken {format_timestamp(surya_laytout_end - surya_laytout_start)}\n\n")
 
     logger.info(f"header_footer start: {format_timestamp(header_footer_start)}")
     logger.info(f"header_footer end: {format_timestamp(header_footer_end)}")

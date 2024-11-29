@@ -268,7 +268,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
 
 async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
     logger.info("Started parse_docx_s3")
-    api_start = time.time()
+
     file_name = get_file_name(s3_url)
 
     # HTML parsing
@@ -295,7 +295,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             htmlData = htmlData.replace(img, f'<img src="{image_key}" alt="{image_key}" />', 1)
             image_file_path = save_file_s3(s3, image_key, image_bytes)
             images[image_key] = image_file_path
-        
+
     docx_img_end = time.time()
 
     html_file_name = change_file_ext(file_name, "html")
@@ -340,9 +340,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     metadata = json.dumps(result)
     s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
-    api_end = time.time()
-
-
+ 
     logger.info(f"DOCX to HTML start: {format_timestamp(convert_html_start)}")
     logger.info(f"DOCX to HTML end: {format_timestamp(convert_html_end)}")
     logger.info(f"DOCX to HTML time taken {format_timestamp(convert_html_end - convert_html_start)}\n\n")
@@ -358,10 +356,6 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     logger.info(f"DOCX to HTML start: {format_timestamp(docx_img_start)}")
     logger.info(f"DOCX to HTML end: {format_timestamp(docx_img_end)}")
     logger.info(f"DOCX to HTML time taken {format_timestamp(docx_img_end - docx_img_start)}\n\n")
-
-    logger.info(f"DOCX tbl qry start: {format_timestamp(table_query_start)}")
-    logger.info(f"DOCX to HTML end: {format_timestamp(table_query_end)}")
-    logger.info(f"DOCX tbl qry time taken {format_timestamp(table_query_end - table_query_start)}\n\n")
 
     return result
 
@@ -401,16 +395,15 @@ async def parse_pdf_page_s3(ctx: Context, *, s3_url: str, page: int) -> dict[str
 
 async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
     logger.info("Started parse_image_s3")
-    image_to_pdf_start = time.time()
+ 
     with s3.open(s3_url, mode="rb") as doc:
+        image_to_pdf_start = time.time()
         pil_image = Image.open(doc).convert("RGB")
     pdf = pdfium.PdfDocument.new()
 
     image = pdfium.PdfImage.new(pdf)
     image.set_bitmap(pdfium.PdfBitmap.from_pil(pil_image))
     width, height = image.get_size()
-
-    
 
     matrix = pdfium.PdfMatrix().scale(width, height)
     image.set_matrix(matrix)
@@ -423,9 +416,7 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     with s3.open(pdf_s3_url, "wb") as output:
         pdf.save(output)
 
-    image_to_pdf_exchange_start = time.time()
     results = _pdf_exchange(pdf_s3_url)
-    image_to_pdf_exchange_end = time.time()
 
     if table_query:
         file_name = get_file_name(pdf_s3_url)
@@ -449,10 +440,6 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     logger.info(f"image_to_pdf start {format_timestamp(image_to_pdf_start)}")
     logger.info(f"image_to_pdf end {format_timestamp(image_to_pdf_end)}")
     logger.info(f"image_to_pdf time taken {format_timestamp(image_to_pdf_end - image_to_pdf_start)}\n\n")
-
-    logger.info(f"image_to_pdf_exchange start {format_timestamp(image_to_pdf_exchange_start)}")
-    logger.info(f"image_to_pdf_exchange end {format_timestamp(image_to_pdf_exchange_end)}")
-    logger.info(f"image_to_pdf_exchange time taken {format_timestamp(image_to_pdf_exchange_end - image_to_pdf_exchange_start)}\n\n")
 
     return results
 
