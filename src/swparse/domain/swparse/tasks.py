@@ -46,14 +46,7 @@ logger = structlog.get_logger()
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
-s3 = S3FileSystem(
-    endpoint_url=settings.storage.ENDPOINT_URL,
-    key=MINIO_ROOT_USER,
-    secret=MINIO_ROOT_PASSWORD,
-    use_ssl=False,
-)
-
+ 
 s3fs = S3FileSystem(
     endpoint_url=settings.storage.ENDPOINT_URL,
     key=MINIO_ROOT_USER,
@@ -64,16 +57,10 @@ s3fs = S3FileSystem(
 
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
     api_start_time = time.time()
-    s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     result = {}
     logger.info("Started parse_xlsx_s3")
     try:
-        with s3.open(s3_url, mode="rb") as doc:
+        with s3fs.open(s3_url, mode="rb") as doc:
             content = doc.read()
         if isinstance(content, str):
             content = content.encode()
@@ -84,7 +71,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         csv_file = await convert_xlsx_csv(content)
         csv_end_time = time.time()
         csv_file_name = change_file_ext(file_name, "csv")
-        csv_file_path = save_file_s3(s3, csv_file_name, csv_file)
+        csv_file_path = save_file_s3(s3fs, csv_file_name, csv_file)
 
         if ext == "application/vnd.ms-excel":
             content = convert_xls_to_xlsx_bytes(content)
@@ -98,21 +85,21 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         html_end_time = time.time()
 
         html_file_name = change_file_ext(file_name, "html")
-        html_file_path = save_file_s3(s3, html_file_name, html_content)
+        html_file_path = save_file_s3(s3fs, html_file_name, html_content)
 
         # Markdown Parsing
         md_start_time = time.time()
         markdown = df.to_markdown()
         md_end_time = time.time()
         md_file_name = change_file_ext(file_name, "md")
-        md_file_path = save_file_s3(s3, md_file_name, markdown)
+        md_file_path = save_file_s3(s3fs, md_file_name, markdown)
 
         # Parsing to Text
         txt_start_time = time.time()
         text_content = html_text.extract_text(html_content)
         txt_end_time = time.time()
         text_file_name = change_file_ext(file_name, "txt")
-        txt_file_path = save_file_s3(s3, text_file_name, text_content)
+        txt_file_path = save_file_s3(s3fs, text_file_name, text_content)
 
         result = {
             ContentType.CSV.value: csv_file_path,
@@ -126,7 +113,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
             xlsx_tbl_qry_end = time.time()
             tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-            tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+            tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
             result[table_query["raw"]] = tables_file_path
 
             logger.info(f"XLSX tbl qry start: {format_timestamp(xlsx_tbl_qry_start)}")
@@ -135,7 +122,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
         meta_save_start_time = time.time()
         metadata = json.dumps(result)
-        s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+        s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
         meta_save_end_time = time.time()
 
     except Exception as e:
@@ -171,29 +158,22 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 
 async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-    s3 = S3FileSystem(
-        # asynchronous=True,
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     logger.info("Started extract_string")
     file_name = get_file_name(s3_url)
     txt_file_name = change_file_ext(file_name, "txt")
 
-    with s3.open(s3_url, mode="rb") as doc:
+    with s3fs.open(s3_url, mode="rb") as doc:
         byte_string = doc.read()
         try:
             out_txt = str(byte_string.decode("utf-8"))
-            text_file_path = save_file_s3(s3, txt_file_name, out_txt)
+            text_file_path = save_file_s3(s3fs, txt_file_name, out_txt)
         except UnicodeDecodeError:
             out_txt = str(byte_string)
-            text_file_path = save_file_s3(s3, txt_file_name, out_txt)
+            text_file_path = save_file_s3(s3fs, txt_file_name, out_txt)
     result = {ContentType.TEXT.value: text_file_path}
 
     metadata = json.dumps(result)
-    s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
     return result
 
@@ -201,7 +181,7 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: di
 def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[str, str]:
     file_name = get_file_name(s3_url)
 
-    with s3.open(s3_url, mode="rb") as doc:
+    with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
 
     markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)    
@@ -222,7 +202,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
             buffered = BytesIO()
             img.save(buffered, format=image_name.split(".")[-1])
             img_b = buffered.getvalue()
-            img_file_path = save_file_s3(s3, image_name, img_b)
+            img_file_path = save_file_s3(s3fs, image_name, img_b)
             all_images[image_name] = img_file_path
             per_page_images.append({image_name:img_file_path})
         per_page_result.pop("doc_images")
@@ -232,21 +212,21 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     caching_start = time.time()
     # Markdown saving
     md_file_name = change_file_ext(file_name, "md")
-    md_file_path = save_file_s3(s3, md_file_name, markdown)
+    md_file_path = save_file_s3(s3fs, md_file_name, markdown)
     # HTML Parsing
     html_file_name = change_file_ext(file_name, "html")
-    html_file_path = save_file_s3(s3, html_file_name, html_results)
+    html_file_path = save_file_s3(s3fs, html_file_name, html_results)
     # Text Parsing
     txt_file_name = change_file_ext(file_name, "txt")
-    txt_file_path = save_file_s3(s3, txt_file_name, text_results)
+    txt_file_path = save_file_s3(s3fs, txt_file_name, text_results)
 
     # JSON file saving
     json_file_name = change_file_ext(file_name, "json")
-    json_file_path = save_file_s3(s3, json_file_name, json.dumps(json_result))
+    json_file_path = save_file_s3(s3fs, json_file_name, json.dumps(json_result))
 
     # Saving image metadata
     img_file_name = change_file_ext(file_name, "json")
-    img_file_path = save_file_s3(s3, img_file_name, json.dumps(all_images))
+    img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(all_images))
     caching_end = time.time()
 
     logger.info(f"Caching start: {format_timestamp(caching_start)}")
@@ -272,7 +252,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     file_name = get_file_name(s3_url)
 
     # HTML parsing
-    with s3.open(s3_url, mode="rb") as byte_content:
+    with s3fs.open(s3_url, mode="rb") as byte_content:
         convert_html_start = time.time()
         result = mammoth.convert_to_html(byte_content)  # type: ignore
         htmlData: str = result.value  # type: ignore
@@ -293,30 +273,30 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
             image_key = f"image-{i}.{image_type}"
             htmlData = htmlData.replace(img, f'<img src="{image_key}" alt="{image_key}" />', 1)
-            image_file_path = save_file_s3(s3, image_key, image_bytes)
+            image_file_path = save_file_s3(s3fs, image_key, image_bytes)
             images[image_key] = image_file_path
 
     docx_img_end = time.time()
 
     html_file_name = change_file_ext(file_name, "html")
-    html_file_path = save_file_s3(s3, html_file_name, htmlData)
+    html_file_path = save_file_s3(s3fs, html_file_name, htmlData)
 
     # Markdown parsing
     md_start =time.time()
     markdown = md(htmlData)  # type: ignore
     md_end =time.time()
     md_file_name = change_file_ext(file_name, "md")
-    md_file_path = save_file_s3(s3, md_file_name, markdown)
+    md_file_path = save_file_s3(s3fs, md_file_name, markdown)
 
     # Parsing to Text
     text_content = html_text.extract_text(htmlData, guess_layout=True)
     text_file_name = change_file_ext(file_name, "txt")
-    txt_file_path = save_file_s3(s3, text_file_name, text_content)
+    txt_file_path = save_file_s3(s3fs, text_file_name, text_content)
 
     # Saving image metadata
     file_name = file_name + "_image_metadata"
     img_file_name = change_file_ext(file_name, "json")
-    img_file_path = save_file_s3(s3, img_file_name, json.dumps(images))
+    img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(images))
 
 
     result = {
@@ -331,7 +311,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         table_query_end = time.time()
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-        tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+        tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
         result[table_query["raw"]] = tables_file_path
         logger.info(f"DOCX to table qry extraction start: {format_timestamp(table_query_start)}")
         logger.info(f"DOCX to table qry extraction end: {format_timestamp(table_query_end)}")
@@ -339,7 +319,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 
     metadata = json.dumps(result)
-    s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
  
     logger.info(f"DOCX to HTML start: {format_timestamp(convert_html_start)}")
     logger.info(f"DOCX to HTML end: {format_timestamp(convert_html_end)}")
@@ -353,10 +333,6 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     logger.info(f"DOCX to MD end: {format_timestamp(md_end)}")
     logger.info(f"DOCX to MD time taken {format_timestamp(md_end - md_start)}\n\n")
 
-    logger.info(f"DOCX to HTML start: {format_timestamp(docx_img_start)}")
-    logger.info(f"DOCX to HTML end: {format_timestamp(docx_img_end)}")
-    logger.info(f"DOCX to HTML time taken {format_timestamp(docx_img_end - docx_img_start)}\n\n")
-
     return result
 
 
@@ -367,12 +343,12 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
     if table_query:
         file_name = get_file_name(s3_url)
-        markdown = get_file_content(s3, results["markdown"])
+        markdown = get_file_content(s3fs, results["markdown"])
         pdf_tbl_qry_start = time.time()
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         pdf_tbl_qry_end = time.time()
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-        tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+        tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
 
         logger.info(f"pdf_tbl_qry start {format_timestamp(pdf_tbl_qry_start)}")
@@ -380,7 +356,7 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         logger.info(f"pdf_tbl_qry time taken {format_timestamp(pdf_tbl_qry_end - pdf_tbl_qry_start)}\n\n")
 
     metadata = json.dumps(results)
-    s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
     api_end_time = time.time()
 
     logger.info(f"api_start_time {format_timestamp(api_start_time)}")
@@ -396,7 +372,7 @@ async def parse_pdf_page_s3(ctx: Context, *, s3_url: str, page: int) -> dict[str
 async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
     logger.info("Started parse_image_s3")
  
-    with s3.open(s3_url, mode="rb") as doc:
+    with s3fs.open(s3_url, mode="rb") as doc:
         image_to_pdf_start = time.time()
         pil_image = Image.open(doc).convert("RGB")
     pdf = pdfium.PdfDocument.new()
@@ -413,19 +389,19 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     page.gen_content()
     image_to_pdf_end = time.time()
     pdf_s3_url = change_file_ext(s3_url, "pdf")
-    with s3.open(pdf_s3_url, "wb") as output:
+    with s3fs.open(pdf_s3_url, "wb") as output:
         pdf.save(output)
 
     results = _pdf_exchange(pdf_s3_url)
 
     if table_query:
         file_name = get_file_name(pdf_s3_url)
-        markdown = get_file_content(s3, results["markdown"])
+        markdown = get_file_content(s3fs, results["markdown"])
         img_tbl_qry_start = time.time()
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         img_tbl_qry_end = time.time()
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-        tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+        tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
 
         logger.info(f"Img tbl qry start {format_timestamp(img_tbl_qry_start)}")
@@ -434,7 +410,7 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
 
 
     metadata = json.dumps(results)
-    s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
 
     logger.info(f"image_to_pdf start {format_timestamp(image_to_pdf_start)}")
@@ -448,20 +424,20 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
     logger.info("Started extract_text_files")
     result = {}
     try:
-        s3 = S3FileSystem(
+        s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
         file_name = get_file_name(s3_url)
-        with s3.open(s3_url, mode="rb") as doc:
+        with s3fs.open(s3_url, mode="rb") as doc:
             content = doc.read()
             if isinstance(content, bytes):
                 content = content.decode("utf-8")
 
             text_file_name = change_file_ext(file_name, "txt")
-            text_file_path = save_file_s3(s3, text_file_name, content)
+            text_file_path = save_file_s3(s3fs, text_file_name, content)
 
             if ext == "text/xml":
                 df = pd.read_xml(io.StringIO(content))
@@ -472,18 +448,18 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
                 df = pd.read_csv(csv_buffer, index_col=False)
                 txt_content = df.to_string(index=False)
                 text_file_name = change_file_ext(file_name, "txt")
-                text_file_path = save_file_s3(s3, text_file_name, txt_content)
+                text_file_path = save_file_s3(s3fs, text_file_name, txt_content)
                 html_content = df.to_html(index=False)
 
             else:
                 html_content = markdown_converter.markdown(content)
             html_file_name = change_file_ext(file_name, "html")
-            html_file_path = save_file_s3(s3, html_file_name, html_content)
+            html_file_path = save_file_s3(s3fs, html_file_name, html_content)
 
             # Markdown Parsing
             markdown = html2text(html_content)
             md_file_name = change_file_ext(file_name, "md")
-            md_file_path = save_file_s3(s3, md_file_name, markdown)
+            md_file_path = save_file_s3(s3fs, md_file_name, markdown)
 
             result = {
                 ContentType.MARKDOWN.value: md_file_path,
@@ -493,11 +469,11 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
             if table_query:
                 tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
                 tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-                tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+                tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
                 result[table_query["raw"]] = tables_file_path
 
             metadata = json.dumps(result)
-            s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+            s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
@@ -506,17 +482,12 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
 
 
 async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-    s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
+
     file_name = get_file_name(s3_url)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_input_path = os.path.join(temp_dir, file_name)
-        with s3.open(s3_url, "rb") as s3_file:
+        with s3fs.open(s3_url, "rb") as s3_file:
             with open(temp_input_path, "wb") as local_file:
                 local_file.write(s3_file.read())
 
@@ -527,46 +498,40 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         temp_txt_path = os.path.join(temp_dir, txt_name)
         conv.convert(inpath=temp_input_path, outpath=temp_txt_path)
         with open(temp_txt_path, "rb") as converted_file:
-            txt_s3_path = save_file_s3(s3, txt_name, converted_file.read())
+            txt_s3_path = save_file_s3(s3fs, txt_name, converted_file.read())
         results[ContentType.TEXT.value] = txt_s3_path
 
         html_name = change_file_ext(file_name, "html")
         temp_html_path = os.path.join(temp_dir, html_name)
         conv.convert(inpath=temp_input_path, outpath=temp_html_path)
         with open(temp_html_path, "rb") as converted_file:
-            html_s3_path = save_file_s3(s3, html_name, converted_file.read())
+            html_s3_path = save_file_s3(s3fs, html_name, converted_file.read())
         results[ContentType.HTML.value] = html_s3_path
 
         with open(temp_html_path) as html_file:
             markdown = md(html_file.read())
             md_file_name = change_file_ext(file_name, "md")
-            md_file_path = save_file_s3(s3, md_file_name, markdown)
+            md_file_path = save_file_s3(s3fs, md_file_name, markdown)
         results[ContentType.MARKDOWN.value] = md_file_path
 
         if table_query:
             tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
             tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-            tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+            tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
             results[table_query["raw"]] = tables_file_path
 
         metadata = json.dumps(results)
-        s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+        s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
     return results
 
 
 async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-    s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     file_name = get_file_name(s3_url)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_input_path = os.path.join(temp_dir, file_name)
-        with s3.open(s3_url, "rb") as s3_file:
+        with s3fs.open(s3_url, "rb") as s3_file:
             with open(temp_input_path, "wb") as local_file:
                 local_file.write(s3_file.read())
 
@@ -578,21 +543,21 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         temp_pptx_path = os.path.join(temp_dir, pptx_name)
         conv.convert(inpath=temp_input_path, outpath=temp_pptx_path)
         with open(temp_pptx_path, "rb") as converted_file:
-            pptx_s3_path = save_file_s3(s3, pptx_name, converted_file.read())
+            pptx_s3_path = save_file_s3(s3fs, pptx_name, converted_file.read())
         results[ContentType.TEXT.value] = pptx_s3_path
         md_file_name = change_file_ext(file_name, "md")
         new_uuid = uuid4()
         md_file_path = f"{BUCKET}/{new_uuid}_{md_file_name}"
-        with s3.open(pptx_s3_path, "rb") as pptx_file:
+        with s3fs.open(pptx_s3_path, "rb") as pptx_file:
             markdown = convert_pptx_to_md(pptx_file, file_name)
         html_results = mistletoe.markdown(markdown)
         text_results = html_text.extract_text(html_results, guess_layout=True)
 
         html_file_name = change_file_ext(file_name, "html")
-        html_file_path = save_file_s3(s3, html_file_name, html_results)
+        html_file_path = save_file_s3(s3fs, html_file_name, html_results)
 
         txt_file_name = change_file_ext(file_name, "txt")
-        txt_file_path = save_file_s3(s3, txt_file_name, text_results)
+        txt_file_path = save_file_s3(s3fs, txt_file_name, text_results)
 
         results = {
             ContentType.MARKDOWN.value: md_file_path,
@@ -600,25 +565,19 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
             ContentType.TEXT.value: txt_file_path,
         }
         metadata = json.dumps(results)
-        s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+        s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
         return results
 
 
 async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-    s3 = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     file_name = get_file_name(s3_url)
     md_file_name = change_file_ext(file_name, "md")
     pptx_to_md_start = time.time()
-    with s3.open(s3_url, mode="rb") as pptx_file:
+    with s3fs.open(s3_url, mode="rb") as pptx_file:
         markdown_content = convert_pptx_to_md(pptx_file, file_name)
     pptx_to_md_end = time.time()
-    md_file_path = save_file_s3(s3, md_file_name, markdown_content)
+    md_file_path = save_file_s3(s3fs, md_file_name, markdown_content)
 
     pptx_to_html_start = time.time()
     html_content = mistletoe.markdown(markdown_content)
@@ -629,10 +588,10 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     pptx_to_txt_end = time.time()
 
     html_file_name = change_file_ext(file_name, "html")
-    html_file_path = save_file_s3(s3, html_file_name, html_content)
+    html_file_path = save_file_s3(s3fs, html_file_name, html_content)
 
     txt_file_name = change_file_ext(file_name, "txt")
-    txt_file_path = save_file_s3(s3, txt_file_name, text_content)
+    txt_file_path = save_file_s3(s3fs, txt_file_name, text_content)
 
     results = {
         ContentType.MARKDOWN.value: md_file_path,
@@ -645,14 +604,14 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         tables_content = extract_tables_gliner(table_query["tables"], markdown_content, table_query["output"])
         pptx_tbl_qry_end = time.time()
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-        tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+        tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
         logger.info(f"pptx_tbl_qry start {format_timestamp(pptx_tbl_qry_start)}")
         logger.info(f"pptx_tbl_qry end {format_timestamp(pptx_tbl_qry_end)}")
         logger.info(f"pptx_tbl_qry time taken {format_timestamp(pptx_tbl_qry_end - pptx_tbl_qry_start)}\n\n")
 
     metadata = json.dumps(results)
-    s3.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
     logger.info(f"pptx_to_md start {format_timestamp(pptx_to_md_start)}")
     logger.info(f"pptx_to_md end {format_timestamp(pptx_to_md_end)}")
@@ -680,10 +639,10 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
             image_metadata = json.loads(image_file_path)
             file_name = get_file_name(s3_url)
             img_file_name = change_file_ext(file_name, "json")
-            img_file_path = save_file_s3(s3, img_file_name, json.dumps(image_metadata))
+            img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(image_metadata))
             metadata["images"]=img_file_path
             new_meatadata = json.dumps(metadata)
-            s3.setxattr(s3_url, copy_kwargs={"ContentType": "images"}, metadata=new_meatadata)
+            s3fs.setxattr(s3_url, copy_kwargs={"ContentType": "images"}, metadata=new_meatadata)
         except Exception as err:
             # correct filepath
             pass
@@ -691,10 +650,10 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
 
     if table_query:
         file_name = get_file_name(s3_url)
-        markdown = get_file_content(s3, metadata["markdown"])
+        markdown = get_file_content(s3fs, metadata["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-        tables_file_path = save_file_s3(s3, tables_file_name, tables_content)
+        tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
         metadata[table_query["raw"]] = tables_file_path
     logger.info("metadata")
     logger.info(metadata)
