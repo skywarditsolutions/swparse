@@ -5,9 +5,9 @@ import time
 import typing
 import warnings
 
-import structlog
-import pandas
+import pandas as pd
 import pypdfium2 as pdfium  # Needs to be at the top to avoid warnings
+import structlog
 from marker.cleaners.bullets import replace_bullets
 from marker.cleaners.code import identify_code_blocks, indent_blocks
 from marker.cleaners.fontstyle import find_bold_italic
@@ -33,6 +33,7 @@ from marker.settings import settings
 from marker.tables.table import format_tables
 from marker.utils import flush_cuda_memory
 from PIL import Image
+
 from .utils import format_timestamp
 
 logger = structlog.get_logger()
@@ -53,9 +54,14 @@ def pdf_markdown(
     ocr_all_pages: bool = False,
 ) -> tuple[str, dict[str, Image.Image], dict, list]:
     if len(model_lst) == 0:
-        logger.error("Loading Models")
+        logger.info("Loading Models")
         model_lst.extend(load_all_models())
-        logger.error(len(model_lst))
+
+  
+
+
+
+        logger.info(len(model_lst))
     with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
         temp_pdf.write(in_file)
         temp_pdf.seek(0)
@@ -68,6 +74,17 @@ def pdf_markdown(
             max_pages=max_pages,
             ocr_all_pages=ocr_all_pages,
         )
+
+              
+        converter = PdfConverter(
+                    config=config_parser.generate_config_dict(),
+                    artifact_dict=model_refs,
+                    processor_list=config_parser.get_processors(),
+                    renderer=config_parser.get_renderer()
+                )
+        rendered = converter(fpath)
+        out_folder = config_parser.get_output_folder(fpath)
+        save_output(rendered, out_folder, base_name)
 
     return full_text, images, out_meta, json_result
 
@@ -337,7 +354,7 @@ async def convert_xlsx_csv(
 ) -> str:
     try:
         xlsx_data = io.BytesIO(input)
-        df = pandas.read_excel(xlsx_data, header=None)
+        df = pd.read_excel(xlsx_data, header=None)
         return df.to_csv(index=False)
     except Exception as e:
         logger.error(f"info converting XLSX to CSV: {e}")
