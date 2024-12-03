@@ -34,7 +34,7 @@ queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
+CACHING_ON = settings.app.CACHING_ON
 
 class UploadBody(BaseStruct):
     file: UploadFile
@@ -92,21 +92,22 @@ class ParserController(Controller):
             metadata["result_type"] = data.parsing_instruction
 
         if s3.exists(s3_url):
-            metadata_json_str = s3fs.getxattr(s3_url, "metadata")
-            if metadata_json_str:
-                del kwargs["ext"]
-                job = await queue.enqueue(
-                    Job(
-                        "get_extracted_url",
-                        kwargs=kwargs,
-                        timeout=0,
-                    ),
-                )
-                save_job_metadata(s3, job.id, metadata)
-                return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
-
-        with s3.open(s3_url, "wb") as f:
-            f.write(content)
+            if CACHING_ON:
+                metadata_json_str = s3fs.getxattr(s3_url, "metadata")
+                if metadata_json_str:
+                    del kwargs["ext"]
+                    job = await queue.enqueue(
+                        Job(
+                            "get_extracted_url",
+                            kwargs=kwargs,
+                            timeout=0,
+                        ),
+                    )
+                    save_job_metadata(s3, job.id, metadata)
+                    return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
+        else:
+            with s3.open(s3_url, "wb") as f:
+                f.write(content)
 
         if file.content_type in ["application/pdf"]:
             job = await queue.enqueue(
