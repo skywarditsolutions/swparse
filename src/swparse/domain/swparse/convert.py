@@ -9,19 +9,18 @@ import warnings
  
 from marker.converters.pdf import PdfConverter
 from marker.models import create_model_dict
+from swparse.config.base import get_settings
 
+settings = get_settings()
 
 logger = structlog.get_logger()
 
+MARKER_MODEL_DICT = settings.worker.MARKER_MODEL_DICT
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
  
 warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
-
-
-model_dict: dict[str,Any] | None = None
-
 
 def pdf_markdown(
     in_file: bytes,
@@ -31,7 +30,9 @@ def pdf_markdown(
     ocr_all_pages: bool = False,
 ) -> tuple[str, str, str, dict[str, Any], dict, list[dict[str, Any]]]:
     # PDF to LLAMA conversion 
-    if model_dict is None:
+ 
+
+    if MARKER_MODEL_DICT is None:  
         logger.info("Loading Models")
         model_dict = create_model_dict()
 
@@ -68,13 +69,15 @@ def pdf_markdown(
                 config=config,
                 artifact_dict=model_dict,
                 processor_list=processors,
-                renderer= "llama_json_renderer.LLAMAJSONRenderer"
+                renderer= "swparse.domain.swparse.llama_json_renderer.LLAMAJSONRenderer"
         )
         rendered = pdf_converter(filename)
         json_result = rendered.pages
         out_meta = rendered.metadata
         images = rendered.images
         full_text = rendered.text
+        full_html = rendered.html
+        full_md = rendered.md
 
     return full_text, full_html, full_md, images, out_meta, json_result
 

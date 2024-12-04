@@ -16,6 +16,7 @@ from redis.asyncio import Redis
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 from sqlalchemy.pool import NullPool
+from marker.models import create_model_dict
 
 if TYPE_CHECKING:
     from litestar.data_extractors import RequestExtractorField, ResponseExtractorField
@@ -409,6 +410,7 @@ class MinioSettings:
 class WorkerSettings:
     REDIS_HOST: str = field(default_factory=lambda: os.getenv("WORKER_REDIS_HOST", "redis://redis:6379"))
     REDIS_URL: str = field(default_factory=lambda: os.getenv("WORKER_REDIS_URL", "redis://redis:6379/0"))
+    MARKER_MODEL_DICT:dict[str, Any] = field(default_factory=create_model_dict)
 
 
 @dataclass

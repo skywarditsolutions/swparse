@@ -10,7 +10,7 @@ from markdownify import MarkdownConverter
 from pydantic import BaseModel
 from bs4 import MarkupResemblesLocatorWarning
 
-from html_renderer import LLAMAHTMLRenderer
+from .html_renderer import LLAMAHTMLRenderer
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 
@@ -81,11 +81,11 @@ class Markdownify(MarkdownConverter):
         is_page = el.has_attr('class') and el['class'][0] == 'page'
         if self.paginate_output and is_page:
             page_id = el['data-page-id']
-            pagination_item = "\n\n" + "{" + str(page_id) + "}" + self.page_separator + "\n\n"
+            # pagination_item = "\n\n" + "{" + str(page_id) + "}" + self.page_separator + "\n\n"
             self.paginated_md[f"{str(page_id)}"] = text
-            return pagination_item + text
-        else:
-            return text
+            # return pagination_item + text
+         
+        return text
 
     def convert_p(self, el, text, *args):
         hyphens = r'-—¬'
