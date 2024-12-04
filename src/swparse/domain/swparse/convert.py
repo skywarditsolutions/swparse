@@ -29,7 +29,7 @@ def pdf_markdown(
     start_page: int = 0,
     max_pages: int = 40,
     ocr_all_pages: bool = False,
-) -> tuple[str, dict[str, str], dict, list]:
+) -> tuple[str, str, str, dict[str, Any], dict, list[dict[str, Any]]]:
     # PDF to LLAMA conversion 
     if model_dict is None:
         logger.info("Loading Models")
@@ -76,7 +76,7 @@ def pdf_markdown(
         images = rendered.images
         full_text = rendered.text
 
-    return full_text, images, out_meta, json_result
+    return full_text, full_html, full_md, images, out_meta, json_result
 
     
 

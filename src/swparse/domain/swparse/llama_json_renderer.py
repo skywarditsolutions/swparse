@@ -131,9 +131,10 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         llama_json_result = []
         full_text = ""
         for pageIdx in pageKeys:
-            saved_images = {}
-            if paginated_images.get(pageIdx):
-                saved_images = save_images(paginated_images[pageIdx])
+            # saved_images = {}
+            # un-comment for image saving not with Minio
+            # if paginated_images.get(pageIdx):
+            #     saved_images = save_images(paginated_images[pageIdx])
             html_result = paginated_html[pageIdx]
             text_results = html_text.extract_text(html_result, guess_layout=True)
             full_text += text_results
@@ -141,7 +142,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
                 {
                 "page":pageIdx,
                 "md": paginated_md[pageIdx],
-                "images":saved_images,
+                "doc_images":paginated_images[pageIdx],
                 "text": text_results,
                 "status": "OK",
                 "links": [],

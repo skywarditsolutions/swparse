@@ -184,10 +184,8 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
 
-    markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)    
-    html_results = mistletoe.markdown(markdown)
-    text_results = html_text.extract_text(html_results, guess_layout=True)
-
+    text_results, html_results, markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)    
+ 
     all_images = {}
     # Save Images
     per_page_json_image_start = time.time()
@@ -195,18 +193,18 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
         per_page_images = []
         per_page_result["items"] = extract_md_components(per_page_result.get("md"))
         doc_images = per_page_result.get("doc_images")
-        if doc_images is None:
-            continue
-        for image_name, img in doc_images.items():
-            image_name = image_name.lower()
-            buffered = BytesIO()
-            img.save(buffered, format=image_name.split(".")[-1])
-            img_b = buffered.getvalue()
-            img_file_path = save_file_s3(s3fs, image_name, img_b)
-            all_images[image_name] = img_file_path
-            per_page_images.append({image_name:img_file_path})
-        per_page_result.pop("doc_images")
-        per_page_result.update({"images":per_page_images})
+
+        if doc_images:
+            for image_name, img in doc_images.items():
+                image_name = image_name.lower()
+                buffered = BytesIO()
+                img.save(buffered, format=image_name.split(".")[-1])
+                img_b = buffered.getvalue()
+                img_file_path = save_file_s3(s3fs, image_name, img_b)
+                all_images[image_name] = img_file_path
+                per_page_images.append({image_name:img_file_path})
+            per_page_result.pop("doc_images")
+            per_page_result.update({"images":per_page_images})
 
     per_page_json_image_end = time.time()
     caching_start = time.time()

@@ -57,10 +57,6 @@ def pdf_markdown(
         logger.info("Loading Models")
         model_lst.extend(load_all_models())
 
-  
-
-
-
         logger.info(len(model_lst))
     with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
         temp_pdf.write(in_file)
