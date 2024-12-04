@@ -220,7 +220,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     txt_file_name = change_file_ext(file_name, "txt")
     txt_file_path = save_file_s3(s3fs, txt_file_name, text_results)
 
-    # JSON file saving
+    # JSON parsing and file saving
     json_file_name = change_file_ext(file_name, "json")
     json_file_path = save_file_s3(s3fs, json_file_name, json.dumps(json_result))
 

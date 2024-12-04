@@ -1,8 +1,12 @@
+
+
+{0}------------------------------------------------
+
 ![](_page_0_Picture_1.png)
 
-# **"My Agreements" in 4i**
+## **"My Agreements" in 4i**
 
-#### **v8.0| 01/23/2024**
+## **v8.0| 01/23/2024**
 
 This Tip Sheet provides information for the Center for Medicare & Medicaid Innovation (CMMI) 4Innovation (4i) application including the use of the "My Agreements" functionality.
 
@@ -24,6 +28,8 @@ You can also access all agreement types in one view for each entity/practice by 
 
 The "Related Agreements" column will contain all the related agreements, regardless of the status for a specific agreement, that are either related to the parent or child agreement. When you select the related agreement hyperlink, you will be navigated to the recital page of the respective agreement. You can either view the recital page of an agreement or download the agreement.
 
+{1}------------------------------------------------
+
 ![](_page_1_Picture_1.png)
 
 The "My Agreements" table can be sorted and searched by "Entity ID" or "Practice ID," "Entity Name" or "Practice Name" and "Agreement ID" or "Agreement Name." All actions can be completed by selecting the icons in the "Actions" column.
@@ -32,23 +38,24 @@ Pro **Tip:** Hovering over the icons in the "Actions" column will display a tool
 
 Pro **Tip:** Hovering over each agreement name will display the full agreement title.
 
-#### **Note:**
+## **Note:**
 
 - Only Participation Agreements and Amendments that were signed in 4i are accessible in the "My Agreements" tab; Participation Agreements and Amendments that were signed outside of 4i can be accessed from the "Documents" tab.
 - The ability to sign Participation Agreements and their Amendments is limited to a specified period of time, referred to as the signing window. The dates and times for these windows are not explicitly identified in 4i and will be shared with users outside the system.
 - The icon for signing the Participation Agreement and Amendments will be greyed out for times outside of the specified signing window.
 - The HIPAA-Covered Data Disclosure agreement can be signed at any time as there is not a specified signing window.
 - o Please note that PCF Practices will encounter brief periods throughout the year when the HIPAA forms are unavailable to update. For more information, please see the HIPAA Form Availability Schedule in the 4i Knowledge Library.
-
 ## **Participation Agreements**
 
 For most CMMI Models, entities/practices are required to have a bi-laterally signed Participation Agreement in "Active" status to participate in the model as part of the onboarding process.
 
 **Note:** Any HIPAA agreement associated with an entity/practice's Participation Agreement can be signed upon creation of the HIPAA agreement even if the entity/practice's Participation Agreement has not been fully executed (counter-signed by CMS). However, there would be no access to PHI/PII protected data until the Participation Agreement is countersigned.
 
-### **Who can sign Participation Agreements in 4i?**
+## **Who can sign Participation Agreements in 4i?**
 
 To sign a Participation Agreement, you must have the role of APM Executive or Practice's Primary Contact. Upon signing your entity/practice's Participation Agreement, the status of the agreement will change to, "Pending CMS Signature," as an indicator that the agreement has been signed by the entity/practice and is now awaiting CMS' review and countersignature. Your Participation Agreement will not be considered "Active" or "Fully Executed" until CMS has reviewed and countersigned the agreement. Follow each step below to sign the agreement:
+
+{2}------------------------------------------------
 
 ![](_page_2_Picture_1.png)
 
@@ -56,7 +63,6 @@ To sign a Participation Agreement, you must have the role of APM Executive or Pr
 - 2. Selecting the enabled "Sign" (pencil) icon under the "Actions" column will open the Participation Agreement page, displaying the recital, notification, and signature pages from the full Participation Agreement. The "recital" provides a high-level summary and the purpose of the agreement in addition to housing the signatures and other information required for the execution of the agreement.
 - 3. After reviewing all details on the page, scroll to the attestation checkbox at the bottom of the displayed agreement to indicate that the APM Executive or Practice Primary Contact is signing the Participation Agreement on the behalf of the entity/practice.
 - 4. Proceed by selecting the "Sign" (pencil) icon. After signing, a confirmation message will be displayed on the screen, indicating that you have signed the Participation Agreement on behalf of your entity/practice.
-
 **Pro Tip:** The "Sign" (pencil) icon will be enabled when the Participation Agreement is ready to be signed (when the signing window is open) and will be disabled after you have signed the agreement or after the signing window has closed if the entity/practice has not signed.
 
 ## **Participation Agreement Amendments**
@@ -69,8 +75,9 @@ To sign a Participation Agreement Amendment, you must be the entity's APM Execut
 
 - 1. Once the applicable Performance Year is selected, you must filter the "Agreement Type" and "Signature Status" drop-downs by "Participation Agreement Amendment" and "Pending APM Signature" or "Pending Practice Signature," respectively.
 - 2. Repeat Steps 2 through 4 above (under Who can sign Participation Agreements in 4i?).
-
 **Note:** A fully executed Participation Agreement Amendment will not retire the previously signed Participation Agreement and any associated agreements. Upon successfully countersignature
+
+{3}------------------------------------------------
 
 ![](_page_3_Picture_1.png)
 
@@ -80,24 +87,25 @@ of the Participation Agreement Amendment by CMS, your entity/practice's current 
 
 If CMS modifies or makes a considerable number of changes to the Participation Agreement for any given model, an Amended & Restated Participation Agreement may be released to those entities/practices currently participating in the model. Once signed and fully executed, the Amended & Restated Participation Agreement retires any previously signed Participation Agreement(s) by the entity/practice.
 
-### **Who can sign Amended & Restated Participation Agreements in 4i?**
+## **Who can sign Amended & Restated Participation Agreements in 4i?**
 
 To sign an Amended & Restated Participation Agreement, you must be the entity's APM Executive or Practice's Primary Contact. The agreement signing window must also be open before you can sign. Follow each step below to sign your entity/practice's Amended & Restated Participation Agreement.
 
 - 1. Once the applicable Performance Year is selected, you must filter the "Agreement Type" and "Signature Status" drop-downs by "Amended & Restated Participation Agreement" and "Pending APM Signature" or "Pending Practice Signature," respectively.
 - 2. Repeat Steps 2 through 4 above (under Who can sign Participation Agreements in 4i?).
-
 **Note:** A fully executed Amended & Restated Participation Agreement will retire any previously signed Participation Agreement and any associated agreements, including any Participation Agreement Amendments. This means that upon CMS successfully countersigning the Amended & Restated Participation Agreement, your entity/practice's current Participation Agreement will be moved to a "Retired" status, and the newly signed agreement will become "Active."
 
-### **Downloading Participation Agreement(s)/Participation Agreement Amendment(s)/Amended & Restated Participation Agreement(s)**
+## **Downloading Participation Agreement(s)/Participation Agreement Amendment(s)/Amended & Restated Participation Agreement(s)**
 
 All agreements can be downloaded from the "My Agreements" page by users with access. The Participation Agreement(s), Participation Agreement Amendment, Amended & Restated Participation Agreement(s), and any associated Amendments can be downloaded after they are fully executed.
 
 **Note:** The "Download" icon under the "Actions" column will stay disabled until the agreement is fully executed.
 
-#### **Download agreement(s) before signing:**
+## **Download agreement(s) before signing:**
 
 To download an agreement before it is fully executed, please follow the steps below.
+
+{4}------------------------------------------------
 
 ![](_page_4_Picture_1.png)
 
@@ -106,17 +114,15 @@ To download an agreement before it is fully executed, please follow the steps be
 - 3. If the signing window is open and pending the entity or practice's signature, select either the enabled "Sign" (pencil) or the "Review" (eye) icons under the "Actions" column.
 - 4. Once the recital page loads, you can select the "Download Full Agreement" button at the top right corner of the page to download the full version of the agreement.
 - 5. Upon selecting the button, the agreement downloads to your computer as a PDF file that can be viewed or printed when opened.
-
-#### **Download agreement(s) after full execution:**
+## **Download agreement(s) after full execution:**
 
 If you wish to download an agreement after it is countersigned by CMS, please follow the steps below.
 
 - 1. Once the applicable Performance Year is selected, you must filter the "Agreement Type" and "Signature Status" drop-downs by specific agreement type and "Active," respectively.
 - 2. Select the "Download" (cloud) icon under the "Actions" column to download the fully executed agreement as a PDF file. This file will contain a combination of the signed recital page (both CMS and Entity/Practice signatures) and the full version of the agreement.
-
 **Note:** These steps are applicable to all user roles with access to 4i.
 
-#### **Downloading Participation Agreement Recital Page:**
+## **Downloading Participation Agreement Recital Page:**
 
 When the user selects a Participation Agreement recital page to download in "My Agreements," the following will download as a PDF file in the following order:
 
@@ -124,16 +130,18 @@ When the user selects a Participation Agreement recital page to download in "My 
 - 2. Full Participation Agreement
 - 3. Active PA Amendment(s) Recital Page (at the current point in time or at the point of expiration/termination if the PA is no longer active)
 - 4. Active Full PA Amendment(s)
-
-#### **Downloading Active/Retired/Expired PA Amendment Recital Page:**
+## **Downloading Active/Retired/Expired PA Amendment Recital Page:**
 
 When a user selects an Active/Retired/Expired PA Amendment recital page to download in "My Agreements," the following will download as a PDF file in the following order:
 
 - 1. PA Amendment Recital Page
+
+{5}------------------------------------------------
+
 ![](_page_5_Picture_1.png)
 
 - 2. Full PA Amendment
-#### **Downloading Amended & Restated PA Recital Page:**
+## **Downloading Amended & Restated PA Recital Page:**
 
 When the user selects a Participation Agreement Amendment recital page to download in "My Agreements," the following will download as a PDF file in the following order:
 
@@ -141,7 +149,6 @@ When the user selects a Participation Agreement Amendment recital page to downlo
 - 2. Full Amended & Restated PA
 - 3. Active PA Amendment(s) Recital Pages (at the current point in time or at the point of expiration/termination if the A&R PA is no longer active)
 - 4. Active Full PA Amendment(s)
-
 ## **Health Insurance Portability and Accountability Act (HIPAA) Covered Data Disclosure Form**
 
 ## **What is a HIPAA-Covered Data Disclosure Form?**
@@ -159,16 +166,16 @@ Please follow the steps below to sign the HIPAA Form as the APM Executive/Practi
 - 1. Select "My Agreements" on the left navigation pane. Users affiliated with more than one entity or practice will be able to view all entities/practices.
 - 2. Select the "Performance Year" drop-down menu at the top right of the page to select the correct Performance Year, if needed.
 
+{6}------------------------------------------------
+
 ![](_page_6_Picture_1.png)
 
 - 3. Once the applicable "Performance Year" is selected, filter the "Agreement Type" and "Signature Status" drop-downs to "HIPAA-Covered Data Disclosure Form" and "Pending APM Signature" or "Pending Practice Signature," respectively.
 - 4. Navigate to the "Actions" column for the agreement. The link in the "Actions" column will display an enabled "Sign" (pencil) icon, indicating that the agreement is ready to be signed. Select the "Sign" (pencil) icon to load the agreement.
-
 **Pro Tip:** If the user is the APM Executive/Practice Primary Contact for the entity/practice and the agreement is pending signature, then the "Actions" column will display an enabled "Sign" (pencil) icon. For all other users and statuses, only the "Review" (eye) icon will display.
 
 - 5. Once the agreement loads, make your selections for the questions applicable to your entity/practice. You will also be required to fill out your Data Custodian Contact's details. An Alternate Data Custodian Contact for your entity/practice can optionally be provided on this form.
 - 6. Scroll to the bottom of the page to certify that you have reviewed the form and are ready to sign the agreement. Select the checkbox to activate the "Sign" button, then select "Sign."
-
 Upon signing, a success message will be displayed for all models, except for the KCC model, and the status of the HIPAA Form will be updated to "Active" if the associated Participation Agreement (Amendment) was countersigned by CMS. Otherwise, the status of the HIPAA Form will be updated to "Pending Parent Form" for the KCC Model and "Pending Parent PA Form" for the PCF Model and will only update to "Active" when the associated Participation Agreement (Amendment) is countersigned by CMS.
 
 In KCC, upon signing, a success message will display and the status of the HIPAA Form will be updated to "Pending HRSA Signature."
@@ -178,17 +185,19 @@ Please follow the steps below to countersign the HIPAA Form as the HRSA user in 
 - 1. Follow Steps 1-2 above.
 - 2. Once the applicable "Performance Year" is selected, filter the "Agreement Type" and "Signature Status" drop-downs to "HIPAA-Covered Data Disclosure Form" and "Pending HRSA Signature" respectively. Review the details entered by the APM Executive.
 - 3. Navigate to the "Actions" column for the agreement. The link in the "Actions" column will display an enabled "Sign" (pencil) icon, indicating that the agreement is ready to be signed. Select the "Sign" (pencil) icon to load the agreement.
-
 **Pro Tip:** If the user is the HRSA user and the agreement is pending HRSA signature, then the "Actions" column will display an enabled "Sign" (pencil) icon. For all other users and statuses, only the "Review" (eye) icon will display.
 
 - 4. Once the agreement loads, scroll to the bottom of the page to certify that you have reviewed the form and are ready to sign the agreement. Select the checkbox to activate the "Sign" button, then select "Sign."
+
+{7}------------------------------------------------
+
 ![](_page_7_Picture_1.png)
 
 Upon countersigning, a success message will display and the status of the HIPAA Form will be updated to "Active" if the associated Participation Agreement (Amendment) was countersigned by CMS. Otherwise, the status of the HIPAA Form will be updated to "Pending Parent Form" and will only update to "Active" when the associated Participation Agreement (Amendment) is countersigned by CMS.
 
 To find the signed form, choose "HIPAA-Covered Data Disclosure Form" from the "Agreement Type" and "Active" from the "Agreement Status" drop-down filters.
 
-### **Updating the HIPAA-Covered Data Disclosure Form**
+## **Updating the HIPAA-Covered Data Disclosure Form**
 
 If the HIPAA-Covered Data Disclosure Form needs to be updated due to changes to your entity's/practice's data custodian details or other information, an updated form must be signed. Please follow the steps below to update your HIPAA form.
 
@@ -196,7 +205,6 @@ If the HIPAA-Covered Data Disclosure Form needs to be updated due to changes to 
 - 2. Select the Review (eye) icon under the "Actions" column.
 - 3. The page will load the previously signed HIPAA form and you can select the "Update HIPAA Disclosure Form" button at the top right portion of the page. A pop-up modal containing a warning message will display on the screen to confirm if you would like to proceed with revising your HIPAA-Covered Data Disclosure Form. Selecting "Yes" will allow you to update and sign an updated HIPAA form.
 - 4. Follow Steps 5 and 6 above (under Who can sign a HIPAA-Covered Data Disclosure Form in 4i?) to complete and sign the form.
-
 **Note:** You can revise your entity/practice's HIPAA form as many times as you wish. Whenever your entity's HIPAA form is revised, any previously signed HIPAA will be captured under the "Retired" category.
 
 ## **Downloading the HIPAA-Covered Data Disclosure Form**
@@ -205,8 +213,9 @@ To download a copy of an executed HIPAA form, please follow the steps below.
 
 - 1. Select "HIPAA Form" and "Active" options from the "Agreement Type" and "Agreement Status" filters, respectively.
 - 2. Select the "Download" (cloud) icon under the "Actions" column to download the fully executed agreement as a PDF file.
-
 **Note:** Only versions of agreements that were fully executed in the 4i application will be downloadable (i.e., in "Active" status). If a version of your form was migrated from another system, you will get a message that you are unable to download the form.
+
+{8}------------------------------------------------
 
 ![](_page_8_Picture_1.png)
 
@@ -226,8 +235,9 @@ In all cases, the transferring entity's APM Executive or Practice's Primary Cont
 - 2. Selecting the enabled "Sign" (pencil) icon under the "Actions" column will open the Novation Agreement page, displaying the recital and signature details.
 - 3. After reviewing all details on the page, scroll to the attestation checkbox at the bottom of the displayed agreement to sign on behalf of the entity/practice as the APM Executive or Practice's Primary Contact.
 - 4. Proceed by selecting the "Sign" button at the bottom of the page. After signing, a confirmation message will be displayed on the screen, indicating that you have signed the Novation Agreement on behalf of your entity/practice.
-
 **Note:** The Novation Agreement will remain in "Pending APM Signature" or "Pending Practice Signature" status after you have signed the Novation Agreement. After the Transferee has signed the agreement, the status will change to "Pending CMS Signature."
+
+{9}------------------------------------------------
 
 ![](_page_9_Picture_1.png)
 
@@ -237,33 +247,11 @@ After the Transferor has signed the Novation Agreement, the Transferee will be r
 
 Since the Novation Agreement is required to be countersigned before it is considered "Active," the CMS Executive user will be required to complete the signature process.
 
-# **4i's Agreement Signature Status Definitions**
+## **4i's Agreement Signature Status Definitions**
 
-| Signature | Definitions |
-| --- | --- |
-| Status |  |
-| Active | This signature status describes agreements that have completed the |
-|  | execution of its signature workflow. This signature status will be |
-|  | applicable for ALL agreement types. |
-| Pending APM | This signature status describes agreements that require an APM |
-| or Practice | Executive’s or Practice Primary Contact’s signature. |
-| Signature | Once an agreement is delivered to the model participant, this signature |
-|  | status will indicate an action to be completed by the entity or practice’s |
-|  | APM Executive user or Practice Primary contact. |
-| Pending CMS | This signature status describes agreements that require a CMS |
-| Signature | Executive's signature. |
-|  | An agreement type will be considered legally executed and will carry an |
-|  | “Active” status, only after CMS has counter-signed the agreement. |
-|  | This status will apply to all agreement types, except the HIPAA Covered |
-|  | Data Disclosure Form as CMS is not required to countersign this |
-|  | agreement. |
-| Closed | This signature status describes agreement types that have never |
-|  | completed the execution of the agreement’s signature workflow. These |
-|  | agreements were never active at any point. Example use cases for this |
-|  | status are: |
-|  | i. An entity does not sign any of the agreement types after the |
-|  | signing window has closed. |
-|  | ii. CMS declines to countersign the agreement. |
+**Signature Status Definitions** Active This signature status describes agreements that have completed the execution of its signature workflow. This signature status will be applicable for ALL agreement types. Pending APM or Practice Signature This signature status describes agreements that **require** an APM Executive's or Practice Primary Contact's signature. Once an agreement is delivered to the model participant, this signature status will indicate an action to be completed by the entity or practice's APM Executive user or Practice Primary contact. Pending CMS Signature This signature status describes agreements that **require** a CMS Executive's signature. An agreement type will be considered legally executed and will carry an "Active" status, only after CMS has counter-signed the agreement. This status will apply to all agreement types, except the HIPAA Covered Data Disclosure Form as CMS is not required to countersign this agreement. Closed This signature status describes agreement types that have never completed the execution of the agreement's signature workflow. These agreements were never active at any point. Example use cases for this status are: i. An entity does not sign any of the agreement types after the signing window has closed. ii. CMS declines to countersign the agreement.
+
+{10}------------------------------------------------
 
 ![](_page_10_Picture_0.png)
 
@@ -274,12 +262,10 @@ If you have questions or require technical assistance, please see the contact in
 - **PCF Model:** PCFTechnicalSupport@cms.hhs.gov
 - **ACO REACH Model:** ACOREACH@cms.hhs.gov
 - **KCC Model:** KCF-CKCC-CMMI@cms.hhs.gov
-
-#### **Phone:**
+## **Phone:**
 
 Call **1-888-734-6433** and then select one of the following:
 
 - **PCF**  option 4
 - **ACO REACH** option 1, and then option 1 again
 - KCC option 1, and then option 3
-
