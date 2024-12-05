@@ -294,8 +294,7 @@ class ParserController(Controller):
         metadata: dict[str, str] = results["metadata"]
 
         try:
-            result = handle_result_type(result_type, metadata, s3, jm, job_key)
-            return result
+            return handle_result_type(result_type, metadata, s3, jm, job_key)
         except Exception as err:
             logger.error(err)
             raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")

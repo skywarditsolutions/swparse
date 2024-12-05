@@ -488,15 +488,13 @@ def handle_result_type(
         elif result_type_check == ContentType.JSON.value:
             json_str = get_file_content(s3, results["json"])
             json_pages = json.loads(json_str)
-            llama_json = [{
+            result = {
                 'pages':json_pages,
-                'job_metadata': jm.__dict__, 
-                'job_id': job_key, 
-                'file_path': results["json"]
-            }]
-            result[result_type] = llama_json
-
-
+                "job_metadata": jm.__dict__, 
+                "job_id": job_key, 
+                "file_path": results["json"],
+            }
+ 
         elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")
             if table_file_path:
@@ -525,7 +523,7 @@ def handle_result_type(
                 tables_content = tables_file.read()
                 result[result_type] = tables_content
 
-        if len(result) > 1:
+        if result:
             return result
 
         raise HTTPException(f"Format {result_type_check} is currently unsupported for {job_key}")
