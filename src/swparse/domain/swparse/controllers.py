@@ -267,7 +267,7 @@ class ParserController(Controller):
     @get(
         path="job/{job_id:str}/result/{result_type:str}",
     )
-    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict:
+    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict|list:
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
