@@ -488,12 +488,10 @@ def handle_result_type(
         elif result_type_check == ContentType.JSON.value:
             json_str = get_file_content(s3, results["json"])
             json_pages = json.loads(json_str)
-            result = [{
+            result = {
                 'pages':json_pages,
                 "job_metadata": jm.__dict__, 
-                "job_id": job_key, 
-                "file_path": results["json"],
-            }]
+            }
  
         elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")

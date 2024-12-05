@@ -240,9 +240,13 @@ def convert_single_pdf(
                 "doc_images":doc_images,
                 "status": "OK",
                 "links": [],
+                'charts':[],
                 "width": page.width,
                 "height": page.height,
                 "triggeredAutoMode": False,
+                'structuredData':None,
+                'noStructuredContent':False,
+                'noTextContent':False
         }
         json_result.append(page_metadata)
 
