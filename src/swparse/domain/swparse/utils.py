@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
-from typing import IO, Any, TYPE_CHECKING
+from typing import IO, Any, TYPE_CHECKING, List
 from uuid import uuid4
 
 import html_text
@@ -541,55 +541,91 @@ class MdAnalyser:
     def __init__(self, markdown_content: str):
         self.markdown_content = markdown_content
         self.components = []
-        self.heading_pattern = re.compile(r"^(#{1,6})\s*(.+)$")
-        self.table_row_pattern = re.compile(r"^\|.*\|$")
-        self.paragraph_pattern = re.compile(r"^[^\|#\s].+$")
         self.lines = markdown_content.splitlines()
-        self.table_row_breakline = re.compile(r"^\|[-|]*\|$")
+        
+        # Compile patterns once for efficiency
+        self.patterns = {
+            "heading": re.compile(r"^(#{1,6})\s*(.+)$"),
+            "table_row": re.compile(r"^\|.*\|$"),
+            "paragraph": re.compile(r"^(?!\!\[.*\]\(.*\))[^\|#\s].+$"),
+            "table_separator": re.compile(r"^\|[-|]*\|$"),
+        }
 
-    def extract_components(self):
+    def extract_components(self) -> List[dict]:
+        """Extracts components from the markdown content."""
         current_table = []
+        
         for line in self.lines:
             if not line.strip():
-                continue
-            if self.heading_pattern.match(line):
-                if current_table:
-                    self.add_table(current_table)
+                continue  # Skip empty lines
+            
+            # Process different patterns
+            if self.patterns["heading"].match(line):
+                self._flush_table(current_table)
                 self.add_heading(line)
-                continue
-            if self.table_row_pattern.match(line):
-                if not re.match(self.table_row_breakline, line):
+            elif self.patterns["table_row"].match(line):
+                if not self.patterns["table_separator"].match(line):
                     current_table.append(line)
-                continue
-            if self.paragraph_pattern.match(line):
-                if current_table:
-                    self.add_table(current_table)
+            elif self.patterns["paragraph"].match(line):
+                self._flush_table(current_table)
                 self.add_paragraph(line)
-                continue
+
+        # Add any remaining table
+        self._flush_table(current_table)
 
         return self.components
 
-    def add_table(self, current_table: list):
-        self.components.append(
-            {
-                "type": "table",
-                "md": "\n".join(current_table),
-                "rows": [[cell.strip() for cell in re.findall(r"\|([^|]+)", row)] for row in current_table],
-            }
-        )
+    def _flush_table(self, current_table: List[str]):
+        """Adds the current table to components if not empty."""
+        if current_table:
+            self.add_table(current_table)
+            current_table.clear()
+
+    def add_table(self, current_table: List[str]):
+        """Processes and adds a table component."""
+        rows = [
+            [cell.strip() for cell in re.findall(r"\|([^|]+)", row)]
+            for row in current_table
+        ]
+        self.components.append({
+            "type": "table",
+            "md": "\n".join(current_table),
+            "rows": rows,
+            "bBox": self._get_bbox(),
+        })
 
     def add_heading(self, line: str):
-        self.components.append(
-            {
-                "type": "heading",
-                "level": len(self.heading_pattern.match(line).group(1)),
-                "md": line,
-                "value": re.sub(r"^#+", "", line).strip(),
-            }
-        )
-
+        """Processes and adds a heading component."""
+        match = self.patterns["heading"].match(line)
+        level = len(match.group(1))
+        text = match.group(2).strip()
+        self.components.append({
+            "type": "heading",
+            "level": level,
+            "md": line,
+            "value": text,
+            "bBox": self._get_bbox()
+        })
+ 
     def add_paragraph(self, line: str):
-        self.components.append({"type": "paragraph", "md": line, "value": md_to_text(line)})
+        """Processes and adds a paragraph component."""
+        self.components.append({
+            "type": "paragraph",
+            "md": line,
+            "value": self.md_to_text(line),
+            "bBox": self._get_bbox()
+        })
+
+    @staticmethod
+    def md_to_text(md: str) -> str:
+        """Converts Markdown to plain text (basic implementation)."""
+        return re.sub(r"(\*\*|__|`|~~)", "", md).strip()
+
+    @staticmethod
+    def _get_bbox() -> dict:
+        """Returns a default bounding box structure."""
+        return {"x": 0.0, "y": 0.0, "w": 0.0, "h": 0.0}
+
 
 
 def extract_md_components(markdown_content: str)->list[dict[str, Any]]:

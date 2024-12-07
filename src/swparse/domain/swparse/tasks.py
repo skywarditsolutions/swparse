@@ -40,7 +40,7 @@ from swparse.domain.swparse.utils import (
     save_file_s3,
 )
 
-from .schema import Page, LLAMAJSONOutput
+from .schemas import Page, LLAMAJSONOutput
 if TYPE_CHECKING:
     from saq.types import Context
 

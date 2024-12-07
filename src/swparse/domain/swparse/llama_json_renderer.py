@@ -3,10 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 import re
-import os
 import regex
 import html_text
-from pydantic import BaseModel
 
 from markdownify import MarkdownConverter
 from bs4 import MarkupResemblesLocatorWarning
@@ -16,15 +14,12 @@ from marker.schema.document import Document
 
 from .html_renderer import LLAMAHTMLRenderer
 from .utils import save_img_s3
-from .schema import Item, BBox, Page, LLAMAJSONOutput
+from .schemas import LLAMAJSONOutput
 from typing import TYPE_CHECKING
 from swparse.config.app import settings
 from s3fs import S3FileSystem
 
 from swparse.domain.swparse.utils import extract_md_components
-
-if TYPE_CHECKING:
-    from PIL.Image import Image
 
 # Ignore beautifulsoup warnings
 import warnings
@@ -33,26 +28,6 @@ warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
-class JSONItemOutput(BaseModel):
-    block_type: str
-    md: str
-    value: str
-    level: str
-
-class LLAMAJSONPAGE(BaseModel):
-    page: str
-    text: str
-    md: str
-    images: list[dict[str,Image]]
-    status: str
-    links: list[str]
-    width: float
-    height: float
-    triggeredAutoMode: bool
-    items: list[JSONItemOutput]
-    block_type: BlockTypes = BlockTypes.Document
-
 
 
 def cleanup_text(full_text:str):
@@ -121,7 +96,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         paginated_md = md_cls.get_paginated_md()
         pageKeys = list(paginated_md.keys())
 
-        llama_json_result:list[Page] = []
+        llama_json_result:list[dict[str,Any]] = []
         full_text = ""
         s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,

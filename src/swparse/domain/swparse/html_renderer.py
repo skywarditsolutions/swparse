@@ -8,6 +8,7 @@ from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import BlockId
 from marker.schema.document import Document, DocumentOutput
+from marker.renderers.html import HTMLRenderer
 
 
 from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
@@ -83,6 +84,7 @@ class LLAMAHTMLRenderer(BaseRenderer):
                     image_name = f"{ref_block_id.to_path()}.png"
                     images[image_name] = image
                     
+                    # paginated images collection
                     if self.paginate_output and f"{ref_block_id.page_id}" in paginated_images:
                         paginated_images[f"{ref_block_id.page_id}"][image_name] = image
                     else:
@@ -93,9 +95,11 @@ class LLAMAHTMLRenderer(BaseRenderer):
                     ref.replace_with('')
             elif ref_block_id.block_type in self.page_blocks:
                 images.update(sub_images)
+
+                # paginated HTML collection
                 if self.paginate_output:
-                    per_page_html = content
-                    paginated_html[f"{ref_block_id.page_id}"] = per_page_html
+                    # per_page_html = content
+                    paginated_html[f"{ref_block_id.page_id}"] = content
                     content = f"<div class='page' data-page-id='{ref_block_id.page_id}'>{content}</div>"
 
 

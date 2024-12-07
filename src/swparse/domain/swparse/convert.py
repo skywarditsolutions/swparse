@@ -12,7 +12,7 @@ from swparse.config.base import get_settings
 from marker.models import create_model_dict
  
 if TYPE_CHECKING:
-    from .schema import LLAMAJSONOutput
+    from .schemas import LLAMAJSONOutput
 
 settings = get_settings()
 
