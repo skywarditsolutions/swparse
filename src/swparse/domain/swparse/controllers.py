@@ -24,7 +24,6 @@ from swparse.domain.swparse.utils import (
     parse_table_query,
 )
 from swparse.lib.schema import BaseStruct
-
 from .urls import PARSER_BASE
 
 logger = structlog.get_logger()
@@ -45,6 +44,16 @@ class ParserController(Controller):
     tags = ["Parsers"]
     path = PARSER_BASE
     middleware = [ApiKeyAuthMiddleware]
+
+    @get(
+        path = "job/test"
+    )
+    async def say_hello(self)->str:
+        from swparse.asgi import swparse
+        res = swparse.state.marker_models
+        logger.info("State value")
+        logger.info(list(res.keys()))
+        return "Hello world"
 
     @post(
         operation_id="ParserQueue",
@@ -67,14 +76,6 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-
         hashed_filename = get_hashed_file_name(filename, content)
         s3_url = f"{BUCKET}/{hashed_filename}"
 

@@ -3,41 +3,47 @@ import os
 import structlog
 import tempfile
 import pandas as pd
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import warnings
 # from .utils import format_timestamp
- 
+import sys
 from marker.converters.pdf import PdfConverter
-from marker.models import create_model_dict
 from swparse.config.base import get_settings
+from marker.models import create_model_dict
+ 
+if TYPE_CHECKING:
+    from .schema import LLAMAJSONOutput
 
 settings = get_settings()
 
 logger = structlog.get_logger()
-
-MARKER_MODEL_DICT = settings.worker.MARKER_MODEL_DICT
+ 
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
  
 warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
-
+models_dict = {}
+# PDF conversion 
 def pdf_markdown(
     in_file: bytes,
     langs: list[str] = ["en"],
     start_page: int = 0,
     max_pages: int = 40,
     ocr_all_pages: bool = False,
-) -> tuple[str, str, str, dict[str, Any], dict, list[dict[str, Any]]]:
-    # PDF to LLAMA conversion 
+) -> "LLAMAJSONOutput":
+    global models_dict
+    if not models_dict:
+        models_dict = create_model_dict()
+        size_in_bytes = sys.getsizeof(models_dict)
+        logger.info(f"Memory size of the dictionary: {size_in_bytes} bytes")
+
  
+    logger.info("exist")
+    state_keys = list( models_dict.keys())
+    logger.info(state_keys)
 
-    if MARKER_MODEL_DICT is None:  
-        logger.info("Loading Models")
-        model_dict = create_model_dict()
-
-        logger.info(list(model_dict.keys()))
-
+ 
     processors = [
         "marker.processors.blockquote.BlockquoteProcessor",
         "marker.processors.code.CodeProcessor",
@@ -67,19 +73,12 @@ def pdf_markdown(
  
         pdf_converter = PdfConverter(
                 config=config,
-                artifact_dict=model_dict,
+                artifact_dict=models_dict,
                 processor_list=processors,
                 renderer= "swparse.domain.swparse.llama_json_renderer.LLAMAJSONRenderer"
         )
-        rendered = pdf_converter(filename)
-        json_result = rendered.pages
-        out_meta = rendered.metadata
-        images = rendered.images
-        full_text = rendered.text
-        full_html = rendered.html
-        full_md = rendered.md
-
-    return full_text, full_html, full_md, images, out_meta, json_result
+ 
+        return pdf_converter(filename)
 
     
 

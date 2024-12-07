@@ -36,10 +36,10 @@ class LLAMAJSONPAGE(BaseModel):
     block_type: BlockTypes = BlockTypes.Document
 
 
-class LLAMAJSONOutput(BaseModel):
-    pages:str
-    paginated_html:dict[str, str]
+class HTMLOutput(BaseModel):
+    full_html:str
     metadata: dict[str, Any]
+    paginated_html:dict[str, str]
     paginated_images: dict[str , Any]
 
 
@@ -59,7 +59,7 @@ class LLAMAHTMLRenderer(BaseRenderer):
         return cropped
 
 
-    def extract_html(self, document:Document, document_output:DocumentOutput, paginated_html: dict[str, str], paginated_images: dict[str, Any], level:int=0 ):
+    def extract_html(self, document:Document, document_output:DocumentOutput, paginated_html: dict[str, str], paginated_images: dict[str, Any], level:int=0 )->tuple[str, dict[str, Any], dict[str, str], dict[str, Any]]:
         soup = BeautifulSoup(document_output.html, 'html.parser')
 
         content_refs = soup.find_all('content-ref')
@@ -82,6 +82,7 @@ class LLAMAHTMLRenderer(BaseRenderer):
                     image = self.extract_image(document, ref_block_id)
                     image_name = f"{ref_block_id.to_path()}.png"
                     images[image_name] = image
+                    
                     if self.paginate_output and f"{ref_block_id.page_id}" in paginated_images:
                         paginated_images[f"{ref_block_id.page_id}"][image_name] = image
                     else:
@@ -111,13 +112,13 @@ class LLAMAHTMLRenderer(BaseRenderer):
         return output, images, paginated_html, paginated_images
 
 
-    def __call__(self, document:Document) -> LLAMAJSONOutput:
+    def __call__(self, document:Document) -> HTMLOutput:
         document_output = document.render()
-        paginated_html = {}
-        paginated_images = {}
+        paginated_html:dict[str, str] = {}
+        paginated_images:dict[str, Any] = {}
         full_html, images, paginated_html, paginated_images = self.extract_html(document, document_output, paginated_html, paginated_images)
-        return LLAMAJSONOutput(
-            pages=full_html,
+        return HTMLOutput(
+            full_html=full_html,
             paginated_html= paginated_html,
             paginated_images = paginated_images,
             metadata=self.generate_document_metadata(document, document_output)

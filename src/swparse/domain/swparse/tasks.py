@@ -7,7 +7,6 @@ import os
 import re
 import tempfile
 import time
-from io import BytesIO
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
@@ -24,6 +23,9 @@ from PIL import Image
 from s3fs import S3FileSystem
 from unoserver import client
 
+
+from pydantic import TypeAdapter, ValidationError
+
 from swparse.config.app import settings
 from swparse.db.models import ContentType
 from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
@@ -31,7 +33,6 @@ from swparse.domain.swparse.utils import (
     change_file_ext,
     convert_pptx_to_md,
     convert_xls_to_xlsx_bytes,
-    extract_md_components,
     extract_tables_gliner,
     format_timestamp,
     get_file_content,
@@ -39,8 +40,10 @@ from swparse.domain.swparse.utils import (
     save_file_s3,
 )
 
+from .schema import Page, LLAMAJSONOutput
 if TYPE_CHECKING:
     from saq.types import Context
+
 
 logger = structlog.get_logger()
 BUCKET = settings.storage.BUCKET
@@ -184,65 +187,43 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
 
-    text_results, html_results, markdown, doc_images, out_meta, json_result = pdf_markdown(content, start_page=start_page, max_pages=end_page)    
- 
-    all_images = {}
-    # Save Images
-    per_page_json_image_start = time.time()
-    for per_page_result in json_result:
-        per_page_images = []
-        per_page_result["items"] = extract_md_components(per_page_result.get("md"))
-        doc_images = per_page_result.get("doc_images")
+    result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page) 
 
-        if doc_images:
-            for image_name, img in doc_images.items():
-                image_name = image_name.lower()
-                buffered = BytesIO()
-                img.save(buffered, format=image_name.split(".")[-1])
-                img_b = buffered.getvalue()
-                img_file_path = save_file_s3(s3fs, image_name, img_b)
-                all_images[image_name] = img_file_path
-                per_page_images.append({image_name:img_file_path})
-            per_page_result.pop("doc_images")
-            per_page_result.update({"images":per_page_images})
-
-    per_page_json_image_end = time.time()
-    caching_start = time.time()
+    data:dict[str, str] = {}
+    
     # Markdown saving
     md_file_name = change_file_ext(file_name, "md")
-    md_file_path = save_file_s3(s3fs, md_file_name, markdown)
+    data[ContentType.MARKDOWN.value] = save_file_s3(s3fs, md_file_name, result.markdown)
     # HTML Parsing
     html_file_name = change_file_ext(file_name, "html")
-    html_file_path = save_file_s3(s3fs, html_file_name, html_results)
+    data[ContentType.HTML.value] = save_file_s3(s3fs, html_file_name, result.html)
     # Text Parsing
     txt_file_name = change_file_ext(file_name, "txt")
-    txt_file_path = save_file_s3(s3fs, txt_file_name, text_results)
+    data[ContentType.TEXT.value] = save_file_s3(s3fs, txt_file_name, result.text)
 
-    # JSON parsing and file saving
-    json_file_name = change_file_ext(file_name, "json")
-    json_file_path = save_file_s3(s3fs, json_file_name, json.dumps(json_result))
+ 
+    # JSON result data validation and saving
+    try:
+        page_adapter = TypeAdapter(list[Page])
+        page_adapter.validate_python(result.pages)
+        logger.info("\nPages\n")
+        logger.info(result.pages)
+        logger.info("\n ----------- \n")
+
+        json_file_name = change_file_ext(file_name, "json")
+        data[ContentType.JSON.value]  = save_file_s3(s3fs, json_file_name, json.dumps(result.pages))
+        
+        logger.info("Validation successful!")
+    except ValidationError as e:
+        logger.error("Validation failed!")
+        logger.error(e.json())
+
 
     # Saving image metadata
     img_file_name = change_file_ext(file_name, "json")
-    img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(all_images))
-    caching_end = time.time()
-
-    logger.info(f"Caching start: {format_timestamp(caching_start)}")
-    logger.info(f"Caching end: {format_timestamp(caching_end)}")
-    logger.info(f"Caching time taken {format_timestamp(caching_end - caching_start)}\n\n")
-
-    logger.info(f"PDF per page JSON images start: {format_timestamp(per_page_json_image_start)}")
-    logger.info(f"PDF per page JSON images end: {format_timestamp(per_page_json_image_end)}")
-    logger.info(f"PDF per page JSON images time taken {format_timestamp(per_page_json_image_end - per_page_json_image_start)}\n\n")
-
-    return {
-        ContentType.MARKDOWN.value: md_file_path,
-        ContentType.HTML.value: html_file_path,
-        ContentType.TEXT.value: txt_file_path,
-        ContentType.IMAGES.value: img_file_path,
-        ContentType.JSON.value: json_file_path,
-    }
-
+    data[ContentType.IMAGES.value] = save_file_s3(s3fs, img_file_name, json.dumps(result.images))
+ 
+    return data
 
 async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
     logger.info("Started parse_docx_s3")

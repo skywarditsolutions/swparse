@@ -6,18 +6,33 @@ import re
 import os
 import regex
 import html_text
-from markdownify import MarkdownConverter
 from pydantic import BaseModel
+
+from markdownify import MarkdownConverter
 from bs4 import MarkupResemblesLocatorWarning
 
-from .html_renderer import LLAMAHTMLRenderer
 from marker.schema import BlockTypes
 from marker.schema.document import Document
+
+from .html_renderer import LLAMAHTMLRenderer
+from .utils import save_img_s3
+from .schema import Item, BBox, Page, LLAMAJSONOutput
+from typing import TYPE_CHECKING
+from swparse.config.app import settings
+from s3fs import S3FileSystem
+
+from swparse.domain.swparse.utils import extract_md_components
+
+if TYPE_CHECKING:
+    from PIL.Image import Image
 
 # Ignore beautifulsoup warnings
 import warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
+BUCKET = settings.storage.BUCKET
+MINIO_ROOT_USER = settings.storage.ROOT_USER
+MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
 class JSONItemOutput(BaseModel):
     block_type: str
@@ -29,7 +44,7 @@ class LLAMAJSONPAGE(BaseModel):
     page: str
     text: str
     md: str
-    images: list[dict[str,str]]
+    images: list[dict[str,Image]]
     status: str
     links: list[str]
     width: float
@@ -39,35 +54,13 @@ class LLAMAJSONPAGE(BaseModel):
     block_type: BlockTypes = BlockTypes.Document
 
 
-class LLAMAJSONOutput(BaseModel):
-    md:str
-    html:str 
-    text:str
-    pages: list[dict[str, Any]]
-    metadata: dict[str, Any] 
-    images:dict[str, Any]
- 
- 
+
 def cleanup_text(full_text:str):
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
     return full_text
 
-
-def save_images(images: dict[str, Any]) -> dict[str, str]:
-
-    output_dir = "./images"
-    os.makedirs(output_dir, exist_ok=True)
-
  
-    saved_paths = {}
-
-    for img_name, img in images.items():
-        file_path = os.path.join(output_dir, img_name)
-        img.save(file_path, "PNG", optimize=False, compress_level=3)
-        saved_paths[img_name] = file_path
-
-    return saved_paths
 
 class Markdownify(MarkdownConverter):
     paginated_md:dict[str, str]= {}
@@ -77,7 +70,7 @@ class Markdownify(MarkdownConverter):
         self.paginate_output = paginate_output
         self.page_separator = page_separator
 
-    def convert_div(self, el, text, convert_as_inline):
+    def convert_div(self, el, text, convert_as_inline) -> str:
         is_page = el.has_attr('class') and el['class'][0] == 'page'
         if self.paginate_output and is_page:
             page_id = el['data-page-id']
@@ -128,35 +121,57 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         paginated_md = md_cls.get_paginated_md()
         pageKeys = list(paginated_md.keys())
 
-        llama_json_result = []
+        llama_json_result:list[Page] = []
         full_text = ""
+        s3fs = S3FileSystem(
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            key=MINIO_ROOT_USER,
+            secret=MINIO_ROOT_PASSWORD,
+            use_ssl=False,
+        )
+
+        all_images = {}
         for pageIdx in pageKeys:
-            # saved_images = {}
-            # un-comment for image saving not with Minio
-            # if paginated_images.get(pageIdx):
-            #     saved_images = save_images(paginated_images[pageIdx])
+            saved_image_list:list[dict[str, str]] = []
+
+            # saving images onto Minio bucket
+            image_dict =  paginated_images.get(pageIdx, {})
+            for image_name, image in image_dict.items():
+                saved_img_file_path = save_img_s3(s3fs, image_name, image)
+                # collecting images per page
+                saved_image_list.append({image_name:saved_img_file_path})
+                # collecting all imges as dict
+                all_images[image_name] = saved_img_file_path
+            md = paginated_md[pageIdx]
             html_result = paginated_html[pageIdx]
+
             text_results = html_text.extract_text(html_result, guess_layout=True)
             full_text += text_results
-            llama_json_result.append(
-                {
-                "page":pageIdx,
-                "md": paginated_md[pageIdx],
-                "doc_images":paginated_images[pageIdx],
-                "text": text_results,
+
+            page = {
+                "page":  int(pageIdx) + 1,
+                "md": md,
+                "text": full_text,
                 "status": "OK",
                 "links": [],
+                "charts": [],
                 "width": 0,
                 "height": 0,
+                "items": extract_md_components(md),
+                "images": saved_image_list,
                 "triggeredAutoMode": False,
-                }
-            )
+                "structuredData": None,
+                "noStructuredContent": False,
+                "noTextContent": False
+            }
  
+            llama_json_result.append(page)
+        
         return LLAMAJSONOutput(
-            md= full_markdown,
+            markdown= full_markdown,
             html = full_html,
             text= full_text,
             pages = llama_json_result,
-            images=images,
+            images= all_images,
             metadata=self.generate_document_metadata(document, document_output)
         )

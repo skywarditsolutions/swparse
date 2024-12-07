@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
-from typing import IO, Any
+from typing import IO, Any, TYPE_CHECKING
 from uuid import uuid4
 
 import html_text
@@ -34,21 +34,14 @@ from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata
 
+if TYPE_CHECKING:
+    from PIL.Image import Image
+
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
-MINIO_ROOT_USER = settings.storage.ROOT_USER
-MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
 JOB_FOLDER = settings.storage.JOB_FOLDER
 
-s3 = S3FileSystem(
-    endpoint_url=settings.storage.ENDPOINT_URL,
-    key=MINIO_ROOT_USER,
-    secret=MINIO_ROOT_PASSWORD,
-    use_ssl=False,
-)
-
-
+ 
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
     x2x = XLS2XLSX(io.BytesIO(content))
@@ -68,6 +61,13 @@ def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> st
     with s3fs.open(s3_url, mode="wb") as f:
         f.write(content)
         return s3_url
+
+def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"Image") -> str:
+    image_name = image_name.lower()
+    buffered = io.BytesIO()
+    image.save(buffered, format=image_name.split(".")[-1])
+    img_b = buffered.getvalue()
+    return save_file_s3(s3fs, image_name, img_b)
 
 
 def get_file_name(s3_url: str) -> str:
@@ -418,40 +418,40 @@ def get_hashed_file_name(filename: str, content: bytes) -> str:
     return f"{check_sum}.{file_ext}"
 
 
-def get_job_metadata(s3: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]:
+def get_job_metadata(s3fs: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]:
     job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
     content = {}
-    if s3.exists(job_file_path):
-        with s3.open(job_file_path, mode="r") as f:
+    if s3fs.exists(job_file_path):
+        with s3fs.open(job_file_path, mode="r") as f:
             content = json.loads(f.read())
     return content
 
 
-def save_job_metadata(s3: S3FileSystem, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
+def save_job_metadata(s3fs: S3FileSystem, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
     job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
     job_folder_path = f"{BUCKET}/{JOB_FOLDER}/"
 
     existing_job_metadata: dict[str, dict] = {"metadata": {}}
-    if not s3.exists(job_folder_path):
-        s3.mkdir(job_folder_path)
+    if not s3fs.exists(job_folder_path):
+        s3fs.mkdir(job_folder_path)
 
-    if not s3.exists(job_file_path):
+    if not s3fs.exists(job_file_path):
         existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
     else:
-        existing_job_metadata = get_job_metadata(s3, job_id)
+        existing_job_metadata = get_job_metadata(s3fs, job_id)
 
     existing_job_metadata["metadata"].update(metadata)
 
     try:
-        with s3.open(job_file_path, mode="w") as f:
+        with s3fs.open(job_file_path, mode="w") as f:
             f.write(json.dumps(existing_job_metadata, indent=4))
         return existing_job_metadata
     except Exception as err:
         raise HTTPException(status_code=500, detail=f"Save job metadata error: {err}")
 
 
-def get_file_content(s3: S3FileSystem, file_path: str) -> str:
-    with s3.open(file_path, mode="r") as f:
+def get_file_content(s3fs: S3FileSystem, file_path: str) -> str:
+    with s3fs.open(file_path, mode="r") as f:
         content = f.read()
         if isinstance(content, bytes):
             content = content.decode()
@@ -459,7 +459,7 @@ def get_file_content(s3: S3FileSystem, file_path: str) -> str:
 
 
 def handle_result_type(
-    result_type: str, results: dict[str, str], s3: S3FileSystem, jm: JobMetadata, job_key: str
+    result_type: str, results: dict[str, str], s3fs: S3FileSystem, jm: JobMetadata, job_key: str
 ) -> dict:
     if results.get("result_type"):
         result_type_check = results["result_type"]
@@ -468,41 +468,41 @@ def handle_result_type(
     try:
         result = {"job_metadata": jm.__dict__}
         if result_type_check == ContentType.MARKDOWN.value:
-            markdown = get_file_content(s3, results["markdown"])
+            markdown = get_file_content(s3fs, results["markdown"])
             result[result_type] = markdown
 
         elif result_type_check == ContentType.HTML.value:
-            html = get_file_content(s3, results["html"])
+            html = get_file_content(s3fs, results["html"])
             result[result_type] = html
 
         elif result_type_check == ContentType.TEXT.value:
-            text = get_file_content(s3, results["text"])
+            text = get_file_content(s3fs, results["text"])
             result[result_type] = text
 
         elif result_type_check == ContentType.TABLE.value:
-            html = extract_tables_from_html(s3, results["html"])
+            html = extract_tables_from_html(s3fs, results["html"])
             result_html = "<br><br>"
             if html:
                 result_html = result_html.join(html)
             result[result_type] = result_html
 
         elif result_type_check == ContentType.JSON.value:
-            json_str = get_file_content(s3, results["json"])
+            json_str = get_file_content(s3fs, results["json"])
             json_pages = json.loads(json_str)
-            result = [{
+            logger.info("Pages")
+            logger.info(json_pages)
+            result = {
                 'pages':json_pages,
                 'job_metadata': jm.__dict__, 
-                'job_id': job_key, 
-                'file_path': results["json"]
-            }]
+            }
 
         elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")
             if table_file_path:
-                with s3.open(results["table"], mode="r") as out_file_html:
+                with s3fs.open(results["table"], mode="r") as out_file_html:
                     result_html = out_file_html.read()
             else:
-                html = extract_tables_from_html(s3, results["html"])
+                html = extract_tables_from_html(s3fs, results["html"])
                 result_html = "<br><br>".join(html)
 
             dfs = pd.read_html(result_html)
@@ -515,16 +515,16 @@ def handle_result_type(
             result[result_type] = markdown_tbls
 
         elif result_type_check == ContentType.IMAGES.value:
-            with s3.open(results["images"], mode="r") as f:
+            with s3fs.open(results["images"], mode="r") as f:
                 json_image_meta = f.read()
 
             result[result_type] = json.loads(json_image_meta)
         else:
-            with s3.open(results[result_type_check], mode="r") as tables_file:
+            with s3fs.open(results[result_type_check], mode="r") as tables_file:
                 tables_content = tables_file.read()
                 result[result_type] = tables_content
 
-        if len(result) > 1:
+        if result:
             return result
 
         raise HTTPException(f"Format {result_type_check} is currently unsupported for {job_key}")
@@ -592,7 +592,7 @@ class MdAnalyser:
         self.components.append({"type": "paragraph", "md": line, "value": md_to_text(line)})
 
 
-def extract_md_components(markdown_content: str):
+def extract_md_components(markdown_content: str)->list[dict[str, Any]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
 
@@ -600,3 +600,4 @@ def extract_md_components(markdown_content: str):
 def format_timestamp(timestamp:float) ->str:
     value = datetime.fromtimestamp(timestamp)
     return value.strftime('%S:') + f"{int(value.strftime('%f')) // 1000}"
+ 
