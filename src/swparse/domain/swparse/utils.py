@@ -543,7 +543,7 @@ class MdAnalyser:
         self.components = []
         self.links = []
         self.lines = markdown_content.splitlines()
-        
+
         # Compile patterns once for efficiency
         self.patterns = {
             "heading": re.compile(r"^(#{1,6})\s*(.+)$"),
