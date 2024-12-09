@@ -1,17 +1,26 @@
-## Unreleased
+## v0.7.0 (2024-12-09)
 
 ### Feat
 
+- merge with dev
+- set caching flag from env, fix: Parser API key properly used from settings
+- add links and empty bBox fields in json parser
+- added link section and fix text regex
 - added data type validation, normalized s3fs obj
 - dependencies updated, add models loading to worker initial start up
 - adjust pdf_markdown handler params
 - replace old marker with v1 version
 - **wip**: surya marker v1.0 migration
 - add logging to each process for docx, pptx, xlsx, pdf and images
-- add items in json result
 
 ### Fix
 
+- git merge conflict resolve
+- swparse json response
+- wrap json obj with list
+- unwrap swparse json result
+- llamaparse json result syntax for json result of swparse
+- adjst json result of pdf parser
 - data validation to json result and refactor items extraction of each page
 - json response syntax
 - remove duplicated s3fs creation
@@ -24,7 +33,21 @@
 - image metadata save filepath
 - image metadata save in string
 - image metadata normalization
+
+## v0.6.3 (2024-11-26)
+
+### Fix
+
 - **wip**: API auth token in middleware
+
+## v0.6.2 (2024-11-25)
+
+### Feat
+
+- add items in json result
+
+### Fix
+
 - images filepath exceeding meta data size, json result JSON dumps
 
 ## v0.6.1 (2024-11-23)
