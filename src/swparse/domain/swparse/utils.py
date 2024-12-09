@@ -649,9 +649,3 @@ class MdAnalyser:
 def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], list[dict[str, str]]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
-
-
-def format_timestamp(timestamp:float) ->str:
-    value = datetime.fromtimestamp(timestamp)
-    return value.strftime('%S:') + f"{int(value.strftime('%f')) // 1000}"
- 

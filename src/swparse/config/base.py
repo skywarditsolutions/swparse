@@ -361,6 +361,9 @@ class AppSettings:
     """CSRF Secure Cookie"""
     JWT_ENCRYPTION_ALGORITHM: str = field(default_factory=lambda: "HS256")
     """JWT Encryption Algorithm"""
+    PARSER_API_KEY: str = field(default_factory=lambda: os.getenv("PARSER_API_KEY"))
+
+    CACHING_ON: bool = field(default_factory=lambda: os.getenv("CACHING_ON", "True") in TRUE_VALUES)
 
     @property
     def slug(self) -> str:

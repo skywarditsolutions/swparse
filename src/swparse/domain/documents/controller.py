@@ -43,12 +43,12 @@ if TYPE_CHECKING:
     from litestar.params import Parameter
 
 SWPARSE_URL = os.environ.get("APP_URL")
-SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
 logger = structlog.get_logger()
 OnlineOffline = TypeVar("OnlineOffline", bound=Literal["online", "offline"])
 
 queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 
+SWPARSE_API_KEY =settings.app.PARSER_API_KEY
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET

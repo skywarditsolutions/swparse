@@ -33,7 +33,7 @@ queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
+CACHING_ON = settings.app.CACHING_ON
 
 class UploadBody(BaseStruct):
     file: UploadFile
@@ -93,7 +93,19 @@ class ParserController(Controller):
             metadata["result_type"] = data.parsing_instruction
 
         if s3.exists(s3_url):
-            pass
+            if CACHING_ON:
+                metadata_json_str = s3fs.getxattr(s3_url, "metadata")
+                if metadata_json_str:
+                    del kwargs["ext"]
+                    job = await queue.enqueue(
+                        Job(
+                            "get_extracted_url",
+                            kwargs=kwargs,
+                            timeout=0,
+                        ),
+                    )
+                    save_job_metadata(s3, job.id, metadata)
+                    return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
         else:
             with s3.open(s3_url, "wb") as f:
                 f.write(content)
@@ -256,7 +268,7 @@ class ParserController(Controller):
     @get(
         path="job/{job_id:str}/result/{result_type:str}",
     )
-    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict:
+    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict|list:
         s3 = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
@@ -283,8 +295,7 @@ class ParserController(Controller):
         metadata: dict[str, str] = results["metadata"]
 
         try:
-            result = handle_result_type(result_type, metadata, s3, jm, job_key)
-            return result
+            return handle_result_type(result_type, metadata, s3, jm, job_key)
         except Exception as err:
             logger.error(err)
             raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")
