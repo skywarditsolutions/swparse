@@ -12,8 +12,6 @@ if TYPE_CHECKING:
     from litestar import Litestar
 
 logger = structlog.get_logger()
-# def load_models(app:Litestar)-> None:
-#     app.state.marker_models = create_model_dict()
 
 def create_app() -> Litestar:
     """Create ASGI application."""
@@ -39,7 +37,6 @@ def create_app() -> Litestar:
         cors_config=config.cors,
         dependencies=dependencies,
         debug=settings.app.DEBUG,
-        # on_startup= [load_models],
         openapi_config=openapi.config,
         route_handlers=routers.route_handlers,
         signature_types=[UUID],

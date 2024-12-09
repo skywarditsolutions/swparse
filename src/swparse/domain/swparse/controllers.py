@@ -46,16 +46,6 @@ class ParserController(Controller):
     path = PARSER_BASE
     middleware = [ApiKeyAuthMiddleware]
 
-    @get(
-        path = "job/test"
-    )
-    async def say_hello(self)->str:
-        from swparse.asgi import swparse
-        res = swparse.state.marker_models
-        logger.info("State value")
-        logger.info(list(res.keys()))
-        return "Hello world"
-
     @post(
         operation_id="ParserQueue",
         name="parsers:start",
