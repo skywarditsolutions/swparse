@@ -4,15 +4,18 @@ import structlog
 import tempfile
 import pandas as pd
 from typing import Any, TYPE_CHECKING
-import warnings
+from marker.config.parser import ConfigParser
+
 # from .utils import format_timestamp
-import sys
 from marker.converters.pdf import PdfConverter
 from swparse.config.base import get_settings
 from marker.models import create_model_dict
  
 if TYPE_CHECKING:
     from .schemas import LLAMAJSONOutput
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
 
 settings = get_settings()
 
@@ -22,7 +25,6 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
  
-warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
 models_dict = {}
 # PDF conversion 
 def pdf_markdown(
@@ -35,13 +37,9 @@ def pdf_markdown(
     global models_dict
     if not models_dict:
         models_dict = create_model_dict()
-        size_in_bytes = sys.getsizeof(models_dict)
-        logger.info(f"Memory size of the dictionary: {size_in_bytes} bytes")
-
- 
-    logger.info("exist")
-    state_keys = list( models_dict.keys())
-    logger.info(state_keys)
+  
+    logger.info("Model loaded: ")
+    logger.info( list( models_dict.keys()))
 
  
     processors = [
@@ -70,9 +68,9 @@ def pdf_markdown(
             "paginate_output": True,
             "force_ocr":   ocr_all_pages
         }
- 
+        config_parser = ConfigParser(config)
         pdf_converter = PdfConverter(
-                config=config,
+                config=config_parser.generate_config_dict(),
                 artifact_dict=models_dict,
                 processor_list=processors,
                 renderer= "swparse.domain.swparse.llama_json_renderer.LLAMAJSONRenderer"

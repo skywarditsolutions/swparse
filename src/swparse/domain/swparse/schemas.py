@@ -42,8 +42,8 @@ class Item(BaseModel):
 
 
 class Link(BaseModel):
-    url: str
-    text: str
+    url: str | None = None
+    text: str | None = None
 
 
 class Page(BaseModel):
@@ -60,9 +60,7 @@ class Page(BaseModel):
     noStructuredContent: bool
     noTextContent: bool
     items: list[Item]
-    # items:list[dict[str, Any]]
-    # links: list[Link]
-    links: list
+    links: list[Link]
 
 
 # class JobMetadata(BaseModel):

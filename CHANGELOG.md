@@ -1,17 +1,30 @@
-## v0.6.3 (2024-11-26)
-
-### Fix
-
-- **wip**: API auth token in middleware
-
-## v0.6.2 (2024-11-25)
+## Unreleased
 
 ### Feat
 
+- added data type validation, normalized s3fs obj
+- dependencies updated, add models loading to worker initial start up
+- adjust pdf_markdown handler params
+- replace old marker with v1 version
+- **wip**: surya marker v1.0 migration
+- add logging to each process for docx, pptx, xlsx, pdf and images
 - add items in json result
 
 ### Fix
 
+- data validation to json result and refactor items extraction of each page
+- json response syntax
+- remove duplicated s3fs creation
+- adjust logging for docx and images
+- include caching save time in calculations
+- change unit from micro seconds to milliseconds
+- change structlog logger
+- disable cache file checked
+- remove logging metadata
+- image metadata save filepath
+- image metadata save in string
+- image metadata normalization
+- **wip**: API auth token in middleware
 - images filepath exceeding meta data size, json result JSON dumps
 
 ## v0.6.1 (2024-11-23)

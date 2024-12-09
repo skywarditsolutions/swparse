@@ -206,10 +206,6 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[
     try:
         page_adapter = TypeAdapter(list[Page])
         page_adapter.validate_python(result.pages)
-        logger.info("\nPages\n")
-        logger.info(result.pages)
-        logger.info("\n ----------- \n")
-
         json_file_name = change_file_ext(file_name, "json")
         data[ContentType.JSON.value]  = save_file_s3(s3fs, json_file_name, json.dumps(result.pages))
         

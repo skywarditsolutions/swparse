@@ -118,21 +118,23 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
                 # collecting all imges as dict
                 all_images[image_name] = saved_img_file_path
             md = paginated_md[pageIdx]
-            html_result = paginated_html[pageIdx]
-
-            text_results = html_text.extract_text(html_result, guess_layout=True)
+            html_result = paginated_html.get(pageIdx)
+            if html_result is None:
+                text_results = ""
+            else:
+                text_results = html_text.extract_text(html_result, guess_layout=True)
             full_text += text_results
-
+            items, links = extract_md_components(md)
             page = {
                 "page":  int(pageIdx) + 1,
                 "md": md,
                 "text": full_text,
                 "status": "OK",
-                "links": [],
+                "links": links,
                 "charts": [],
                 "width": 0,
                 "height": 0,
-                "items": extract_md_components(md),
+                "items": items,
                 "images": saved_image_list,
                 "triggeredAutoMode": False,
                 "structuredData": None,

@@ -541,25 +541,28 @@ class MdAnalyser:
     def __init__(self, markdown_content: str):
         self.markdown_content = markdown_content
         self.components = []
+        self.links = []
         self.lines = markdown_content.splitlines()
         
         # Compile patterns once for efficiency
         self.patterns = {
             "heading": re.compile(r"^(#{1,6})\s*(.+)$"),
             "table_row": re.compile(r"^\|.*\|$"),
-            "paragraph": re.compile(r"^(?!\!\[.*\]\(.*\))[^\|#\s].+$"),
+            "paragraph": re.compile(r"^(?!\!\[.*\]\(.*\))(?!.*https?://)[^\|#\s].+$"),
             "table_separator": re.compile(r"^\|[-|]*\|$"),
+            "links": re.compile(r"http?s?://[^\s]+")
         }
 
-    def extract_components(self) -> List[dict]:
+    def extract_components(self) -> tuple[List[dict[str,Any]], list[dict[str, str]]]:
         """Extracts components from the markdown content."""
         current_table = []
         
         for line in self.lines:
             if not line.strip():
-                continue  # Skip empty lines
-            
+                continue 
             # Process different patterns
+            self.extract_link(line)
+            line = self.remove_links(line)
             if self.patterns["heading"].match(line):
                 self._flush_table(current_table)
                 self.add_heading(line)
@@ -570,16 +573,11 @@ class MdAnalyser:
                 self._flush_table(current_table)
                 self.add_paragraph(line)
 
-        # Add any remaining table
+ 
         self._flush_table(current_table)
 
-        return self.components
+        return self.components, self.links
 
-    def _flush_table(self, current_table: List[str]):
-        """Adds the current table to components if not empty."""
-        if current_table:
-            self.add_table(current_table)
-            current_table.clear()
 
     def add_table(self, current_table: List[str]):
         """Processes and adds a table component."""
@@ -593,6 +591,26 @@ class MdAnalyser:
             "rows": rows,
             "bBox": self._get_bbox(),
         })
+
+    def _flush_table(self, current_table: List[str]):
+        """Adds the current table to components if not empty."""
+        if current_table:
+            self.add_table(current_table)
+            current_table.clear()
+
+
+    def extract_link(self, line: str):
+        """Extract links from the given line and adds them to self.links."""
+        matches = self.patterns["links"].findall(line)
+        for match in matches:
+            self.links.append({
+                "text": match,
+                "url": match
+            })
+
+    def remove_links(self, line: str) -> str:
+        """Remove links from a line while keeping the remaining text."""
+        return self.patterns["links"].sub("", line).strip()
 
     def add_heading(self, line: str):
         """Processes and adds a heading component."""
@@ -608,9 +626,9 @@ class MdAnalyser:
         })
  
     def add_paragraph(self, line: str):
-        """Processes and adds a paragraph component."""
+        """Processes and adds a text component."""
         self.components.append({
-            "type": "paragraph",
+            "type": "text",
             "md": line,
             "value": self.md_to_text(line),
             "bBox": self._get_bbox()
@@ -628,7 +646,7 @@ class MdAnalyser:
 
 
 
-def extract_md_components(markdown_content: str)->list[dict[str, Any]]:
+def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], list[dict[str, str]]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
 
