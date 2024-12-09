@@ -85,6 +85,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    volumes:
+      - ./huggingface:/root/.cache/huggingface
     deploy:
       resources:
         reservations:

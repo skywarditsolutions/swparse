@@ -15,7 +15,6 @@ from marker.schema.document import Document
 from .html_renderer import LLAMAHTMLRenderer
 from .utils import save_img_s3
 from .schemas import LLAMAJSONOutput
-from typing import TYPE_CHECKING
 from swparse.config.app import settings
 from s3fs import S3FileSystem
 
@@ -79,7 +78,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         paginated_html = {}
         paginated_images= {}
         full_html, images, paginated_html, paginated_images = self.extract_html(document, document_output, paginated_html, paginated_images)
- 
+
         md_cls = Markdownify(
             True,
             self.page_separator,

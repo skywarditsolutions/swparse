@@ -45,8 +45,6 @@ class ApiKeyAuthMiddleware(AbstractMiddleware):
                 provide_api_key_service(alchemy.provide_session(connection.app.state, connection.scope))
             )
             is_authorized = bool(await api_key_service.authenticate(api_key))
-            logger.error("API key authentication")
-            logger.error(is_authorized)
 
             if not is_authorized:
                 raise NotAuthorizedException(status_code=403, detail="Forbidden: Invalid API key")

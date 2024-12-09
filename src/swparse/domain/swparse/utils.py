@@ -1,38 +1,44 @@
-import hashlib
 import io
-import json
-import math
 import os
 import re
+import json
+import math
+import hashlib
+from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
 from typing import IO, Any, TYPE_CHECKING, List
-from uuid import uuid4
 
-import html_text
-import mistletoe
 import pandas as pd
 from gliner import GLiNER
 from lark import Lark, Token, Transformer
-from litestar.exceptions import HTTPException
+
+import html_text
+import mistletoe
 from lxml import html
 from markdown_it import MarkdownIt
 from mdit_plain.renderer import RendererPlain
+
 from nltk import download, tokenize
+
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.shapes.base import BaseShape
 from pptx.shapes.shapetree import SlideShapes
-from s3fs import S3FileSystem
+
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
+
 from xls2xlsx import XLS2XLSX
+
+from s3fs import S3FileSystem
 
 from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata
+from litestar.exceptions import HTTPException
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -489,8 +495,6 @@ def handle_result_type(
         elif result_type_check == ContentType.JSON.value:
             json_str = get_file_content(s3fs, results["json"])
             json_pages = json.loads(json_str)
-            logger.info("Pages")
-            logger.info(json_pages)
             result = {
                 'pages':json_pages,
                 'job_metadata': jm.__dict__, 
@@ -556,7 +560,7 @@ class MdAnalyser:
     def extract_components(self) -> tuple[List[dict[str,Any]], list[dict[str, str]]]:
         """Extracts components from the markdown content."""
         current_table = []
-        
+
         for line in self.lines:
             if not line.strip():
                 continue 
@@ -649,3 +653,8 @@ class MdAnalyser:
 def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], list[dict[str, str]]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
+
+
+def format_timestamp(timestamp:float) ->str:
+    value = datetime.fromtimestamp(timestamp)
+    return value.strftime('%S:') + f"{int(value.strftime('%f')) // 1000}"

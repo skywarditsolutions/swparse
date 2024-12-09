@@ -1,38 +1,24 @@
 ## v0.7.0 (2024-12-09)
 
-### Feat
+### Features
+ 
+- Replaced the old marker version with the newly released version 1.0.2
+- Set caching flag from environment variable.
+- Added a link section for each page in json result.
+- Added caching for marker models during server setup.
+- Added data type validation for JSON results to ensure compatibility with LLamaparse.
 
-- merge with dev
-- set caching flag from env, fix: Parser API key properly used from settings
-- add links and empty bBox fields in json parser
-- added link section and fix text regex
-- added data type validation, normalized s3fs obj
-- dependencies updated, add models loading to worker initial start up
-- adjust pdf_markdown handler params
-- replace old marker with v1 version
-- **wip**: surya marker v1.0 migration
-- add logging to each process for docx, pptx, xlsx, pdf and images
+### Improvements
 
-### Fix
+- Significantly reduced marker model loading time.
+- Doubled the speed of layout and text detection.
+- Improved the output of text items in the JSON result
 
-- git merge conflict resolve
-- swparse json response
-- wrap json obj with list
-- unwrap swparse json result
-- llamaparse json result syntax for json result of swparse
-- adjst json result of pdf parser
-- data validation to json result and refactor items extraction of each page
-- json response syntax
-- remove duplicated s3fs creation
-- adjust logging for docx and images
-- include caching save time in calculations
-- change unit from micro seconds to milliseconds
-- change structlog logger
-- disable cache file checked
-- remove logging metadata
-- image metadata save filepath
-- image metadata save in string
-- image metadata normalization
+## Fix
+
+- Fixed the text regular expression to properly capture text, excluding images and links, in the JSON result.
+- Fixed JSON result syntax to ensure compatibility with LLamaparse.
+
 
 ## v0.6.3 (2024-11-26)
 

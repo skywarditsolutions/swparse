@@ -17,25 +17,6 @@ from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 import warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
-class JSONItemOutput(BaseModel):
-    block_type: str
-    md: str
-    value: str
-    level: str
-
-class LLAMAJSONPAGE(BaseModel):
-    page: str
-    text: str
-    md: str
-    images: list[dict[str,str]]
-    status: str
-    links: list[str]
-    width: float
-    height: float
-    triggeredAutoMode: bool
-    items: list[JSONItemOutput]
-    block_type: BlockTypes = BlockTypes.Document
-
 
 class HTMLOutput(BaseModel):
     full_html:str
@@ -98,7 +79,6 @@ class LLAMAHTMLRenderer(BaseRenderer):
 
                 # paginated HTML collection
                 if self.paginate_output:
-                    # per_page_html = content
                     paginated_html[f"{ref_block_id.page_id}"] = content
                     content = f"<div class='page' data-page-id='{ref_block_id.page_id}'>{content}</div>"
 

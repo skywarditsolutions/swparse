@@ -25,7 +25,7 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
  
-models_dict = {}
+models_dict:dict[str, Any] = {}
 # PDF conversion 
 def pdf_markdown(
     in_file: bytes,
@@ -39,9 +39,8 @@ def pdf_markdown(
         models_dict = create_model_dict()
   
     logger.info("Model loaded: ")
-    logger.info( list( models_dict.keys()))
+    logger.info(list(models_dict.keys()))
 
- 
     processors = [
         "marker.processors.blockquote.BlockquoteProcessor",
         "marker.processors.code.CodeProcessor",
@@ -78,8 +77,7 @@ def pdf_markdown(
  
         return pdf_converter(filename)
 
-    
-
+ 
 async def convert_xlsx_csv(
     input: bytes
 ) -> str:
