@@ -119,7 +119,8 @@ class API_KEY(CamelizedBaseStruct):
     api_key: str
     name: str
     status:ApiKeyStatus
-
+    created_at: datetime
+    updated_at: datetime
 
 class UpdateAPIKey(CamelizedBaseStruct):
     id: UUID
@@ -132,3 +133,5 @@ class API_KEY_DETAIL(CamelizedBaseStruct):
     username: str | None
     api_key:str
     status: ApiKeyStatus
+    created_at: datetime
+    updated_at: datetime

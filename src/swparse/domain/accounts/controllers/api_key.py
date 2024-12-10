@@ -6,7 +6,7 @@ import secrets
 from typing import TYPE_CHECKING, Annotated
 
 import structlog
-from litestar import Controller, Response, delete, get, patch, post
+from litestar import Controller, delete, get, patch, post
 from litestar.di import Provide
 from litestar.exceptions import InternalServerException
 
@@ -18,6 +18,7 @@ from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.accounts.schemas import UpdateAPIKey, API_KEY_DETAIL, API_KEY, APIKeyCreate
 from swparse.domain.accounts.services import ApiKeyService, UserService
 from litestar.repository.filters import LimitOffset, CollectionFilter
+from litestar.params import Dependency
 from  litestar.exceptions import NotAuthorizedException, NotFoundException
 
 if TYPE_CHECKING:
@@ -70,10 +71,12 @@ class APIKeyController(Controller):
         self,
         api_key_service: ApiKeyService,
         current_user: UserModel,
-        limit_offset: LimitOffset
+        # limit_offset: LimitOffset
+        filters: Annotated[CollectionFilter, Dependency(skip_validation=True)] = None,
     ) -> OffsetPagination[API_KEY]:
         """Generate an API key."""
-        filters = [limit_offset]
+        # filters = [limit_offset]
+        filters = filters or []
         if not current_user.is_superuser:
             filters.append(CollectionFilter("user_id", [current_user.id]))
         api_key_objs, total = await api_key_service.list_and_count(*filters)
@@ -110,7 +113,9 @@ class APIKeyController(Controller):
             name = updated_api_key_obj.name,
             username = current_user.name,
             api_key = updated_api_key_obj.api_key,
-            status= updated_api_key_obj.status
+            status= updated_api_key_obj.status,
+            created_at=updated_api_key_obj.created_at,
+            updated_at = updated_api_key_obj.updated_at
         )
 
 
