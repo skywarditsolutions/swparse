@@ -10,4 +10,7 @@ ACCOUNT_CREATE = "/api/users"
 ACCOUNT_ASSIGN_ROLE = "/api/roles/{role_slug:str}/assign"
 ACCOUNT_REVOKE_ROLE = "/api/roles/{role_slug:str}/revoke"
 
-API_KEY_GENERATE = "/api/keys/{key_name:str}/create"
+API_KEY_GENERATE = "/api/keys/create"
+API_KEY_LIST = "/api/keys/list"
+API_KEY_UPDATE = "/api/keys/update"
+API_KEY_DELETE = "/api/keys/delete"
