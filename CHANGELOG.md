@@ -1,3 +1,16 @@
+## v0.8.0 (2024-12-12)
+
+### Feat
+
+- added datetime fields to schema and filter type for api key list endpoint
+- migrate status field of api_key table from str to enum
+- API KEY controller; api key rename, list, delete endpoints
+
+### Fix
+
+- remove sayHello route and model caching to app state
+- clean code and fix testing files
+
 ## v0.7.0 (2024-12-09)
 
 ### Features
