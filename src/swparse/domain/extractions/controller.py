@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import mimetypes
 import os
-from typing import Annotated
+from typing import Annotated, Optional, Literal
 from uuid import UUID
 
 import httpx
@@ -30,7 +30,7 @@ from swparse.domain.swparse.schemas import JobStatus, Status
 from .dependencies import provide_extraction_serivice
 from .schemas import Extraction
 from .services import ExtractionService
-
+ 
 logger = structlog.get_logger()
 
 SWPARSE_URL = os.environ.get("APP_URL")
@@ -90,9 +90,12 @@ class ExtractionController(Controller):
         extraction_service: ExtractionService,
         data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
         current_user: User,
+        sheet_index: Optional[list[str | int]] = None,
+        index_type: Literal["index", "name"]| None = None
     ) -> Extraction:
         content = await data.read()
-        job = await extraction_service.create_job(data)
+
+        job = await extraction_service.create_job(data, sheet_index, index_type)
         extraction = ExtractionModel(
             file_name=data.filename,
             file_size=len(content),

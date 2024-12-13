@@ -104,7 +104,7 @@ class Status(enum.StrEnum):
     queued = "PENDING"
     active = "PENDING"
     complete = "SUCCESS"
-
+    
 
 @dataclass
 class JobMetadata:

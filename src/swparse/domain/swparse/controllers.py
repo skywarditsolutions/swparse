@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional, TypeVar
+from typing import Annotated, Literal, Optional, TypeVar, Union
 from uuid import uuid4
 
 import structlog
@@ -24,7 +24,7 @@ from swparse.domain.swparse.utils import (
     save_job_metadata,
 )
 from swparse.lib.schema import BaseStruct
-
+from swparse.domain.swparse.schemas import SheetIndexEnum
 from .urls import PARSER_BASE
 
 logger = structlog.get_logger()
@@ -40,6 +40,7 @@ class UploadBody(BaseStruct):
     file: UploadFile
     parsing_instruction: Optional[str] = None
     sheet_index: Optional[list[str | int]] = None 
+    sheet_index_type: Literal["index", "name"] | None = None
 
 
 class ParserController(Controller):
@@ -130,12 +131,23 @@ class ParserController(Controller):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel",
         ):
+            sheet_index = data.sheet_index
+            if sheet_index:
+                if data.sheet_index_type == "index":
+                    sheet_index = [int(index) for index in sheet_index]
+                    
+                elif data.sheet_index_type == "name":
+                    sheet_index = [str(index) for index in sheet_index]
+                    
+                else:
+                    raise ValueError("Invalid sheet_index_type provided.")       
+            
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_s3",
                     kwargs={
                         **kwargs, 
-                        "sheet_index": data.sheet_index
+                        "sheet_index": sheet_index
                     },
                     timeout=0,
                 ),

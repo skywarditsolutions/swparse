@@ -1,8 +1,6 @@
-import io
 import os
 import structlog
 import tempfile
-import pandas as pd
 from typing import Any, TYPE_CHECKING
 from marker.config.parser import ConfigParser
 

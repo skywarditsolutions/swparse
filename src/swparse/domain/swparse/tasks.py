@@ -7,11 +7,12 @@ import os
 import re
 import tempfile
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional , Union
 from uuid import uuid4
 
 import html_text
 import mammoth
+
 import markdown as markdown_converter
 import mistletoe
 import pandas as pd
@@ -23,6 +24,10 @@ from PIL import Image
 from s3fs import S3FileSystem
 from unoserver import client
 
+import openpyxl
+from openpyxl.drawing.image import Image
+from PIL import Image as PILImage
+from .utils import save_img_s3
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -56,7 +61,7 @@ s3fs = S3FileSystem(
     secret=MINIO_ROOT_PASSWORD,
     use_ssl=False,
 )
-async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: list[str|int]| None) -> dict[str, str]:
+async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
 
     result = {}
     logger.info("Started parse_xlsx_s3")
@@ -73,8 +78,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         str_buffer = io.BytesIO(content)
    
         if sheet_index is not None:
-            sheet_index = [int(index) if str(index).isdigit() else index for index in sheet_index]
- 
+             
             df = pd.read_excel(str_buffer, sheet_name=sheet_index, header=0, na_filter=False)
             
             csv_content = "" 
@@ -97,7 +101,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             
             csv_content = df.to_csv(index=False, na_rep="")
             html_content = df.to_html(index=False, na_rep="")
-            md_content = df.to_markdown()
+            md_content = df.to_markdown()          
             
         csv_file_name = change_file_ext(file_name, "csv")
         csv_file_path = save_file_s3(s3fs, csv_file_name, csv_content)
@@ -112,7 +116,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         text_content = html_text.extract_text(html_content)
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3fs, text_file_name, text_content)
-
+ 
         result = {
             ContentType.CSV.value: csv_file_path,
             ContentType.MARKDOWN.value: md_file_path,
