@@ -1,3 +1,10 @@
+## v0.7.2 (2024-12-13)
+
+### Feat
+
+- Added sheet indexing support for Excel file extraction, including .xlsx and .xls.
+- Enabled extraction from Excel files based on either sheet names or sheet indexes.
+
 ## v0.7.1 (2024-12-12)
 
 ### Feat
