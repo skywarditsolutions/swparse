@@ -63,20 +63,6 @@ class Page(BaseModel):
     links: list[Link]
 
 
-# class JobMetadata(BaseModel):
-#     credits_used: float
-#     job_credits_usage: int
-#     job_pages: int
-#     job_auto_mode_triggered_pages: int
-#     job_is_cache_hit: bool
-#     credits_max: int
-
-
-# class JsonResult(BaseModel):
-#     pages: list[Page]
-#     job_metadata: JobMetadata
-
-
 class LLAMAJSONOutput(BaseModel):
     markdown:str
     html:str 

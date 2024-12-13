@@ -7,7 +7,7 @@ import os
 import re
 import tempfile
 import time
-from typing import TYPE_CHECKING, Optional , Union
+from typing import TYPE_CHECKING, Optional 
 from uuid import uuid4
 
 import html_text

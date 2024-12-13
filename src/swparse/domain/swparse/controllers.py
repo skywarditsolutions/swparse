@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal, Optional, TypeVar, Union
+from typing import Annotated, Literal, Optional, TypeVar
 from uuid import uuid4
 
 import structlog
