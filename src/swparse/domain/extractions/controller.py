@@ -94,7 +94,21 @@ class ExtractionController(Controller):
         index_type: Literal["index", "name"]| None = None
     ) -> Extraction:
         content = await data.read()
-
+        
+        if sheet_index and len(sheet_index) >0:
+            if index_type is None:
+                raise HTTPException(detail="Please provide index_type: 'index' or 'name'", status_code=400)
+            
+            try:
+                if index_type == "index":
+                    sheet_index = [int(index) for index in sheet_index]
+                else:
+                    sheet_index = [str(index) for index in sheet_index]
+            except ValueError as e:
+                raise HTTPException(
+                    detail=f"Invalid sheet index value. Error: {str(e)}",
+                    status_code=400,
+                )
         job = await extraction_service.create_job(data, sheet_index, index_type)
         extraction = ExtractionModel(
             file_name=data.filename,

@@ -24,7 +24,6 @@ from swparse.domain.swparse.utils import (
     save_job_metadata,
 )
 from swparse.lib.schema import BaseStruct
-from swparse.domain.swparse.schemas import SheetIndexEnum
 from .urls import PARSER_BASE
 
 logger = structlog.get_logger()

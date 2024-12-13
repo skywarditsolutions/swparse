@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Any, Optional, Union
+from typing import Any, Optional, Literal
 import httpx
 
 from advanced_alchemy.service import (
@@ -15,7 +15,6 @@ from swparse.domain.swparse.schemas import JobStatus
 from swparse.config.app import settings
 
 from .repositories import ExtractionRepository
-from swparse.domain.swparse.schemas import SheetIndexEnum
 
 SWPARSE_URL = f"{os.environ.get('APP_URL')}"
 SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
@@ -32,7 +31,7 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
         self.repository: ExtractionRepository = self.repository_type(**repo_kwargs)
         self.model_type = self.repository.model_type
 
-    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None, index_type: SheetIndexEnum | None = None) -> JobStatus:
+    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None, index_type: Literal["name", "index"] | None = None) -> JobStatus:
         form_data = {}
         if sheet_index and len(sheet_index) > 0 :            
             form_data = {
