@@ -2,8 +2,8 @@
 
 ### Feat
 
-- Generate, list, delete API key endpoints 
-
+- Added endpoints to generate, list, and delete API keys.
+- Added endpoint to rename an API key.
 
 ## v0.7.0 (2024-12-09)
 

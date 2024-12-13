@@ -28,7 +28,7 @@ from pydantic import TypeAdapter, ValidationError
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType
-from swparse.domain.swparse.convert import convert_xlsx_csv, pdf_markdown
+from swparse.domain.swparse.convert import pdf_markdown
 from swparse.domain.swparse.utils import (
     change_file_ext,
     convert_pptx_to_md,
@@ -56,9 +56,8 @@ s3fs = S3FileSystem(
     secret=MINIO_ROOT_PASSWORD,
     use_ssl=False,
 )
+async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: list[str|int]| None) -> dict[str, str]:
 
-
-async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
     result = {}
     logger.info("Started parse_xlsx_s3")
     try:
@@ -67,28 +66,47 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         if isinstance(content, str):
             content = content.encode()
 
-        file_name = get_file_name(s3_url)
-        # CSV Parsing
-        csv_file = await convert_xlsx_csv(content)
-        csv_file_name = change_file_ext(file_name, "csv")
-        csv_file_path = save_file_s3(s3fs, csv_file_name, csv_file)
-
         if ext == "application/vnd.ms-excel":
             content = convert_xls_to_xlsx_bytes(content)
 
-        # HTML Parsing
-        str_buffer = io.StringIO(csv_file)
-        df = pd.read_csv(str_buffer, header=0, skip_blank_lines=True, na_filter=False)
-        df = df.fillna("")
-        html_content = df.to_html(index=False, na_rep="")
+        file_name = get_file_name(s3_url)
+        str_buffer = io.BytesIO(content)
+   
+        if sheet_index is not None:
+            sheet_index = [int(index) if str(index).isdigit() else index for index in sheet_index]
+ 
+            df = pd.read_excel(str_buffer, sheet_name=sheet_index, header=0, na_filter=False)
+            
+            csv_content = "" 
+            html_content = ""
+            md_content = "" 
+            
+            for df in df.values():
+                csv_content += df.to_csv(index=False, na_rep="")
+                csv_content += "\n"
+                
+                html_content += df.to_html(index=False, na_rep="")
+                html_content += "<br>"   
+     
+                md_content += df.to_markdown(index=False)
+                md_content += "\n"
+             
+        else:
+            df = pd.read_excel(str_buffer, header=0,  na_filter=False)
+            df = df.fillna("")
+            
+            csv_content = df.to_csv(index=False, na_rep="")
+            html_content = df.to_html(index=False, na_rep="")
+            md_content = df.to_markdown()
+            
+        csv_file_name = change_file_ext(file_name, "csv")
+        csv_file_path = save_file_s3(s3fs, csv_file_name, csv_content)
 
         html_file_name = change_file_ext(file_name, "html")
         html_file_path = save_file_s3(s3fs, html_file_name, html_content)
 
-        # Markdown Parsing
-        markdown = df.to_markdown()
         md_file_name = change_file_ext(file_name, "md")
-        md_file_path = save_file_s3(s3fs, md_file_name, markdown)
+        md_file_path = save_file_s3(s3fs, md_file_name, md_content)
 
         # Parsing to Text
         text_content = html_text.extract_text(html_content)
@@ -103,18 +121,17 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         }
 
         if table_query:
-            tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
+            tables_content = extract_tables_gliner(table_query["tables"], md_content, table_query["output"])
             tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
             tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
             result[table_query["raw"]] = tables_file_path
-
 
         metadata = json.dumps(result)
         s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
 
     except Exception as e:
-        logger.exception(f"Error while parsing document: {e}")
-
+        logger.error(f"Error parsing XLSX file from S3: {e}")
+        raise
     return result
 
 

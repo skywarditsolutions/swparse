@@ -78,13 +78,3 @@ def pdf_markdown(
         return pdf_converter(filename)
 
  
-async def convert_xlsx_csv(
-    input: bytes
-) -> str:
-    try:
-        xlsx_data = io.BytesIO(input)
-        df = pd.read_excel(xlsx_data, header=None)
-        return df.to_csv(index=False)
-    except Exception as e:
-        logger.error(f"info converting XLSX to CSV: {e}")
-        return ""

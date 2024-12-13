@@ -39,6 +39,7 @@ CACHING_ON = settings.app.CACHING_ON
 class UploadBody(BaseStruct):
     file: UploadFile
     parsing_instruction: Optional[str] = None
+    sheet_index: Optional[list[str | int]] = None 
 
 
 class ParserController(Controller):
@@ -132,7 +133,10 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_s3",
-                    kwargs=kwargs,
+                    kwargs={
+                        **kwargs, 
+                        "sheet_index": data.sheet_index
+                    },
                     timeout=0,
                 ),
             )
