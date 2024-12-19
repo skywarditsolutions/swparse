@@ -160,13 +160,13 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: di
     return result
 
 
-def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40) -> dict[str, str]:
+def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_ocr:bool = False) -> dict[str, str]:
     file_name = get_file_name(s3_url)
 
     with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
     start_time = time.time()
-    result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page) 
+    result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
     end_time = time.time()
 
     data:dict[str, str] = {}
@@ -270,9 +270,11 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     return result
 
 
-async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
+async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
-    results = _pdf_exchange(s3_url)
+    logger.info("force_ocr")
+    logger.info(force_ocr)
+    results = _pdf_exchange(s3_url, force_ocr= force_ocr)
 
     if table_query:
         file_name = get_file_name(s3_url)
@@ -291,7 +293,7 @@ async def parse_pdf_page_s3(ctx: Context, *, s3_url: str, page: int) -> dict[str
     return _pdf_exchange(s3_url, start_page=page)
 
 
-async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
+async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr:bool = False) -> dict[str, str]:
     logger.info("Started parse_image_s3")
  
     with s3fs.open(s3_url, mode="rb") as doc:
@@ -312,7 +314,7 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     with s3fs.open(pdf_s3_url, "wb") as output:
         pdf.save(output)
 
-    results = _pdf_exchange(pdf_s3_url)
+    results = _pdf_exchange(pdf_s3_url, force_ocr)
 
     if table_query:
         file_name = get_file_name(pdf_s3_url)

@@ -40,6 +40,7 @@ class UploadBody(BaseStruct):
     parsing_instruction: Optional[str] = None
     sheet_index: Optional[list[str | int]] = None 
     sheet_index_type: Literal["index", "name"] | None = None
+    force_ocr: bool = False
 
 
 class ParserController(Controller):
@@ -73,7 +74,6 @@ class ParserController(Controller):
 
         metadata = {}
         kwargs = {"s3_url": s3_url, "ext": file.content_type, "table_query": None}
-
         if data.parsing_instruction:
             if data.parsing_instruction not in ContentType:
                 try:
@@ -106,7 +106,10 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_pdf_s3",
-                    kwargs=kwargs,
+                    kwargs={
+                        **kwargs,
+                        "force_ocr": data.force_ocr
+                        },
                     timeout=0,
                 ),
             )
@@ -114,7 +117,9 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_image_s3",
-                    kwargs=kwargs,
+                    kwargs={
+                        **kwargs,
+                        "force_ocr":data.force_ocr},
                     timeout=0,
                 ),
             )
