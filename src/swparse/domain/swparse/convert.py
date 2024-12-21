@@ -39,23 +39,48 @@ def pdf_markdown(
     logger.info("Model loaded: ")
     logger.info(list(models_dict.keys()))
 
+    # processors = [
+    #     "marker.processors.blockquote.BlockquoteProcessor",
+    #     "marker.processors.code.CodeProcessor",
+    #     "marker.processors.document_toc.DocumentTOCProcessor",
+    #     "marker.processors.equation.EquationProcessor",
+    #     "marker.processors.footnote.FootnoteProcessor",
+    #     "marker.processors.ignoretext.IgnoreTextProcessor",
+    #     "marker.processors.line_numbers.LineNumbersProcessor",
+    #     "marker.processors.list.ListProcessor",
+    #     "marker.processors.page_header.PageHeaderProcessor",
+    #     "marker.processors.sectionheader.SectionHeaderProcessor",
+    #     "marker.processors.table.TableProcessor",
+    #     "marker.processors.text.TextProcessor",
+    #     "marker.processors.debug.DebugProcessor",
+    # ]
     processors = [
-        "marker.processors.blockquote.BlockquoteProcessor",
-        "marker.processors.code.CodeProcessor",
-        "marker.processors.debug.DebugProcessor",
-        "marker.processors.document_toc.DocumentTOCProcessor",
-        "marker.processors.equation.EquationProcessor",
-        "marker.processors.footnote.FootnoteProcessor",
-        "marker.processors.ignoretext.IgnoreTextProcessor",
-        "marker.processors.line_numbers.LineNumbersProcessor",
-        "marker.processors.list.ListProcessor",
-        "marker.processors.page_header.PageHeaderProcessor",
-        "marker.processors.sectionheader.SectionHeaderProcessor",
-        "marker.processors.table.TableProcessor",
-        "marker.processors.text.TextProcessor",
+    # Prioritize text extraction and filtering
+    "marker.processors.text.TextProcessor",
+    "marker.processors.ignoretext.IgnoreTextProcessor",
+
+    # Process headers and sections
+    "marker.processors.sectionheader.SectionHeaderProcessor",
+    "marker.processors.page_header.PageHeaderProcessor",
+
+    # Extract structure and metadata
+    "marker.processors.document_toc.DocumentTOCProcessor",
+    "marker.processors.line_numbers.LineNumbersProcessor",
+
+    # Handle lists, tables, and equations
+    "marker.processors.list.ListProcessor",
+    "marker.processors.table.TableProcessor",
+    "marker.processors.equation.EquationProcessor",
+
+    # Optional: Process blockquotes and code
+    "marker.processors.blockquote.BlockquoteProcessor",
+    "marker.processors.code.CodeProcessor",
+
+    # Debug and logging
+    "marker.processors.debug.DebugProcessor",
     ]
 
-
+ 
     with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
         temp_pdf.write(in_file)
         temp_pdf.seek(0)

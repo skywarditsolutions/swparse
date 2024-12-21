@@ -47,6 +47,7 @@ def create_app() -> Litestar:
             plugins.saq,
             plugins.granian,
         ],
+        request_max_body_size = 1_073_741_824  # 1 GB in bytes
         on_app_init=[auth.on_app_init],
         listeners=[account_signals.user_created_event_handler, team_signals.team_created_event_handler],
     )
