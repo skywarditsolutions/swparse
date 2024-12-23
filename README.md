@@ -462,3 +462,17 @@ Loading environment configuration from .env
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ```
+
+Parsing XLSX/XLS Files with Indexing
+
+This functionality allows users to extract sheets from XLSX/XLS files using two types of indexing:
+
+- `name`: Refers to the sheet name.
+- `index`: Refers to the sheet index (starting from 0).
+
+To specify the sheets to extract, use the following keys in the request body:
+
+- `sheet_index`: A list of sheet indexes or names to extract.
+- `sheet_index_type`: Defines the indexing type. Accepted values are `name` and `index`
+
+**Note:** When the indexing type is defined as index, all values in the sheet_index list must be integers. Similarly, when the indexing type is defined as name, all values in the sheet_index list must be strings.
