@@ -463,7 +463,7 @@ Loading environment configuration from .env
 
 ```
 
-Parsing XLSX/XLS Files with Indexing
+### Parsing XLSX/XLS Files with Indexing
 
 This functionality allows users to extract sheets from XLSX/XLS files using two types of indexing:
 
