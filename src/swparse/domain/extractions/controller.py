@@ -30,7 +30,8 @@ from swparse.domain.swparse.schemas import JobStatus, Status
 from .dependencies import provide_extraction_serivice
 from .schemas import Extraction
 from .services import ExtractionService
- 
+from swparse.lib.schema import BaseStruct
+
 logger = structlog.get_logger()
 
 SWPARSE_URL = os.environ.get("APP_URL")
@@ -46,6 +47,10 @@ s3fs = S3FileSystem(
     use_ssl=False,
 )
 
+class UploadBody(BaseStruct):
+    file: UploadFile
+    sheet_index: Optional[list[str | int]] = None 
+    sheet_index_type: Literal["index", "name"] | None = None
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -88,19 +93,19 @@ class ExtractionController(Controller):
     async def create_extraction(
         self,
         extraction_service: ExtractionService,
-        data: Annotated[UploadFile, Body(media_type=RequestEncodingType.MULTI_PART)],
+        data: Annotated[UploadBody, Body(media_type=RequestEncodingType.MULTI_PART)],
         current_user: User,
-        sheet_index: Optional[list[str | int]] = None,
-        index_type: Literal["index", "name"]| None = None
     ) -> Extraction:
-        content = await data.read()
-        
+        file = data.file
+        content = await file.read()
+        sheet_index = data.sheet_index
+        sheet_index_type = data.sheet_index_type
         if sheet_index and len(sheet_index) >0:
-            if index_type is None:
+            if sheet_index_type is None:
                 raise HTTPException(detail="Please provide index_type: 'index' or 'name'", status_code=400)
             
             try:
-                if index_type == "index":
+                if sheet_index_type == "index":
                     sheet_index = [int(index) for index in sheet_index]
                 else:
                     sheet_index = [str(index) for index in sheet_index]
@@ -109,9 +114,10 @@ class ExtractionController(Controller):
                     detail=f"Invalid sheet index value. Error: {str(e)}",
                     status_code=400,
                 )
-        job = await extraction_service.create_job(data, sheet_index, index_type)
+        uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
+        job = await extraction_service.create_job(uploaded_file, sheet_index, sheet_index_type)
         extraction = ExtractionModel(
-            file_name=data.filename,
+            file_name=file.filename,
             file_size=len(content),
             file_path=job.s3_url,
             user_id=current_user.id,

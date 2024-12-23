@@ -37,6 +37,7 @@ class ApiKeyAuthMiddleware(AbstractMiddleware):
         api_key = headers.get("authorization")
         if not api_key:
             raise NotAuthorizedException(status_code=403, detail="Forbidden missing API key")
+  
         prefix, token = api_key.split(" ")
 
         if token != DEFAULT_API_KEY:

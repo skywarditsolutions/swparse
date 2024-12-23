@@ -516,6 +516,7 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 
 async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | None) -> dict[str, str]:
+    logger.info("working get_extracted_url")
     metadata_json_str = s3fs.getxattr(s3_url, "metadata")
     metadata = json.loads(metadata_json_str)
 

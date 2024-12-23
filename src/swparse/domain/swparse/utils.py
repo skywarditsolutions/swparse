@@ -4,6 +4,7 @@ import re
 import json
 import math
 import hashlib
+import base64
 from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
@@ -418,9 +419,41 @@ def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: 
         }
 
 
-def get_hashed_file_name(filename: str, content: bytes) -> str:
+
+
+def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
+    """
+    Generate a hashed file name based on file content or additional input data.
+
+    Args:
+        filename (str): Original file name.
+        input (Union[bytes, dict]): File content as bytes or a dictionary with additional instruction fields.
+
+    Returns:
+        str: Hashed file name.
+    """
     file_ext = filename.split(".")[-1]
-    check_sum = hashlib.md5(content).hexdigest()
+
+    if isinstance(input_data, dict):
+        input_data["content"] = base64.b64encode(input_data["content"]).decode("utf-8")
+      
+        sheet_index = input_data["sheet_index"]
+        index_type = input_data["sheet_index_type"]
+        logger.info("sheet index")
+        logger.info(sheet_index)
+        if index_type == "name":
+            input_data["sheet_index"] = sorted(sheet_index, key=str.lower)
+        else:
+            input_data["sheet_index"]  = sorted(sheet_index) 
+        logger.info("Sorted")
+        logger.info( input_data["sheet_index"]  )
+        input_bytes = json.dumps(input_data, sort_keys=True).encode("utf-8")
+        logger.info("Hashed value")
+        logger.info(input_bytes)
+    else:
+        input_bytes = input_data
+ 
+    check_sum = hashlib.md5(input_bytes).hexdigest()
     return f"{check_sum}.{file_ext}"
 
 

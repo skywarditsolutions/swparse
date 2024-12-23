@@ -69,7 +69,18 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-        hashed_filename = get_hashed_file_name(filename, content)
+ 
+        if data.sheet_index_type:
+            hashed_input ={
+                "content": content,
+                "sheet_index": data.sheet_index,
+                "sheet_index_type": data.sheet_index_type
+            }
+  
+            hashed_filename = get_hashed_file_name(filename, hashed_input)
+        else:
+ 
+            hashed_filename = get_hashed_file_name(filename, content)
         s3_url = f"{BUCKET}/{hashed_filename}"
 
         metadata = {}
@@ -85,6 +96,7 @@ class ParserController(Controller):
             metadata["result_type"] = data.parsing_instruction
 
         if s3fs.exists(s3_url):
+            logger.info("it's already exist")
             if CACHING_ON:
                 metadata_json_str = s3fs.getxattr(s3_url, "metadata")
                 if metadata_json_str:
