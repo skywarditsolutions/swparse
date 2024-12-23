@@ -1,3 +1,10 @@
+## v0.7.3 (2024-12-23)
+
+### Fix
+
+- Integrated sheet indexing into checksum calculations for Excel files to ensure unique hashes based on sheet selection.
+
+
 ## v0.7.2 (2024-12-13)
 
 ### Feat
