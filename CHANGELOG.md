@@ -1,8 +1,12 @@
 ## v0.7.3 (2024-12-23)
 
-### Fix
+### Feat
 
 - Integrated sheet indexing into checksum calculations for Excel files to ensure unique hashes based on sheet selection.
+
+### Fix
+
+- Resolve request hanging issue during authentication errors with multipart form data uploads in middleware
 
 
 ## v0.7.2 (2024-12-13)
