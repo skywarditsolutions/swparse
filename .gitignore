@@ -180,3 +180,4 @@ local.duckdb
 
 requirements.txt
 data/
+huggingface/

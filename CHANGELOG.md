@@ -1,3 +1,61 @@
+## v0.7.4 (2024-12-23)
+
+### Feat
+
+- Integrated sheet indexing into checksum calculations for Excel files to ensure unique hashes based on sheet selection.
+
+### Fix
+
+- Resolve request hanging issue during authentication errors with multipart form data uploads in middleware
+
+
+## v0.7.3 (2024-12-23)
+
+### Feat
+
+- Integrated sheet indexing into checksum calculations for Excel files to ensure unique hashes based on sheet selection.
+
+### Fix
+
+- Resolve request hanging issue during authentication errors with multipart form data uploads in middleware
+
+
+## v0.7.2 (2024-12-13)
+
+### Feat
+
+- Added sheet indexing support for Excel file extraction, including .xlsx and .xls.
+- Enabled extraction from Excel files based on either sheet names or sheet indexes.
+
+## v0.7.1 (2024-12-12)
+
+### Feat
+
+- Added endpoints to generate, list, and delete API keys.
+- Added endpoint to rename an API key.
+
+## v0.7.0 (2024-12-09)
+
+### Features
+ 
+- Replaced the old marker version with the newly released version 1.0.2
+- Set caching flag from environment variable.
+- Added a link section for each page in json result.
+- Added caching for marker models during server setup.
+- Added data type validation for JSON results to ensure compatibility with LLamaparse.
+
+### Improvements
+
+- Significantly reduced marker model loading time.
+- Doubled the speed of layout and text detection.
+- Improved the output of text items in the JSON result
+
+## Fix
+
+- Fixed the text regular expression to properly capture text, excluding images and links, in the JSON result.
+- Fixed JSON result syntax to ensure compatibility with LLamaparse.
+
+
 ## v0.6.3 (2024-11-26)
 
 ### Fix

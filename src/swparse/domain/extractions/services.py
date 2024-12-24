@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Any
+from typing import Any, Optional, Literal
 import httpx
 
 from advanced_alchemy.service import (
@@ -31,12 +31,19 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
         self.repository: ExtractionRepository = self.repository_type(**repo_kwargs)
         self.model_type = self.repository.model_type
 
-    async def create_job(self, data: UploadFile) -> JobStatus:
+    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None, index_type: Literal["name", "index"] | None = None) -> JobStatus:
+        form_data = {}
+        if sheet_index and len(sheet_index) > 0 :            
+            form_data = {
+                "sheet_index": sheet_index,
+                "sheet_index_type":index_type
+            }
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
                     f"{SWPARSE_URL}/api/parsing/upload",
-                    files={"file": (data.filename, data.file, data.content_type)},
+                    files={"file": (data.filename, data.file, data.content_type), },
+                    data = form_data,
                     headers={
                         "Content-Type": "multipart/form-data; boundary=0xc0d3kywt;",
                         "Authorization": f"Bearer {SWPARSE_API_KEY}",

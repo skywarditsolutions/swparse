@@ -20,11 +20,10 @@ from swparse.domain.swparse.utils import (
     get_hashed_file_name,
     get_job_metadata,
     handle_result_type,
-    save_job_metadata,
     parse_table_query,
+    save_job_metadata,
 )
 from swparse.lib.schema import BaseStruct
-
 from .urls import PARSER_BASE
 
 logger = structlog.get_logger()
@@ -34,11 +33,14 @@ queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
+CACHING_ON = settings.app.CACHING_ON
 
 class UploadBody(BaseStruct):
     file: UploadFile
     parsing_instruction: Optional[str] = None
+    sheet_index: Optional[list[str | int]] = None 
+    sheet_index_type: Literal["index", "name"] | None = None
+    force_ocr: bool = False
 
 
 class ParserController(Controller):
@@ -61,26 +63,28 @@ class ParserController(Controller):
         file = data.file
         content = await file.read()
         filename = file.filename
-        s3 = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-
         s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
-
-        hashed_filename = get_hashed_file_name(filename, content)
+ 
+        if data.sheet_index_type:
+            hashed_input ={
+                "content": content,
+                "sheet_index": data.sheet_index,
+                "sheet_index_type": data.sheet_index_type
+            }
+  
+            hashed_filename = get_hashed_file_name(filename, hashed_input)
+        else:
+ 
+            hashed_filename = get_hashed_file_name(filename, content)
         s3_url = f"{BUCKET}/{hashed_filename}"
 
         metadata = {}
         kwargs = {"s3_url": s3_url, "ext": file.content_type, "table_query": None}
-
         if data.parsing_instruction:
             if data.parsing_instruction not in ContentType:
                 try:
@@ -91,28 +95,33 @@ class ParserController(Controller):
                     raise HTTPException(detail="Invalid result type", status_code=400)
             metadata["result_type"] = data.parsing_instruction
 
-        if s3.exists(s3_url):
-            metadata_json_str = s3fs.getxattr(s3_url, "metadata")
-            if metadata_json_str:
-                del kwargs["ext"]
-                job = await queue.enqueue(
-                    Job(
-                        "get_extracted_url",
-                        kwargs=kwargs,
-                        timeout=0,
-                    ),
-                )
-                save_job_metadata(s3, job.id, metadata)
-                return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
-
-        with s3.open(s3_url, "wb") as f:
-            f.write(content)
+        if s3fs.exists(s3_url):
+            logger.info("it's already exist")
+            if CACHING_ON:
+                metadata_json_str = s3fs.getxattr(s3_url, "metadata")
+                if metadata_json_str:
+                    del kwargs["ext"]
+                    job = await queue.enqueue(
+                        Job(
+                            "get_extracted_url",
+                            kwargs=kwargs,
+                            timeout=0,
+                        ),
+                    )
+                    save_job_metadata(s3fs, job.id, metadata)
+                    return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
+        else:
+            with s3fs.open(s3_url, "wb") as f:
+                f.write(content)
 
         if file.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 Job(
                     "parse_pdf_s3",
-                    kwargs=kwargs,
+                    kwargs={
+                        **kwargs,
+                        "force_ocr": data.force_ocr
+                        },
                     timeout=0,
                 ),
             )
@@ -120,7 +129,9 @@ class ParserController(Controller):
             job = await queue.enqueue(
                 Job(
                     "parse_image_s3",
-                    kwargs=kwargs,
+                    kwargs={
+                        **kwargs,
+                        "force_ocr":data.force_ocr},
                     timeout=0,
                 ),
             )
@@ -136,10 +147,24 @@ class ParserController(Controller):
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "application/vnd.ms-excel",
         ):
+            sheet_index = data.sheet_index
+            if sheet_index:
+                if data.sheet_index_type == "index":
+                    sheet_index = [int(index) for index in sheet_index]
+                    
+                elif data.sheet_index_type == "name":
+                    sheet_index = [str(index) for index in sheet_index]
+                    
+                else:
+                    raise ValueError("Invalid sheet_index_type provided.")       
+            
             job = await queue.enqueue(
                 Job(
                     "parse_xlsx_s3",
-                    kwargs=kwargs,
+                    kwargs={
+                        **kwargs, 
+                        "sheet_index": sheet_index
+                    },
                     timeout=0,
                 ),
             )
@@ -186,7 +211,7 @@ class ParserController(Controller):
 
         if not job:
             raise HTTPException(detail="JOB ERROR", status_code=400)
-        save_job_metadata(s3, job.id, metadata)
+        save_job_metadata(s3fs, job.id, metadata)
 
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
@@ -215,7 +240,7 @@ class ParserController(Controller):
         content = await data.read()
         filename = data.filename
         new_uuid = uuid4()
-        s3 = S3FileSystem(
+        s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
@@ -223,7 +248,7 @@ class ParserController(Controller):
         )
 
         s3_url = f"{BUCKET}/{new_uuid}_{filename}"
-        with s3.open(s3_url, "wb") as f:
+        with s3fs.open(s3_url, "wb") as f:
             f.write(content)  # type: ignore
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
@@ -266,8 +291,8 @@ class ParserController(Controller):
     @get(
         path="job/{job_id:str}/result/{result_type:str}",
     )
-    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict:
-        s3 = S3FileSystem(
+    async def get_result(self, job_id: str, result_type: str = "markdown") -> dict|list:
+        s3fs = S3FileSystem(
             endpoint_url=settings.storage.ENDPOINT_URL,
             key=MINIO_ROOT_USER,
             secret=MINIO_ROOT_PASSWORD,
@@ -284,20 +309,16 @@ class ParserController(Controller):
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)
         if not job:
-            results = get_job_metadata(s3, job_id)
+            results = get_job_metadata(s3fs, job_id)
             metadata: dict[str, str] = results["metadata"]
         else:
             metadata = job.result
             await job.refresh(1)
-        results = save_job_metadata(s3, job_id, metadata)
+        results = save_job_metadata(s3fs, job_id, metadata)
         metadata: dict[str, str] = results["metadata"]
 
-        logger.info("Metadata")
-        logger.info(metadata)
         try:
-            result = handle_result_type(result_type, metadata, s3, jm, job_key)
-            logger.info(result)
-            return result
+            return handle_result_type(result_type, metadata, s3fs, jm, job_key)
         except Exception as err:
             logger.error(err)
             raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")

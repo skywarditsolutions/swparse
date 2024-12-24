@@ -1,53 +1,54 @@
-import hashlib
 import io
-import json
-import math
 import os
 import re
+import json
+import math
+import hashlib
+import base64
+from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
 from logging import getLogger
 from operator import attrgetter
-from typing import IO, Any
-from uuid import uuid4
-from markdown_it import MarkdownIt
-from mdit_plain.renderer import RendererPlain
-import html_text
-import mistletoe
+from typing import IO, Any, TYPE_CHECKING, List
+
 import pandas as pd
 from gliner import GLiNER
 from lark import Lark, Token, Transformer
-from litestar.exceptions import HTTPException
+
+import html_text
+import mistletoe
 from lxml import html
+from markdown_it import MarkdownIt
+from mdit_plain.renderer import RendererPlain
+
 from nltk import download, tokenize
+
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE, PP_PLACEHOLDER
 from pptx.shapes.base import BaseShape
 from pptx.shapes.shapetree import SlideShapes
-from s3fs import S3FileSystem
+
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
+
 from xls2xlsx import XLS2XLSX
+
+from s3fs import S3FileSystem
 
 from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata
+from litestar.exceptions import HTTPException
+
+if TYPE_CHECKING:
+    from PIL.Image import Image
 
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
-MINIO_ROOT_USER = settings.storage.ROOT_USER
-MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
-
 JOB_FOLDER = settings.storage.JOB_FOLDER
 
-s3 = S3FileSystem(
-    endpoint_url=settings.storage.ENDPOINT_URL,
-    key=MINIO_ROOT_USER,
-    secret=MINIO_ROOT_PASSWORD,
-    use_ssl=False,
-)
-
-
+ 
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
     x2x = XLS2XLSX(io.BytesIO(content))
@@ -67,6 +68,13 @@ def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> st
     with s3fs.open(s3_url, mode="wb") as f:
         f.write(content)
         return s3_url
+
+def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"Image") -> str:
+    image_name = image_name.lower()
+    buffered = io.BytesIO()
+    image.save(buffered, format=image_name.split(".")[-1])
+    img_b = buffered.getvalue()
+    return save_file_s3(s3fs, image_name, img_b)
 
 
 def get_file_name(s3_url: str) -> str:
@@ -411,46 +419,78 @@ def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: 
         }
 
 
-def get_hashed_file_name(filename: str, content: bytes) -> str:
+
+
+def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
+    """
+    Generate a hashed file name based on file content or additional input data.
+
+    Args:
+        filename (str): Original file name.
+        input (Union[bytes, dict]): File content as bytes or a dictionary with additional instruction fields.
+
+    Returns:
+        str: Hashed file name.
+    """
     file_ext = filename.split(".")[-1]
-    check_sum = hashlib.md5(content).hexdigest()
+
+    if isinstance(input_data, dict):
+        input_data["content"] = base64.b64encode(input_data["content"]).decode("utf-8")
+      
+        sheet_index = input_data["sheet_index"]
+        index_type = input_data["sheet_index_type"]
+        logger.info("sheet index")
+        logger.info(sheet_index)
+        if index_type == "name":
+            input_data["sheet_index"] = sorted(sheet_index, key=str.lower)
+        else:
+            input_data["sheet_index"]  = sorted(sheet_index) 
+        logger.info("Sorted")
+        logger.info( input_data["sheet_index"]  )
+        input_bytes = json.dumps(input_data, sort_keys=True).encode("utf-8")
+        logger.info("Hashed value")
+        logger.info(input_bytes)
+    else:
+        input_bytes = input_data
+ 
+    check_sum = hashlib.md5(input_bytes).hexdigest()
     return f"{check_sum}.{file_ext}"
 
 
-def get_job_metadata(s3: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]:
+def get_job_metadata(s3fs: S3FileSystem, job_id: str) -> dict[str, dict[str, str]]:
     job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
     content = {}
-    if s3.exists(job_file_path):
-        with s3.open(job_file_path, mode="r") as f:
+    if s3fs.exists(job_file_path):
+        with s3fs.open(job_file_path, mode="r") as f:
             content = json.loads(f.read())
     return content
 
 
-def save_job_metadata(s3: S3FileSystem, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
+def save_job_metadata(s3fs: S3FileSystem, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
     job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
     job_folder_path = f"{BUCKET}/{JOB_FOLDER}/"
 
     existing_job_metadata: dict[str, dict] = {"metadata": {}}
-    if not s3.exists(job_folder_path):
-        s3.mkdir(job_folder_path)
+    if not s3fs.exists(job_folder_path):
+        s3fs.mkdir(job_folder_path)
 
-    if not s3.exists(job_file_path):
+    if not s3fs.exists(job_file_path):
         existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
     else:
-        existing_job_metadata = get_job_metadata(s3, job_id)
+        existing_job_metadata = get_job_metadata(s3fs, job_id)
 
     existing_job_metadata["metadata"].update(metadata)
 
     try:
-        with s3.open(job_file_path, mode="w") as f:
+        with s3fs.open(job_file_path, mode="w") as f:
             f.write(json.dumps(existing_job_metadata, indent=4))
         return existing_job_metadata
     except Exception as err:
         raise HTTPException(status_code=500, detail=f"Save job metadata error: {err}")
 
 
-def get_file_content(s3: S3FileSystem, file_path: str) -> str:
-    with s3.open(file_path, mode="r") as f:
+def get_file_content(s3fs: S3FileSystem, file_path: str) -> str:
+    with s3fs.open(file_path, mode="r") as f:
         content = f.read()
         if isinstance(content, bytes):
             content = content.decode()
@@ -458,7 +498,7 @@ def get_file_content(s3: S3FileSystem, file_path: str) -> str:
 
 
 def handle_result_type(
-    result_type: str, results: dict[str, str], s3: S3FileSystem, jm: JobMetadata, job_key: str
+    result_type: str, results: dict[str, str], s3fs: S3FileSystem, jm: JobMetadata, job_key: str
 ) -> dict:
     if results.get("result_type"):
         result_type_check = results["result_type"]
@@ -467,35 +507,39 @@ def handle_result_type(
     try:
         result = {"job_metadata": jm.__dict__}
         if result_type_check == ContentType.MARKDOWN.value:
-            markdown = get_file_content(s3, results["markdown"])
+            markdown = get_file_content(s3fs, results["markdown"])
             result[result_type] = markdown
 
         elif result_type_check == ContentType.HTML.value:
-            html = get_file_content(s3, results["html"])
+            html = get_file_content(s3fs, results["html"])
             result[result_type] = html
 
         elif result_type_check == ContentType.TEXT.value:
-            text = get_file_content(s3, results["text"])
+            text = get_file_content(s3fs, results["text"])
             result[result_type] = text
 
         elif result_type_check == ContentType.TABLE.value:
-            html = extract_tables_from_html(s3, results["html"])
+            html = extract_tables_from_html(s3fs, results["html"])
             result_html = "<br><br>"
             if html:
                 result_html = result_html.join(html)
             result[result_type] = result_html
 
         elif result_type_check == ContentType.JSON.value:
-            json_str = get_file_content(s3, results["json"])
-            result[result_type] = json.loads(json_str)
+            json_str = get_file_content(s3fs, results["json"])
+            json_pages = json.loads(json_str)
+            result = {
+                'pages':json_pages,
+                'job_metadata': jm.__dict__, 
+            }
 
         elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")
             if table_file_path:
-                with s3.open(results["table"], mode="r") as out_file_html:
+                with s3fs.open(results["table"], mode="r") as out_file_html:
                     result_html = out_file_html.read()
             else:
-                html = extract_tables_from_html(s3, results["html"])
+                html = extract_tables_from_html(s3fs, results["html"])
                 result_html = "<br><br>".join(html)
 
             dfs = pd.read_html(result_html)
@@ -508,16 +552,16 @@ def handle_result_type(
             result[result_type] = markdown_tbls
 
         elif result_type_check == ContentType.IMAGES.value:
-            with s3.open(results["images"], mode="r") as f:
+            with s3fs.open(results["images"], mode="r") as f:
                 json_image_meta = f.read()
 
             result[result_type] = json.loads(json_image_meta)
         else:
-            with s3.open(results[result_type_check], mode="r") as tables_file:
+            with s3fs.open(results[result_type_check], mode="r") as tables_file:
                 tables_content = tables_file.read()
                 result[result_type] = tables_content
 
-        if len(result) > 1:
+        if result:
             return result
 
         raise HTTPException(f"Format {result_type_check} is currently unsupported for {job_key}")
@@ -534,57 +578,116 @@ class MdAnalyser:
     def __init__(self, markdown_content: str):
         self.markdown_content = markdown_content
         self.components = []
-        self.heading_pattern = re.compile(r"^(#{1,6})\s*(.+)$")
-        self.table_row_pattern = re.compile(r"^\|.*\|$")
-        self.paragraph_pattern = re.compile(r"^[^\|#\s].+$")
+        self.links = []
         self.lines = markdown_content.splitlines()
-        self.table_row_breakline = re.compile(r"^\|[-|]*\|$")
 
-    def extract_components(self):
+        # Compile patterns once for efficiency
+        self.patterns = {
+            "heading": re.compile(r"^(#{1,6})\s*(.+)$"),
+            "table_row": re.compile(r"^\|.*\|$"),
+            "paragraph": re.compile(r"^(?!\!\[.*\]\(.*\))(?!.*https?://)[^\|#\s].+$"),
+            "table_separator": re.compile(r"^\|[-|]*\|$"),
+            "links": re.compile(r"http?s?://[^\s]+")
+        }
+
+    def extract_components(self) -> tuple[List[dict[str,Any]], list[dict[str, str]]]:
+        """Extracts components from the markdown content."""
         current_table = []
+
         for line in self.lines:
             if not line.strip():
-                continue
-            if self.heading_pattern.match(line):
-                if current_table:
-                    self.add_table(current_table)
+                continue 
+            # Process different patterns
+            self.extract_link(line)
+            line = self.remove_links(line)
+            if self.patterns["heading"].match(line):
+                self._flush_table(current_table)
                 self.add_heading(line)
-                continue
-            if self.table_row_pattern.match(line):
-                if not re.match(self.table_row_breakline, line):
+            elif self.patterns["table_row"].match(line):
+                if not self.patterns["table_separator"].match(line):
                     current_table.append(line)
-                continue
-            if self.paragraph_pattern.match(line):
-                if current_table:
-                    self.add_table(current_table)
+            elif self.patterns["paragraph"].match(line):
+                self._flush_table(current_table)
                 self.add_paragraph(line)
-                continue
 
-        return self.components
+ 
+        self._flush_table(current_table)
 
-    def add_table(self, current_table: list):
-        self.components.append(
-            {
-                "type": "table",
-                "md": "\n".join(current_table),
-                "rows": [[cell.strip() for cell in re.findall(r"\|([^|]+)", row)] for row in current_table],
-            }
-        )
+        return self.components, self.links
+
+
+    def add_table(self, current_table: List[str]):
+        """Processes and adds a table component."""
+        rows = [
+            [cell.strip() for cell in re.findall(r"\|([^|]+)", row)]
+            for row in current_table
+        ]
+        self.components.append({
+            "type": "table",
+            "md": "\n".join(current_table),
+            "rows": rows,
+            "bBox": self._get_bbox(),
+        })
+
+    def _flush_table(self, current_table: List[str]):
+        """Adds the current table to components if not empty."""
+        if current_table:
+            self.add_table(current_table)
+            current_table.clear()
+
+
+    def extract_link(self, line: str):
+        """Extract links from the given line and adds them to self.links."""
+        matches = self.patterns["links"].findall(line)
+        for match in matches:
+            self.links.append({
+                "text": match,
+                "url": match
+            })
+
+    def remove_links(self, line: str) -> str:
+        """Remove links from a line while keeping the remaining text."""
+        return self.patterns["links"].sub("", line).strip()
 
     def add_heading(self, line: str):
-        self.components.append(
-            {
-                "type": "heading",
-                "level": len(self.heading_pattern.match(line).group(1)),
-                "md": line,
-                "value": re.sub(r"^#+", "", line).strip(),
-            }
-        )
-
+        """Processes and adds a heading component."""
+        match = self.patterns["heading"].match(line)
+        level = len(match.group(1))
+        text = match.group(2).strip()
+        self.components.append({
+            "type": "heading",
+            "level": level,
+            "md": line,
+            "value": text,
+            "bBox": self._get_bbox()
+        })
+ 
     def add_paragraph(self, line: str):
-        self.components.append({"type": "paragraph", "md": line, "value": md_to_text(line)})
+        """Processes and adds a text component."""
+        self.components.append({
+            "type": "text",
+            "md": line,
+            "value": self.md_to_text(line),
+            "bBox": self._get_bbox()
+        })
+
+    @staticmethod
+    def md_to_text(md: str) -> str:
+        """Converts Markdown to plain text (basic implementation)."""
+        return re.sub(r"(\*\*|__|`|~~)", "", md).strip()
+
+    @staticmethod
+    def _get_bbox() -> dict:
+        """Returns a default bounding box structure."""
+        return {"x": 0.0, "y": 0.0, "w": 0.0, "h": 0.0}
 
 
-def extract_md_components(markdown_content: str):
+
+def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], list[dict[str, str]]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
+
+
+def format_timestamp(timestamp:float) ->str:
+    value = datetime.fromtimestamp(timestamp)
+    return value.strftime('%S:') + f"{int(value.strftime('%f')) // 1000}"

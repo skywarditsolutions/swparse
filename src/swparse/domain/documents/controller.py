@@ -8,7 +8,6 @@ import tempfile
 from typing import TYPE_CHECKING, Annotated, Literal, TypeVar
 
 import pandas as pd
-from saq import Job, Queue
 import structlog
 from litestar import Controller, get, post
 from litestar.di import Provide
@@ -17,6 +16,7 @@ from litestar.pagination import OffsetPagination
 from litestar.repository.filters import CollectionFilter, LimitOffset
 from litestar.response import File
 from s3fs import S3FileSystem
+from saq import Job, Queue
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType, User
@@ -31,23 +31,24 @@ from swparse.domain.swparse.utils import (
     change_file_ext,
     extract_tables_from_html,
     get_file_name,
-    save_file_s3,
     parse_table_query,
+    save_file_s3,
 )
 
 from . import urls
 
 if TYPE_CHECKING:
     from uuid import UUID
+
     from litestar.params import Parameter
 
 SWPARSE_URL = os.environ.get("APP_URL")
-SWPARSE_API_KEY = os.environ.get("PARSER_API_KEY")
 logger = structlog.get_logger()
 OnlineOffline = TypeVar("OnlineOffline", bound=Literal["online", "offline"])
 
 queue = Queue.from_url(settings.worker.REDIS_HOST, name="swparse")
 
+SWPARSE_API_KEY =settings.app.PARSER_API_KEY
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET

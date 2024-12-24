@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from litestar.static_files import create_static_files_router
 
-from swparse.domain.accounts.controllers import AccessController, UserController, UserRoleController
+from swparse.domain.accounts.controllers import AccessController, UserController, UserRoleController, APIKeyController
 from swparse.domain.documents.controller import DocumentController
 from swparse.domain.swparse.controllers import ParserController
 from swparse.domain.tags.controllers import TagController
@@ -28,6 +28,7 @@ route_handlers: list[ControllerRouterHandler] = [
     DocumentController,
     ExtractionController,
     UserController,
+    APIKeyController,
     TeamController,
     UserRoleController,
     TeamMemberController,

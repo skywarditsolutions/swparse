@@ -9,13 +9,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 
 class ApiKeyStatus(str, Enum):
-    ACTIVE = "active"
-    REVOKED = "revoked"
-    EXPIRED = "expired"
+    ACTIVE = "ACTIVE"
+    REVOKED = "REVOKED"
+    EXPIRED = "EXPIRED"
+
 
 class ApiKeys(UUIDAuditBase):
     __tablename__ = "api_keys"
     api_key: Mapped[str] = mapped_column(index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(200), index=True, nullable=False)
     user_id: Mapped[UUID] = mapped_column(ForeignKey("user_account.id", ondelete="cascade"), nullable=False)
-    status: Mapped[str] = mapped_column(default="active", nullable=True)
+    status: Mapped[ApiKeyStatus] = mapped_column(default=ApiKeyStatus.ACTIVE, nullable=True)

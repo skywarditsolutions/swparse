@@ -1,0 +1,893 @@
+[
+    {
+        "page": 1,
+        "text": "                                          SSBCradk\n                        Oscar Awards 2024\nWhy In News\n   \u2022 The highly anticipated 96th Academy Awards ceremony concluded with flair at\n      the Ovation Hollywood in Los Angeles on Monday.\n   \u2022 Christopher Nolan\u2019s epic biographical thriller Oppenheimer swept seven\n      awards, including Best Picture, while also earning Nolan and actors Cillian\n      Murphy and Robert Downey Jr awards for Best Director, Best Actor and Best\n      Supporting Actor, respectively.\n       8 :~.OSCARS\n                                                                     EMAVS\nHistory OF OSCARS\n   \u2022 The Academy Awards, or Oscars, are given annually by the Academy of Motion\n      Picture Arts and Sciences to recognize achievements in the film industry. The\n      academy is an honorary organization in Beverly Hills, California, that aims to\n      advance the arts and sciences of motion pictures. The Academy of Motion\n      Picture Arts and Sciences (AMPAS) votes for the Oscar winners.",
+        "md": "# Oscar Awards 2024\n\n# Why In News\n\n- The highly anticipated 96th Academy Awards ceremony concluded with flair at the Ovation Hollywood in Los Angeles on Monday.\n- Christopher Nolan\u2019s epic biographical thriller Oppenheimer swept seven awards, including Best Picture, while also earning Nolan and actors Cillian Murphy and Robert Downey Jr awards for Best Director, Best Actor and Best Supporting Actor, respectively.\n\n# History OF OSCARS\n\n- The Academy Awards, or Oscars, are given annually by the Academy of Motion Picture Arts and Sciences to recognize achievements in the film industry. The academy is an honorary organization in Beverly Hills, California, that aims to advance the arts and sciences of motion pictures. The Academy of Motion Picture Arts and Sciences (AMPAS) votes for the Oscar winners.",
+        "images": [
+            {
+                "name": "img_p0_1.png",
+                "height": 292,
+                "width": 1252,
+                "x": 80.6,
+                "y": 402.9,
+                "original_width": 1252,
+                "original_height": 292,
+                "ocr": [
+                    {
+                        "x": 45,
+                        "y": 9,
+                        "w": 1207,
+                        "h": 217,
+                        "confidence": "0.1053572606189603",
+                        "text": "8 :~."
+                    },
+                    {
+                        "x": 950,
+                        "y": 202,
+                        "w": 302,
+                        "h": 80,
+                        "confidence": "0.21133996542280933",
+                        "text": "EMAVS"
+                    }
+                ]
+            },
+            {
+                "name": "img_p0_2.png",
+                "height": 256,
+                "width": 256,
+                "x": 267.6,
+                "y": 35.400000000000006,
+                "original_width": 256,
+                "original_height": 256,
+                "ocr": [
+                    {
+                        "x": 34,
+                        "y": 94,
+                        "w": 220,
+                        "h": 69,
+                        "confidence": "0.5694599850917306",
+                        "text": "SSBCradk"
+                    }
+                ]
+            },
+            {
+                "name": "img_p0_3.png",
+                "height": 533,
+                "width": 948,
+                "x": 128.02,
+                "y": 330.89,
+                "original_width": 948,
+                "original_height": 533,
+                "ocr": [
+                    {
+                        "x": 411,
+                        "y": 115,
+                        "w": 428,
+                        "h": 110,
+                        "confidence": "0.999692121977191",
+                        "text": "OSCARS"
+                    }
+                ]
+            },
+            {
+                "name": "img_p0_4.png",
+                "height": 289,
+                "width": 513,
+                "x": 231.48,
+                "y": 659.6449999999999,
+                "original_width": 513,
+                "original_height": 289
+            }
+        ],
+        "charts": [],
+        "items": [
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "Oscar Awards 2024",
+                "md": "# Oscar Awards 2024",
+                "bBox": {
+                    "x": 186,
+                    "y": 147.92,
+                    "w": 238.74,
+                    "h": 30
+                }
+            },
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "Why In News",
+                "md": "# Why In News",
+                "bBox": {
+                    "x": 58,
+                    "y": 203.92,
+                    "w": 109.65,
+                    "h": 19.98
+                }
+            },
+            {
+                "type": "text",
+                "value": "- The highly anticipated 96th Academy Awards ceremony concluded with flair at the Ovation Hollywood in Los Angeles on Monday.\n- Christopher Nolan\u2019s epic biographical thriller Oppenheimer swept seven awards, including Best Picture, while also earning Nolan and actors Cillian Murphy and Robert Downey Jr awards for Best Director, Best Actor and Best Supporting Actor, respectively.",
+                "md": "- The highly anticipated 96th Academy Awards ceremony concluded with flair at the Ovation Hollywood in Los Angeles on Monday.\n- Christopher Nolan\u2019s epic biographical thriller Oppenheimer swept seven awards, including Best Picture, while also earning Nolan and actors Cillian Murphy and Robert Downey Jr awards for Best Director, Best Actor and Best Supporting Actor, respectively.",
+                "bBox": {
+                    "x": 94,
+                    "y": 243.92,
+                    "w": 433.69,
+                    "h": 87.98
+                }
+            },
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "History OF OSCARS",
+                "md": "# History OF OSCARS",
+                "bBox": {
+                    "x": 58,
+                    "y": 374.06,
+                    "w": 385,
+                    "h": 205.84
+                }
+            },
+            {
+                "type": "text",
+                "value": "- The Academy Awards, or Oscars, are given annually by the Academy of Motion Picture Arts and Sciences to recognize achievements in the film industry. The academy is an honorary organization in Beverly Hills, California, that aims to advance the arts and sciences of motion pictures. The Academy of Motion Picture Arts and Sciences (AMPAS) votes for the Oscar winners.",
+                "md": "- The Academy Awards, or Oscars, are given annually by the Academy of Motion Picture Arts and Sciences to recognize achievements in the film industry. The academy is an honorary organization in Beverly Hills, California, that aims to advance the arts and sciences of motion pictures. The Academy of Motion Picture Arts and Sciences (AMPAS) votes for the Oscar winners.",
+                "bBox": {
+                    "x": 94,
+                    "y": 374.06,
+                    "w": 439.11,
+                    "h": 294.84
+                }
+            }
+        ],
+        "status": "OK",
+        "links": [
+            {
+                "url": "http://hyperurl.co/SSBCrackExamsApp",
+                "text": ""
+            }
+        ],
+        "width": 595.32,
+        "height": 841.92,
+        "triggeredAutoMode": false,
+        "structuredData": null,
+        "noStructuredContent": false,
+        "noTextContent": false
+    },
+    {
+        "page": 2,
+        "text": "\u2022 The AMPAS is a large group of industry professionals that includes over 10,000\n    members, of which nearly 9,500 are eligible to vote. The members are divided\n    into 17 branches and voting takes place online over a few days before the\n    ceremony.\n                                               FAMPASI\n                        THEACADEMY\n                OF MOTION PICTURE ARTS AND SCIENCES\n\u2022 The first Oscars were presented on May 16, 1929, at a banquet in the\n    Hollywood Roosevelt Hotel.\n\u2022 The 1930 ceremony was the first to be broadcast by radio, and the 1953\n    ceremony was the first to be televised. Officially the Academy Award of Merit,\n    everyone knows the golden knight holding a sword and standing on a reel of film\n    as Oscar.\n\u2022 Cedric Gibbons, art director at movie studio Metro-Goldwyn-Mayer, gets the\n    credit for designing the statuette but not for naming it.",
+        "md": "# The Academy of Motion Picture Arts and Sciences\n\nThe AMPAS is a large group of industry professionals that includes over 10,000 members, of which nearly 9,500 are eligible to vote. The members are divided into 17 branches and voting takes place online over a few days before the ceremony.\n\n# History of the Oscars\n\nThe first Oscars were presented on May 16, 1929, at a banquet in the Hollywood Roosevelt Hotel.\n\nThe 1930 ceremony was the first to be broadcast by radio, and the 1953 ceremony was the first to be televised. Officially the Academy Award of Merit, everyone knows the golden knight holding a sword and standing on a reel of film as Oscar.\n\nCedric Gibbons, art director at movie studio Metro-Goldwyn-Mayer, gets the credit for designing the statuette but not for naming it.",
+        "images": [
+            {
+                "name": "img_p1_3.png",
+                "height": 372,
+                "width": 1000,
+                "x": 115.5,
+                "y": 200.94,
+                "original_width": 1000,
+                "original_height": 372,
+                "ocr": [
+                    {
+                        "x": 469,
+                        "y": 227,
+                        "w": 64,
+                        "h": 14,
+                        "confidence": "0.29389319423117555",
+                        "text": "FAMPASI"
+                    },
+                    {
+                        "x": 194,
+                        "y": 276,
+                        "w": 150,
+                        "h": 48,
+                        "confidence": "0.9997954533711153",
+                        "text": "THE"
+                    },
+                    {
+                        "x": 332,
+                        "y": 254,
+                        "w": 474,
+                        "h": 74,
+                        "confidence": "0.9991473614567914",
+                        "text": "ACADEMY"
+                    },
+                    {
+                        "x": 96,
+                        "y": 333,
+                        "w": 809,
+                        "h": 33,
+                        "confidence": "0.9792284959442258",
+                        "text": "OF MOTION PICTURE ARTS AND SCIENCES"
+                    }
+                ]
+            },
+            {
+                "name": "img_p1_4.png",
+                "height": 730,
+                "width": 1296,
+                "x": 89.25,
+                "y": 509.77599999999995,
+                "original_width": 1296,
+                "original_height": 730
+            }
+        ],
+        "charts": [],
+        "items": [
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "The Academy of Motion Picture Arts and Sciences",
+                "md": "# The Academy of Motion Picture Arts and Sciences",
+                "bBox": {
+                    "x": 152.04,
+                    "y": 297.69,
+                    "w": 307.94,
+                    "h": 42.66
+                }
+            },
+            {
+                "type": "text",
+                "value": "The AMPAS is a large group of industry professionals that includes over 10,000 members, of which nearly 9,500 are eligible to vote. The members are divided into 17 branches and voting takes place online over a few days before the ceremony.",
+                "md": "The AMPAS is a large group of industry professionals that includes over 10,000 members, of which nearly 9,500 are eligible to vote. The members are divided into 17 branches and voting takes place online over a few days before the ceremony.",
+                "bBox": {
+                    "x": 94,
+                    "y": 151.92,
+                    "w": 443.99,
+                    "h": 172.44
+                }
+            },
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "History of the Oscars",
+                "md": "# History of the Oscars",
+                "bBox": {
+                    "x": 189.34,
+                    "y": 306.07,
+                    "w": 57.1,
+                    "h": 18.28
+                }
+            },
+            {
+                "type": "text",
+                "value": "The first Oscars were presented on May 16, 1929, at a banquet in the Hollywood Roosevelt Hotel.\n\nThe 1930 ceremony was the first to be broadcast by radio, and the 1953 ceremony was the first to be televised. Officially the Academy Award of Merit, everyone knows the golden knight holding a sword and standing on a reel of film as Oscar.\n\nCedric Gibbons, art director at movie studio Metro-Goldwyn-Mayer, gets the credit for designing the statuette but not for naming it.",
+                "md": "The first Oscars were presented on May 16, 1929, at a banquet in the Hollywood Roosevelt Hotel.\n\nThe 1930 ceremony was the first to be broadcast by radio, and the 1953 ceremony was the first to be televised. Officially the Academy Award of Merit, everyone knows the golden knight holding a sword and standing on a reel of film as Oscar.\n\nCedric Gibbons, art director at movie studio Metro-Goldwyn-Mayer, gets the credit for designing the statuette but not for naming it.",
+                "bBox": {
+                    "x": 94,
+                    "y": 297.69,
+                    "w": 458.82,
+                    "h": 213.21
+                }
+            }
+        ],
+        "status": "OK",
+        "links": [
+            {
+                "url": "http://hyperurl.co/SSBCrackExamsApp",
+                "text": ""
+            }
+        ],
+        "width": 595.32,
+        "height": 841.92,
+        "triggeredAutoMode": false,
+        "structuredData": null,
+        "noStructuredContent": false,
+        "noTextContent": false
+    },
+    {
+        "page": 3,
+        "text": "\u2022 The first ever Academy Award was bestowed upon Emil Jannings, for Best Actor\n    for his leading roles in silent films The Way of All Flesh (1927) and The Last\n    Command (1928).\n\n\u2022 The first ever Academy Award for Best Picture went to Wings, a 1927 silent\n    movie that told the story of two pilots in love with the same woman. A popular\n    legend has it that the name \"Oscars\" comes from Margaret Herrick, the\n    Academy's librarian, who thought the statuette resembled her Uncle Oscar. In\n    1939, the Academy officially adopted the nickname.",
+        "md": "# Academy Awards\n\n\u2022 The first ever Academy Award was bestowed upon Emil Jannings, for Best Actor for his leading roles in silent films The Way of All Flesh (1927) and The Last Command (1928).\n\n\u2022 The first ever Academy Award for Best Picture went to Wings, a 1927 silent movie that told the story of two pilots in love with the same woman. A popular legend has it that the name \"Oscars\" comes from Margaret Herrick, the Academy's librarian, who thought the statuette resembled her Uncle Oscar. In 1939, the Academy officially adopted the nickname.",
+        "images": [
+            {
+                "name": "img_p2_2.png",
+                "height": 630,
+                "width": 1200,
+                "x": 131.18,
+                "y": 182.49999999999994,
+                "original_width": 1200,
+                "original_height": 630
+            },
+            {
+                "name": "img_p2_3.png",
+                "height": 332,
+                "width": 590,
+                "x": 84.75,
+                "y": 476.3599999999999,
+                "original_width": 590,
+                "original_height": 332
+            }
+        ],
+        "charts": [],
+        "items": [
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "Academy Awards",
+                "md": "# Academy Awards",
+                "bBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 595.32,
+                    "h": 841.92
+                }
+            },
+            {
+                "type": "text",
+                "value": "\u2022 The first ever Academy Award was bestowed upon Emil Jannings, for Best Actor for his leading roles in silent films The Way of All Flesh (1927) and The Last Command (1928).\n\n\u2022 The first ever Academy Award for Best Picture went to Wings, a 1927 silent movie that told the story of two pilots in love with the same woman. A popular legend has it that the name \"Oscars\" comes from Margaret Herrick, the Academy's librarian, who thought the statuette resembled her Uncle Oscar. In 1939, the Academy officially adopted the nickname.",
+                "md": "\u2022 The first ever Academy Award was bestowed upon Emil Jannings, for Best Actor for his leading roles in silent films The Way of All Flesh (1927) and The Last Command (1928).\n\n\u2022 The first ever Academy Award for Best Picture went to Wings, a 1927 silent movie that told the story of two pilots in love with the same woman. A popular legend has it that the name \"Oscars\" comes from Margaret Herrick, the Academy's librarian, who thought the statuette resembled her Uncle Oscar. In 1939, the Academy officially adopted the nickname.",
+                "bBox": {
+                    "x": 76,
+                    "y": 132.92,
+                    "w": 473.17,
+                    "h": 344.98
+                }
+            }
+        ],
+        "status": "OK",
+        "links": [
+            {
+                "url": "http://hyperurl.co/SSBCrackExamsApp",
+                "text": ""
+            }
+        ],
+        "width": 595.32,
+        "height": 841.92,
+        "triggeredAutoMode": false,
+        "structuredData": null,
+        "noStructuredContent": false,
+        "noTextContent": false
+    },
+    {
+        "page": 4,
+        "text": "OSCARS 2024\n    \u2022 Jimmy Kimmel hosted the 96th annual Academy Awards at the Dolby Theatre in\n        Los Angeles\n\n    \u2022 \u201cOppenheimer\u201d took home seven Academy Awards on Sunday, including best\n        picture. The Christopher Nolan-directed biopic about the father of the atomic\n        bomb, J. Robert Oppenheimer, earned best actor, best supporting actor, best\n        film editing, best cinematography, best score and best director.\n    \u2022 Disney and Searchlight\u2019s \u201cPoor Things\u201d won four awards during the ceremony,\n        including best actress, best makeup and hairstyling, best production design and\n        best costume design.\n    \u2022 While \u201cBarbie,\u201d the other half of the Barbenheimer phenomenon, entered the\n        night with eight nominations, it won a single Oscar for Best Original Song, a\n        testament to its cultural impact and the talents of Billie Eilish and Finneas\n        O\u2019Connell.\n                                                                  SEARCHLIGHT",
+        "md": "# OSCARS 2024\n\n- Jimmy Kimmel hosted the 96th annual Academy Awards at the Dolby Theatre in Los Angeles.\n- \u201cOppenheimer\u201d took home seven Academy Awards on Sunday, including best picture. The Christopher Nolan-directed biopic about the father of the atomic bomb, J. Robert Oppenheimer, earned best actor, best supporting actor, best film editing, best cinematography, best score and best director.\n- Disney and Searchlight\u2019s \u201cPoor Things\u201d won four awards during the ceremony, including best actress, best makeup and hairstyling, best production design and best costume design.\n- While \u201cBarbie,\u201d the other half of the Barbenheimer phenomenon, entered the night with eight nominations, it won a single Oscar for Best Original Song, a testament to its cultural impact and the talents of Billie Eilish and Finneas O\u2019Connell.",
+        "images": [
+            {
+                "name": "img_p3_2.png",
+                "height": 548,
+                "width": 975,
+                "x": 202.3,
+                "y": 190.40999999999997,
+                "original_width": 975,
+                "original_height": 548
+            },
+            {
+                "name": "img_p3_3.png",
+                "height": 413,
+                "width": 722,
+                "x": 176,
+                "y": 610.864,
+                "original_width": 722,
+                "original_height": 413,
+                "ocr": [
+                    {
+                        "x": 488,
+                        "y": 122,
+                        "w": 104,
+                        "h": 30,
+                        "confidence": "0.9596558802106276",
+                        "text": "SEARCHLIGHT"
+                    }
+                ]
+            }
+        ],
+        "charts": [],
+        "items": [
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "OSCARS 2024",
+                "md": "# OSCARS 2024",
+                "bBox": {
+                    "x": 58,
+                    "y": 137.92,
+                    "w": 111.37,
+                    "h": 19.98
+                }
+            },
+            {
+                "type": "text",
+                "value": "- Jimmy Kimmel hosted the 96th annual Academy Awards at the Dolby Theatre in Los Angeles.\n- \u201cOppenheimer\u201d took home seven Academy Awards on Sunday, including best picture. The Christopher Nolan-directed biopic about the father of the atomic bomb, J. Robert Oppenheimer, earned best actor, best supporting actor, best film editing, best cinematography, best score and best director.\n- Disney and Searchlight\u2019s \u201cPoor Things\u201d won four awards during the ceremony, including best actress, best makeup and hairstyling, best production design and best costume design.\n- While \u201cBarbie,\u201d the other half of the Barbenheimer phenomenon, entered the night with eight nominations, it won a single Oscar for Best Original Song, a testament to its cultural impact and the talents of Billie Eilish and Finneas O\u2019Connell.",
+                "md": "- Jimmy Kimmel hosted the 96th annual Academy Awards at the Dolby Theatre in Los Angeles.\n- \u201cOppenheimer\u201d took home seven Academy Awards on Sunday, including best picture. The Christopher Nolan-directed biopic about the father of the atomic bomb, J. Robert Oppenheimer, earned best actor, best supporting actor, best film editing, best cinematography, best score and best director.\n- Disney and Searchlight\u2019s \u201cPoor Things\u201d won four awards during the ceremony, including best actress, best makeup and hairstyling, best production design and best costume design.\n- While \u201cBarbie,\u201d the other half of the Barbenheimer phenomenon, entered the night with eight nominations, it won a single Oscar for Best Original Song, a testament to its cultural impact and the talents of Billie Eilish and Finneas O\u2019Connell.",
+                "bBox": {
+                    "x": 94,
+                    "y": 177.92,
+                    "w": 451.32,
+                    "h": 487.7
+                }
+            }
+        ],
+        "status": "OK",
+        "links": [
+            {
+                "url": "http://hyperurl.co/SSBCrackExamsApp",
+                "text": ""
+            }
+        ],
+        "width": 595.32,
+        "height": 841.92,
+        "triggeredAutoMode": false,
+        "structuredData": null,
+        "noStructuredContent": false,
+        "noTextContent": false
+    },
+    {
+        "page": 5,
+        "text": "List Of Indian Oscar Winner\n    \u2022 India has earned its place in Oscar history with triumphant victories at the 55th,\n        81st and 95th Academy Awards, across diverse categories including Best Original\n        Song, Best Documentary, Best Sound Mixing, Best Original Score and Best\n        Costume Design. As we look forward to the upcoming Academy Award\n        Ceremonies, it is clear that there are more Oscar accolades awaiting to grace\n        India\u2019s cinematic achievements.\n      Indian Recipients                                  Category                         Year\n          Bhanu Athaiya                            Best Costume Design                    1983\n           Satyajit Ray                               Honorary Award                      1992\n          Resul Pookutty                             Best Sound Mixing                    2009\n              Gulzar                                 Best Original Song                   2009\n           A R Rahman                   Best Original Score and Best Original Song        2009\n        Kartiki Gonsalves                         Best Documentary Short                  2023\n        MM Keeravani and                             Best Original Song                   2023\n           Chandrabose\nComplete Winners List\n    \u2022 Best Supporting Actress: Da\u2019Vine Joy Randolph, \u201cThe Holdovers\u201d\n    \u2022 Best Animated Short: \u201cWar Is Over!\u201d\n    \u2022 Best Animated Feature: \u201cThe Boy and the Heron\u201d\n    \u2022 Best Original Screenplay: \u201cAnatomy of a Fall\u201d ANHTOMVOFAFALL\n    \u2022 Best Adapted Screenplay: \u201cAmerican Fiction\u201d\n    \u2022 Best Makeup and Hairstyling: \u201cPoor Things\u201d\n    \u2022 Best Production Design: \u201cPoor Things\u201d",
+        "md": "# List Of Indian Oscar Winner\n\nIndia has earned its place in Oscar history with triumphant victories at the 55th, 81st and 95th Academy Awards, across diverse categories including Best Original Song, Best Documentary, Best Sound Mixing, Best Original Score and Best Costume Design. As we look forward to the upcoming Academy Award Ceremonies, it is clear that there are more Oscar accolades awaiting to grace India\u2019s cinematic achievements.\n\n|Indian Recipients|Category|Year|\n|---|---|---|\n|Bhanu Athaiya|Best Costume Design|1983|\n|Satyajit Ray|Honorary Award|1992|\n|Resul Pookutty|Best Sound Mixing|2009|\n|Gulzar|Best Original Song|2009|\n|A R Rahman|Best Original Score and Best Original Song|2009|\n|Kartiki Gonsalves|Best Documentary Short|2023|\n|MM Keeravani and Chandrabose|Best Original Song|2023|\n\n# Complete Winners List\n\n- Best Supporting Actress: Da\u2019Vine Joy Randolph, \u201cThe Holdovers\u201d\n- Best Animated Short: \u201cWar Is Over!\u201d\n- Best Animated Feature: \u201cThe Boy and the Heron\u201d\n- Best Original Screenplay: \u201cAnatomy of a Fall\u201d\n- Best Adapted Screenplay: \u201cAmerican Fiction\u201d\n- Best Makeup and Hairstyling: \u201cPoor Things\u201d\n- Best Production Design: \u201cPoor Things\u201d",
+        "images": [
+            {
+                "name": "img_p4_2.png",
+                "height": 463,
+                "width": 1086,
+                "x": 58.5,
+                "y": 264.17999999999995,
+                "original_width": 1086,
+                "original_height": 463,
+                "ocr": [
+                    {
+                        "x": 59,
+                        "y": 17,
+                        "w": 240,
+                        "h": 36,
+                        "confidence": "0.824380204116995",
+                        "text": "Indian Recipients"
+                    },
+                    {
+                        "x": 570,
+                        "y": 20,
+                        "w": 130,
+                        "h": 32,
+                        "confidence": "0.6554925755027241",
+                        "text": "Category"
+                    },
+                    {
+                        "x": 967,
+                        "y": 19,
+                        "w": 67,
+                        "h": 28,
+                        "confidence": "0.9999831914901733",
+                        "text": "Year"
+                    },
+                    {
+                        "x": 98,
+                        "y": 72,
+                        "w": 160,
+                        "h": 28,
+                        "confidence": "0.9999566540354529",
+                        "text": "Bhanu Athaiya"
+                    },
+                    {
+                        "x": 516,
+                        "y": 70,
+                        "w": 238,
+                        "h": 32,
+                        "confidence": "0.99989221815628",
+                        "text": "Best Costume Design"
+                    },
+                    {
+                        "x": 972,
+                        "y": 72,
+                        "w": 58,
+                        "h": 24,
+                        "confidence": "0.9800449167634044",
+                        "text": "1983"
+                    },
+                    {
+                        "x": 109,
+                        "y": 121,
+                        "w": 139,
+                        "h": 36,
+                        "confidence": "0.9999081148465905",
+                        "text": "Satyajit Ray"
+                    },
+                    {
+                        "x": 545,
+                        "y": 123,
+                        "w": 177,
+                        "h": 29,
+                        "confidence": "0.9997454522694127",
+                        "text": "Honorary Award"
+                    },
+                    {
+                        "x": 972,
+                        "y": 124,
+                        "w": 58,
+                        "h": 26,
+                        "confidence": "0.7426753054295057",
+                        "text": "1992"
+                    },
+                    {
+                        "x": 96,
+                        "y": 175,
+                        "w": 167,
+                        "h": 32,
+                        "confidence": "0.9993169953394814",
+                        "text": "Resul Pookutty"
+                    },
+                    {
+                        "x": 532,
+                        "y": 174,
+                        "w": 204,
+                        "h": 32,
+                        "confidence": "0.9683953322138821",
+                        "text": "Best Sound Mixing"
+                    },
+                    {
+                        "x": 972,
+                        "y": 176,
+                        "w": 58,
+                        "h": 26,
+                        "confidence": "0.9922204361136783",
+                        "text": "2009"
+                    },
+                    {
+                        "x": 140,
+                        "y": 228,
+                        "w": 78,
+                        "h": 26,
+                        "confidence": "0.998773894804262",
+                        "text": "Gulzar"
+                    },
+                    {
+                        "x": 531,
+                        "y": 224,
+                        "w": 209,
+                        "h": 38,
+                        "confidence": "0.9600958650143685",
+                        "text": "Best Original Song"
+                    },
+                    {
+                        "x": 972,
+                        "y": 228,
+                        "w": 58,
+                        "h": 26,
+                        "confidence": "0.9922204361136783",
+                        "text": "2009"
+                    },
+                    {
+                        "x": 108,
+                        "y": 280,
+                        "w": 140,
+                        "h": 26,
+                        "confidence": "0.9950984905355467",
+                        "text": "A R Rahman"
+                    },
+                    {
+                        "x": 401,
+                        "y": 276,
+                        "w": 467,
+                        "h": 38,
+                        "confidence": "0.9506555916123492",
+                        "text": "Best Original Score and Best Original Song"
+                    },
+                    {
+                        "x": 972,
+                        "y": 280,
+                        "w": 58,
+                        "h": 26,
+                        "confidence": "0.9922204361136783",
+                        "text": "2009"
+                    },
+                    {
+                        "x": 82,
+                        "y": 332,
+                        "w": 192,
+                        "h": 26,
+                        "confidence": "0.8498489610978905",
+                        "text": "Kartiki Gonsalves"
+                    },
+                    {
+                        "x": 502,
+                        "y": 330,
+                        "w": 266,
+                        "h": 30,
+                        "confidence": "0.9634928687511161",
+                        "text": "Best Documentary Short"
+                    },
+                    {
+                        "x": 972,
+                        "y": 332,
+                        "w": 60,
+                        "h": 28,
+                        "confidence": "0.9999985694885254",
+                        "text": "2023"
+                    },
+                    {
+                        "x": 76,
+                        "y": 384,
+                        "w": 206,
+                        "h": 26,
+                        "confidence": "0.9264982000829277",
+                        "text": "MM Keeravani and"
+                    },
+                    {
+                        "x": 531,
+                        "y": 380,
+                        "w": 211,
+                        "h": 38,
+                        "confidence": "0.8902947116796893",
+                        "text": "Best Original Song"
+                    },
+                    {
+                        "x": 972,
+                        "y": 384,
+                        "w": 60,
+                        "h": 28,
+                        "confidence": "0.9999985694885254",
+                        "text": "2023"
+                    },
+                    {
+                        "x": 104,
+                        "y": 420,
+                        "w": 150,
+                        "h": 28,
+                        "confidence": "0.9999924160179473",
+                        "text": "Chandrabose"
+                    }
+                ]
+            },
+            {
+                "name": "img_p4_3.png",
+                "height": 232,
+                "width": 874,
+                "x": 83.75,
+                "y": 596.13,
+                "original_width": 874,
+                "original_height": 232,
+                "ocr": [
+                    {
+                        "x": 524,
+                        "y": 0,
+                        "w": 286,
+                        "h": 124,
+                        "confidence": "0.7123576553105819",
+                        "text": "ANHTOMV"
+                    },
+                    {
+                        "x": 530,
+                        "y": 108,
+                        "w": 276,
+                        "h": 122,
+                        "confidence": "0.5986870172831706",
+                        "text": "OFAFALL"
+                    }
+                ]
+            }
+        ],
+        "charts": [],
+        "items": [
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "List Of Indian Oscar Winner",
+                "md": "# List Of Indian Oscar Winner",
+                "bBox": {
+                    "x": 58,
+                    "y": 137.92,
+                    "w": 226.95,
+                    "h": 19.98
+                }
+            },
+            {
+                "type": "text",
+                "value": "India has earned its place in Oscar history with triumphant victories at the 55th, 81st and 95th Academy Awards, across diverse categories including Best Original Song, Best Documentary, Best Sound Mixing, Best Original Score and Best Costume Design. As we look forward to the upcoming Academy Award Ceremonies, it is clear that there are more Oscar accolades awaiting to grace India\u2019s cinematic achievements.",
+                "md": "India has earned its place in Oscar history with triumphant victories at the 55th, 81st and 95th Academy Awards, across diverse categories including Best Original Song, Best Documentary, Best Sound Mixing, Best Original Score and Best Costume Design. As we look forward to the upcoming Academy Award Ceremonies, it is clear that there are more Oscar accolades awaiting to grace India\u2019s cinematic achievements.",
+                "bBox": {
+                    "x": 94,
+                    "y": 177.92,
+                    "w": 458.66,
+                    "h": 276.8
+                }
+            },
+            {
+                "type": "table",
+                "rows": [
+                    [
+                        "Indian Recipients",
+                        "Category",
+                        "Year"
+                    ],
+                    [
+                        "Bhanu Athaiya",
+                        "Best Costume Design",
+                        "1983"
+                    ],
+                    [
+                        "Satyajit Ray",
+                        "Honorary Award",
+                        "1992"
+                    ],
+                    [
+                        "Resul Pookutty",
+                        "Best Sound Mixing",
+                        "2009"
+                    ],
+                    [
+                        "Gulzar",
+                        "Best Original Song",
+                        "2009"
+                    ],
+                    [
+                        "A R Rahman",
+                        "Best Original Score and Best Original Song",
+                        "2009"
+                    ],
+                    [
+                        "Kartiki Gonsalves",
+                        "Best Documentary Short",
+                        "2023"
+                    ],
+                    [
+                        "MM Keeravani and Chandrabose",
+                        "Best Original Song",
+                        "2023"
+                    ]
+                ],
+                "md": "|Indian Recipients|Category|Year|\n|---|---|---|\n|Bhanu Athaiya|Best Costume Design|1983|\n|Satyajit Ray|Honorary Award|1992|\n|Resul Pookutty|Best Sound Mixing|2009|\n|Gulzar|Best Original Song|2009|\n|A R Rahman|Best Original Score and Best Original Song|2009|\n|Kartiki Gonsalves|Best Documentary Short|2023|\n|MM Keeravani and Chandrabose|Best Original Song|2023|",
+                "isPerfectTable": true,
+                "csv": "\"Indian Recipients\",\"Category\",\"Year\"\n\"Bhanu Athaiya\",\"Best Costume Design\",\"1983\"\n\"Satyajit Ray\",\"Honorary Award\",\"1992\"\n\"Resul Pookutty\",\"Best Sound Mixing\",\"2009\"\n\"Gulzar\",\"Best Original Song\",\"2009\"\n\"A R Rahman\",\"Best Original Score and Best Original Song\",\"2009\"\n\"Kartiki Gonsalves\",\"Best Documentary Short\",\"2023\"\n\"MM Keeravani and Chandrabose\",\"Best Original Song\",\"2023\"",
+                "bBox": {
+                    "x": 85.39,
+                    "y": 271.93,
+                    "w": 444.41,
+                    "h": 196.46
+                }
+            },
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "Complete Winners List",
+                "md": "# Complete Winners List",
+                "bBox": {
+                    "x": 58,
+                    "y": 504.92,
+                    "w": 187.17,
+                    "h": 19.98
+                }
+            },
+            {
+                "type": "text",
+                "value": "- Best Supporting Actress: Da\u2019Vine Joy Randolph, \u201cThe Holdovers\u201d\n- Best Animated Short: \u201cWar Is Over!\u201d\n- Best Animated Feature: \u201cThe Boy and the Heron\u201d\n- Best Original Screenplay: \u201cAnatomy of a Fall\u201d\n- Best Adapted Screenplay: \u201cAmerican Fiction\u201d\n- Best Makeup and Hairstyling: \u201cPoor Things\u201d\n- Best Production Design: \u201cPoor Things\u201d",
+                "md": "- Best Supporting Actress: Da\u2019Vine Joy Randolph, \u201cThe Holdovers\u201d\n- Best Animated Short: \u201cWar Is Over!\u201d\n- Best Animated Feature: \u201cThe Boy and the Heron\u201d\n- Best Original Screenplay: \u201cAnatomy of a Fall\u201d\n- Best Adapted Screenplay: \u201cAmerican Fiction\u201d\n- Best Makeup and Hairstyling: \u201cPoor Things\u201d\n- Best Production Design: \u201cPoor Things\u201d",
+                "bBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 595.32,
+                    "h": 841.92
+                }
+            }
+        ],
+        "status": "OK",
+        "links": [
+            {
+                "url": "http://hyperurl.co/SSBCrackExamsApp",
+                "text": ""
+            }
+        ],
+        "width": 595.32,
+        "height": 841.92,
+        "triggeredAutoMode": false,
+        "structuredData": null,
+        "noStructuredContent": false,
+        "noTextContent": false
+    },
+    {
+        "page": 6,
+        "text": "   \u2022 Best Costume Design: \u201cPoor Things\u201d\n   \u2022 Best International Feature: \u201d\u201cThe Zone of Interest\u201d\n   \u2022 Best Supporting Actor: Robert Downey Jr., \u201cOppenheimer\u201d\n   \u2022 Best Visual Effects: \u201cGodzilla Minus One\u201d\n   \u2022 Best Film Editing: \u201cOppenheimer\u201d\n                          AMERICANHURH\n                             FICTION\n                                                  PRAICERL\n   \u2022 Best: Documentary (Short Subject): \u201cThe Last Repair Shop\u201d\n   \u2022 Best Documentary Feature: \u201c20 Days in Mariupol\u201d\n   \u2022 Best Cinematography: \u201cOppenheimer\u201d\n   \u2022 Best Short Film (Live Action): \u201cThe Wonderful Story of Henry Sugar\u201d\n   \u2022 Best Sound: \u201cThe Zone of Interest\u201d\n   \u2022 Best Score: \u201cOppenheimer\u201d\n20DAYS\nINMARIUPOL\n   \u2022 Best Song: \u201cWhat Was I Made For?\u201d from \u201cBarbie\u201d\n   \u2022 Best Actor: Cillian Murphy, \u201cOppenheimer\u201d\n   \u2022 Best Director: Christopher Nolan, \u201cOppenheimer\u201d\n   \u2022 Best Actress: Emma Stone, \u201cPoor Things\u201d\n   \u2022 Best Picture: \u201cOppenheimer\u201d",
+        "md": "# Awards\n\n- Best Costume Design: \u201cPoor Things\u201d\n- Best International Feature: \u201cThe Zone of Interest\u201d\n- Best Supporting Actor: Robert Downey Jr., \u201cOppenheimer\u201d\n- Best Visual Effects: \u201cGodzilla Minus One\u201d\n- Best Film Editing: \u201cOppenheimer\u201d\n- Best Documentary (Short Subject): \u201cThe Last Repair Shop\u201d\n- Best Documentary Feature: \u201c20 Days in Mariupol\u201d\n- Best Cinematography: \u201cOppenheimer\u201d\n- Best Short Film (Live Action): \u201cThe Wonderful Story of Henry Sugar\u201d\n- Best Sound: \u201cThe Zone of Interest\u201d\n- Best Score: \u201cOppenheimer\u201d\n- Best Song: \u201cWhat Was I Made For?\u201d from \u201cBarbie\u201d\n- Best Actor: Cillian Murphy, \u201cOppenheimer\u201d\n- Best Director: Christopher Nolan, \u201cOppenheimer\u201d\n- Best Actress: Emma Stone, \u201cPoor Things\u201d\n- Best Picture: \u201cOppenheimer\u201d",
+        "images": [
+            {
+                "name": "img_p5_2.png",
+                "height": 190,
+                "width": 666,
+                "x": 91.325,
+                "y": 222.35999999999996,
+                "original_width": 666,
+                "original_height": 190,
+                "ocr": [
+                    {
+                        "x": 147,
+                        "y": 43,
+                        "w": 176,
+                        "h": 36,
+                        "confidence": "0.9999563776176819",
+                        "text": "AMERICAN"
+                    },
+                    {
+                        "x": 321,
+                        "y": 0,
+                        "w": 150,
+                        "h": 83,
+                        "confidence": "0.4773901700973511",
+                        "text": "HURH"
+                    },
+                    {
+                        "x": 170,
+                        "y": 76,
+                        "w": 134,
+                        "h": 32,
+                        "confidence": "0.6865936401567138",
+                        "text": "FICTION"
+                    },
+                    {
+                        "x": 331,
+                        "y": 129,
+                        "w": 152,
+                        "h": 61,
+                        "confidence": "0.5151849136947748",
+                        "text": "PRAICERL"
+                    }
+                ]
+            },
+            {
+                "name": "img_p5_3.png",
+                "height": 199,
+                "width": 796,
+                "x": 58.5,
+                "y": 477.8499999999999,
+                "original_width": 796,
+                "original_height": 199,
+                "ocr": [
+                    {
+                        "x": 6,
+                        "y": 36,
+                        "w": 158,
+                        "h": 52,
+                        "confidence": "0.8363443952677566",
+                        "text": "20DAYS"
+                    },
+                    {
+                        "x": 7,
+                        "y": 79,
+                        "w": 200,
+                        "h": 40,
+                        "confidence": "0.8659011524354722",
+                        "text": "INMARIUPOL"
+                    }
+                ]
+            }
+        ],
+        "charts": [],
+        "items": [
+            {
+                "type": "heading",
+                "lvl": 1,
+                "value": "Awards",
+                "md": "# Awards",
+                "bBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 595.32,
+                    "h": 841.92
+                }
+            },
+            {
+                "type": "text",
+                "value": "- Best Costume Design: \u201cPoor Things\u201d\n- Best International Feature: \u201cThe Zone of Interest\u201d\n- Best Supporting Actor: Robert Downey Jr., \u201cOppenheimer\u201d\n- Best Visual Effects: \u201cGodzilla Minus One\u201d\n- Best Film Editing: \u201cOppenheimer\u201d\n- Best Documentary (Short Subject): \u201cThe Last Repair Shop\u201d\n- Best Documentary Feature: \u201c20 Days in Mariupol\u201d\n- Best Cinematography: \u201cOppenheimer\u201d\n- Best Short Film (Live Action): \u201cThe Wonderful Story of Henry Sugar\u201d\n- Best Sound: \u201cThe Zone of Interest\u201d\n- Best Score: \u201cOppenheimer\u201d\n- Best Song: \u201cWhat Was I Made For?\u201d from \u201cBarbie\u201d\n- Best Actor: Cillian Murphy, \u201cOppenheimer\u201d\n- Best Director: Christopher Nolan, \u201cOppenheimer\u201d\n- Best Actress: Emma Stone, \u201cPoor Things\u201d\n- Best Picture: \u201cOppenheimer\u201d",
+                "md": "- Best Costume Design: \u201cPoor Things\u201d\n- Best International Feature: \u201cThe Zone of Interest\u201d\n- Best Supporting Actor: Robert Downey Jr., \u201cOppenheimer\u201d\n- Best Visual Effects: \u201cGodzilla Minus One\u201d\n- Best Film Editing: \u201cOppenheimer\u201d\n- Best Documentary (Short Subject): \u201cThe Last Repair Shop\u201d\n- Best Documentary Feature: \u201c20 Days in Mariupol\u201d\n- Best Cinematography: \u201cOppenheimer\u201d\n- Best Short Film (Live Action): \u201cThe Wonderful Story of Henry Sugar\u201d\n- Best Sound: \u201cThe Zone of Interest\u201d\n- Best Score: \u201cOppenheimer\u201d\n- Best Song: \u201cWhat Was I Made For?\u201d from \u201cBarbie\u201d\n- Best Actor: Cillian Murphy, \u201cOppenheimer\u201d\n- Best Director: Christopher Nolan, \u201cOppenheimer\u201d\n- Best Actress: Emma Stone, \u201cPoor Things\u201d\n- Best Picture: \u201cOppenheimer\u201d",
+                "bBox": {
+                    "x": 0,
+                    "y": 0,
+                    "w": 595.32,
+                    "h": 841.92
+                }
+            }
+        ],
+        "status": "OK",
+        "links": [
+            {
+                "url": "http://hyperurl.co/SSBCrackExamsApp",
+                "text": ""
+            }
+        ],
+        "width": 595.32,
+        "height": 841.92,
+        "triggeredAutoMode": false,
+        "structuredData": null,
+        "noStructuredContent": false,
+        "noTextContent": false
+    }
+]

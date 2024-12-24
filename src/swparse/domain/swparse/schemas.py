@@ -1,13 +1,76 @@
 import enum
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Any, TYPE_CHECKING
 
 from swparse.__about__ import __version__ as current_version
 from swparse.config.base import get_settings
+from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from PIL.Image import Image
+
 
 __all__ = ("SystemHealth",)
 
 settings = get_settings()
+
+class OcrItem(BaseModel):
+    x: int
+    y: int
+    w: int
+    h: int
+    confidence: str
+    text: str
+
+
+class BBox(BaseModel):
+    x: float
+    y: float
+    w: float
+    h: float
+
+
+class Item(BaseModel):
+    type: str
+    md: str
+    bBox: BBox 
+    value: str | None = None
+    lvl: int|None | None= None
+    rows: list[list[str]] | None= None
+    isPerfectTable: bool | None= None
+    csv: str | None= None
+
+
+class Link(BaseModel):
+    url: str | None = None
+    text: str | None = None
+
+
+class Page(BaseModel):
+    page: int
+    text: str
+    md: str
+    images: list[dict[str, str]]
+    charts: list
+    status: str
+    width: int
+    height: int
+    triggeredAutoMode: bool
+    structuredData: None
+    noStructuredContent: bool
+    noTextContent: bool
+    items: list[Item]
+    links: list[Link]
+
+
+class LLAMAJSONOutput(BaseModel):
+    markdown:str
+    html:str 
+    text:str
+    pages: list[dict[str, Any]]
+    metadata: dict[str, Any] 
+    images: dict[str, str]
+
 
 
 @dataclass
@@ -27,7 +90,7 @@ class Status(enum.StrEnum):
     queued = "PENDING"
     active = "PENDING"
     complete = "SUCCESS"
-
+    
 
 @dataclass
 class JobMetadata:

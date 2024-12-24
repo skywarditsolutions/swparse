@@ -4,8 +4,9 @@ from datetime import datetime  # noqa: TCH003
 from uuid import UUID  # noqa: TCH003
 
 import msgspec
-from swparse.db.models.team_roles import TeamRoles
 from swparse.lib.schema import CamelizedBaseStruct
+from swparse.db.models.team_roles import TeamRoles
+from swparse.db.models.api_keys import ApiKeyStatus
 
 __all__ = (
     "AccountLogin",
@@ -108,5 +109,29 @@ class UserRoleAdd(CamelizedBaseStruct):
 
 class UserRoleRevoke(CamelizedBaseStruct):
     """User role revoke ."""
-
     user_name: str
+
+class APIKeyCreate(CamelizedBaseStruct):
+    key_name: str
+
+class API_KEY(CamelizedBaseStruct):
+    id: UUID
+    api_key: str
+    name: str
+    status:ApiKeyStatus
+    created_at: datetime
+    updated_at: datetime
+
+class UpdateAPIKey(CamelizedBaseStruct):
+    id: UUID
+    new_name:str
+
+
+class API_KEY_DETAIL(CamelizedBaseStruct):
+    id: UUID
+    name: str
+    username: str | None
+    api_key:str
+    status: ApiKeyStatus
+    created_at: datetime
+    updated_at: datetime
