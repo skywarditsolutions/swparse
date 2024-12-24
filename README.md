@@ -1,10 +1,12 @@
 # SWParse : Skyward's Smart parser for image and multi-document parsing for LLMs
 
+
 Latest Version : 0.6.2
 
 ## Summary
 
 The SWParse  system is a smart document parser that integrates well with LLamaIndex RAG  that extracts Structured text from various file types, including images and documents.
+
 Features:
 
 - Support for multiple file formats and languages ( PDF , DOCX , XLSX , HTML , Markdown , Images and Several Plain Text files)
@@ -25,6 +27,7 @@ With GPU
 
 ```bash
 cp .env.docker.example .env
+
 bash start.sh
 ```
 
@@ -116,6 +119,7 @@ parser = LlamaParse(
     base_url="http://localhost:8000"
 )
 ```
+
 
 - See `example.ipynb`
 
@@ -463,6 +467,7 @@ Loading environment configuration from .env
 
 ```
 
+
 ### Parsing XLSX/XLS Files with Indexing
 
 This functionality allows users to extract sheets from XLSX/XLS files using two types of indexing:
@@ -476,3 +481,4 @@ To specify the sheets to extract, use the following keys in the request body:
 - `sheet_index_type`: Defines the indexing type. Accepted values are `name` and `index`
 
 **Note:** When the indexing type is defined as index, all values in the sheet_index list must be integers. Similarly, when the indexing type is defined as name, all values in the sheet_index list must be strings.
+
