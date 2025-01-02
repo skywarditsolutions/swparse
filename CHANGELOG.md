@@ -1,14 +1,16 @@
-## v0.8.1 (2025-01-02)
+## v0.7.5 (2025-01-02)
 
-### Feat
+### Features
 
-- plain_text (bool) parameter added to extract text only for PDF files
-- add fallback for reading sheet index if it is a number
-- remove sheet_index_type parameter and updated xlsx parsing to accomodate the changes
-- refactor XLSX parsing to streamline the workflow for both with and without sheet indexes
-- integrated images into extracted results: html, markdown, and handle incorrect sheet names
-- extract images from excel files
-- v0.7.4 release note
+- Integrated images into the extracted results of Excel files, such as in HTML and Markdown formats.
+- Removed the `sheet_index_type` parameter to make the sheet indexing more intuitive.
+- Introduced a fallback mechanism for reading sheet indexes when specified as a number and improved handling of incorrect sheet names.
+- Added a plain_text (bool) parameter to extract text only from PDF files.
+
+### Fixes
+
+- Resolved an issue where images were missing when extracting from Excel files.
+
 
 ## v0.7.4 (2024-12-23)
 

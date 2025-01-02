@@ -102,6 +102,24 @@ curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
 
 <hr>
 
+### PDF File Extraction in Plain Text Mode
+
+The `plain_text` parameter allows users to extract only the text from PDF files, ignoring the layout and reading order. This mode focuses solely on retrieving the raw text content, optimizing for speed and minimal processing.
+
+To enable this mode, include the `plain_text` parameter in the request body as follows:
+
+```bash
+curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
+-H "Authorization: Bearer <API-KEY>" \
+-H "Content-Type: multipart/form-data" \
+-F "file=@<file-path>" \
+-F "plain_text=true"
+```
+
+This will extract the plain text from the PDF file, skipping any layout or reading order detection.
+
+<hr>
+
 To quickly get a development environment running, run the following:
 
 ```shell
