@@ -691,26 +691,25 @@ def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], li
     return analyser.extract_components()
 
 
-def extract_excel_images(s3fs: S3FileSystem, excel_content: bytes, sheet_index: list[str|int]) -> dict[str, str]:
+def extract_excel_images(s3fs: S3FileSystem, excel_content: bytes, sheet_name: str|int) -> dict[str, str]:
     """
     Extract images from an Excel file and store them in S3.
     return a dictionary mapping image names to S3 paths.
     """
     pxl_doc = load_workbook(filename=io.BytesIO(excel_content))
     all_images = {}
-    
-    for sheet_name in pxl_doc.sheetnames:
-        sheet = pxl_doc[sheet_name]
-        
-        for i, image in enumerate(sheet._images):
-            if isinstance(image, Image):
-                img_data = image.ref
-                pil_image = PILImage.open(img_data)
+     
+    sheet = pxl_doc[sheet_name]
 
-                img_name = f"{sheet_name}_image_{i}.png"
-                saved_img_path = save_img_s3(s3fs, img_name, pil_image)
-                
-                all_images[img_name] = saved_img_path
+    for i, image in enumerate(sheet._images):
+        if isinstance(image, Image):
+            img_data = image.ref
+            pil_image = PILImage.open(img_data)
+
+            img_name = f"sheet_{sheet_name}_image_{i}.png"
+            saved_img_path = save_img_s3(s3fs, img_name, pil_image)
+            
+            all_images[img_name] = saved_img_path
 
     return all_images
 

@@ -77,23 +77,36 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         str_buffer = io.BytesIO(content)
    
         if sheet_index is not None:
-             
-            df = pd.read_excel(str_buffer, sheet_name=sheet_index, header=0, na_filter=False)
-            
             csv_content = "" 
             html_content = ""
             md_content = "" 
-            images = extract_excel_images(s3fs, content, sheet_index) 
             
-            for df in df.values():
+            for sheet_name in sheet_index:
+                try:
+                    df = pd.read_excel(str_buffer, sheet_name=sheet_name, header=0, na_filter=False)
+                except Exception as e:
+                    logger.error("error occur while reading sheet")
+                    logger.error(e)
+                    continue
+        
+                images = extract_excel_images(s3fs, content, sheet_name) 
+                
+            
                 csv_content += df.to_csv(index=False, na_rep="")
                 csv_content += "\n"
-                
-                html_content += df.to_html(index=False, na_rep="")
-                html_content += "<br>"   
-     
+    
                 md_content += df.to_markdown(index=False)
                 md_content += "\n"
+                
+                html_content += df.to_html(index=False, na_rep="")
+                html_content += "<br>"
+                
+                # adding extracted images
+                for image_key in images.keys():
+                    md_content += f"\n![{image_key}]({image_key})\n\n"
+                    
+                    html_content += f'<br><img src=\"{image_key}" alt=\"{image_key}\" /><br>'
+                       
              
         else:
             df = pd.read_excel(str_buffer, header=0,  na_filter=False)
