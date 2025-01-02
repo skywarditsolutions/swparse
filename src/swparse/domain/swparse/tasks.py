@@ -61,6 +61,7 @@ s3fs = S3FileSystem(
     secret=MINIO_ROOT_PASSWORD,
     use_ssl=False,
 )
+
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
     logger.info("Started parse_xlsx_s3")
 
@@ -82,7 +83,9 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             pxl_doc = load_workbook(filename=str_buffer)
             sheet_index = pxl_doc.sheetnames
             sheet_index = [] if sheet_index is None else sheet_index
-        
+        else:
+            sheet_index = [int(x) if x.isdigit() else x for x in sheet_index]
+            
         csv_content = "" 
         html_content = ""
         md_content = "" 

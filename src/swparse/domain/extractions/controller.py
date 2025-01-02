@@ -50,7 +50,6 @@ s3fs = S3FileSystem(
 class UploadBody(BaseStruct):
     file: UploadFile
     sheet_index: Optional[list[str | int]] = None 
-    sheet_index_type: Literal["index", "name"] | None = None
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -99,23 +98,8 @@ class ExtractionController(Controller):
         file = data.file
         content = await file.read()
         sheet_index = data.sheet_index
-        sheet_index_type = data.sheet_index_type
-        if sheet_index and len(sheet_index) >0:
-            if sheet_index_type is None:
-                raise HTTPException(detail="Please provide index_type: 'index' or 'name'", status_code=400)
-            
-            try:
-                if sheet_index_type == "index":
-                    sheet_index = [int(index) for index in sheet_index]
-                else:
-                    sheet_index = [str(index) for index in sheet_index]
-            except ValueError as e:
-                raise HTTPException(
-                    detail=f"Invalid sheet index value. Error: {str(e)}",
-                    status_code=400,
-                )
         uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
-        job = await extraction_service.create_job(uploaded_file, sheet_index, sheet_index_type)
+        job = await extraction_service.create_job(uploaded_file, sheet_index)
         extraction = ExtractionModel(
             file_name=file.filename,
             file_size=len(content),

@@ -39,7 +39,6 @@ class UploadBody(BaseStruct):
     file: UploadFile
     parsing_instruction: Optional[str] = None
     sheet_index: Optional[list[str | int]] = None 
-    sheet_index_type: Literal["index", "name"] | None = None
     force_ocr: bool = False
 
 
@@ -70,17 +69,18 @@ class ParserController(Controller):
             use_ssl=False,
         )
  
-        if data.sheet_index_type:
+        if data.sheet_index:
+            logger.info("sheet_index")
+            logger.info(data.sheet_index)
+            logger.info(type(data.sheet_index))
             hashed_input ={
                 "content": content,
                 "sheet_index": data.sheet_index,
-                "sheet_index_type": data.sheet_index_type
             }
-  
             hashed_filename = get_hashed_file_name(filename, hashed_input)
         else:
- 
             hashed_filename = get_hashed_file_name(filename, content)
+            
         s3_url = f"{BUCKET}/{hashed_filename}"
 
         metadata = {}
@@ -148,15 +148,6 @@ class ParserController(Controller):
             "application/vnd.ms-excel",
         ):
             sheet_index = data.sheet_index
-            if sheet_index:
-                if data.sheet_index_type == "index":
-                    sheet_index = [int(index) for index in sheet_index]
-                    
-                elif data.sheet_index_type == "name":
-                    sheet_index = [str(index) for index in sheet_index]
-                    
-                else:
-                    raise ValueError("Invalid sheet_index_type provided.")       
             
             job = await queue.enqueue(
                 Job(

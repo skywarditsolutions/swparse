@@ -441,18 +441,9 @@ def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
         input_data["content"] = base64.b64encode(input_data["content"]).decode("utf-8")
       
         sheet_index = input_data["sheet_index"]
-        index_type = input_data["sheet_index_type"]
-        logger.info("sheet index")
-        logger.info(sheet_index)
-        if index_type == "name":
-            input_data["sheet_index"] = sorted(sheet_index, key=str.lower)
-        else:
-            input_data["sheet_index"]  = sorted(sheet_index) 
-        logger.info("Sorted")
-        logger.info( input_data["sheet_index"]  )
+ 
+        input_data["sheet_index"] = sorted(sheet_index, key=lambda x: str(x).lower())
         input_bytes = json.dumps(input_data, sort_keys=True).encode("utf-8")
-        logger.info("Hashed value")
-        logger.info(input_bytes)
     else:
         input_bytes = input_data
  
