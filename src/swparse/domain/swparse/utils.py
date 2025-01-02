@@ -424,7 +424,7 @@ def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: 
         }
 
 
-def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
+def get_hashed_file_name(filename: str, hashed_input: dict[str, Any]) -> str:
     """
     Generate a hashed file name based on file content or additional input data.
 
@@ -437,15 +437,18 @@ def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
     """
     file_ext = filename.split(".")[-1]
 
-    if isinstance(input_data, dict):
-        input_data["content"] = base64.b64encode(input_data["content"]).decode("utf-8")
-      
-        sheet_index = input_data["sheet_index"]
- 
-        input_data["sheet_index"] = sorted(sheet_index, key=lambda x: str(x).lower())
-        input_bytes = json.dumps(input_data, sort_keys=True).encode("utf-8")
+    key_len = len(list(hashed_input.keys()))
+    
+    if key_len == 1:
+        input_bytes = hashed_input["content"]
+        
     else:
-        input_bytes = input_data
+        hashed_input["content"] = base64.b64encode(hashed_input["content"]).decode("utf-8")
+        
+        if hashed_input.get("sheet_index"):
+            hashed_input["sheet_index"] = sorted(hashed_input["sheet_index"], key=lambda x: str(x))
+        
+    input_bytes = json.dumps(hashed_input, sort_keys=True).encode("utf-8")
  
     check_sum = hashlib.md5(input_bytes).hexdigest()
     return f"{check_sum}.{file_ext}"

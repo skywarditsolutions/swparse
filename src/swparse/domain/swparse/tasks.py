@@ -9,7 +9,7 @@ import tempfile
 import time
 from typing import TYPE_CHECKING, Optional 
 from uuid import uuid4
-
+import pymupdf  
 import html_text
 import mammoth
 
@@ -293,14 +293,25 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     return result
 
 
-async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False) -> dict[str, str]:
+async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
-    logger.info("force_ocr")
-    logger.info(force_ocr)
+
+    file_name = get_file_name(s3_url)
+    
+    if plain_text:
+        with s3fs.open(s3_url, mode="rb") as doc:
+            content = doc.read()
+            
+        with pymupdf.open(stream=io.BytesIO(content), filetype="pdf") as doc:
+            text = chr(12).join([page.get_text("text") for page in doc]) 
+            
+        text_file_name = change_file_ext(file_name, "txt")
+        txt_file_path = save_file_s3(s3fs, text_file_name, text)
+        return { ContentType.TEXT.value: txt_file_path}
+    
     results = _pdf_exchange(s3_url, force_ocr= force_ocr)
 
     if table_query:
-        file_name = get_file_name(s3_url)
         markdown = get_file_content(s3fs, results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])

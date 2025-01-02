@@ -40,6 +40,7 @@ class UploadBody(BaseStruct):
     parsing_instruction: Optional[str] = None
     sheet_index: Optional[list[str | int]] = None 
     force_ocr: bool = False
+    plain_text: bool = False
 
 
 class ParserController(Controller):
@@ -68,18 +69,17 @@ class ParserController(Controller):
             secret=MINIO_ROOT_PASSWORD,
             use_ssl=False,
         )
- 
+        hashed_input ={
+            "content": content
+        }
+
         if data.sheet_index:
-            logger.info("sheet_index")
-            logger.info(data.sheet_index)
-            logger.info(type(data.sheet_index))
-            hashed_input ={
-                "content": content,
-                "sheet_index": data.sheet_index,
-            }
-            hashed_filename = get_hashed_file_name(filename, hashed_input)
-        else:
-            hashed_filename = get_hashed_file_name(filename, content)
+            hashed_input["sheet_index"] = data.sheet_index
+            
+        if data.plain_text:
+            hashed_input["plain_text"] = data.plain_text
+        
+        hashed_filename = get_hashed_file_name(filename, hashed_input)
             
         s3_url = f"{BUCKET}/{hashed_filename}"
 
@@ -120,7 +120,8 @@ class ParserController(Controller):
                     "parse_pdf_s3",
                     kwargs={
                         **kwargs,
-                        "force_ocr": data.force_ocr
+                        "force_ocr": data.force_ocr,
+                        "plain_text": data.plain_text
                         },
                     timeout=0,
                 ),
