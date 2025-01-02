@@ -691,13 +691,18 @@ def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], li
     return analyser.extract_components()
 
 
-def extract_excel_images(s3fs: S3FileSystem, excel_content: bytes, sheet_name: str|int) -> dict[str, str]:
+def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
     """
     Extract images from an Excel file and store them in S3.
     return a dictionary mapping image names to S3 paths.
     """
-    pxl_doc = load_workbook(filename=io.BytesIO(excel_content))
+    pxl_doc = load_workbook(filename= excel_content)
     all_images = {}
+     
+    # openpyxl only work with sheet name
+    if isinstance(sheet_name, int):
+        # retrieve sheet name based on the sheet index
+        sheet_name = pxl_doc.sheetnames[sheet_name] 
      
     sheet = pxl_doc[sheet_name]
 
