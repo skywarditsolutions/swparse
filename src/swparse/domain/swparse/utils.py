@@ -5,6 +5,7 @@ import json
 import math
 import hashlib
 import base64
+
 from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
@@ -41,6 +42,10 @@ from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata
 from litestar.exceptions import HTTPException
 
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image
+from PIL import Image as PILImage
+
 if TYPE_CHECKING:
     from PIL.Image import Image
 
@@ -69,7 +74,7 @@ def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> st
         f.write(content)
         return s3_url
 
-def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"Image") -> str:
+def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
     image_name = image_name.lower()
     buffered = io.BytesIO()
     image.save(buffered, format=image_name.split(".")[-1])
@@ -419,8 +424,6 @@ def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: 
         }
 
 
-
-
 def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
     """
     Generate a hashed file name based on file content or additional input data.
@@ -686,6 +689,30 @@ class MdAnalyser:
 def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], list[dict[str, str]]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
+
+
+def extract_excel_images(s3fs: S3FileSystem, excel_content: bytes, sheet_index: list[str|int]) -> dict[str, str]:
+    """
+    Extract images from an Excel file and store them in S3.
+    return a dictionary mapping image names to S3 paths.
+    """
+    pxl_doc = load_workbook(filename=io.BytesIO(excel_content))
+    all_images = {}
+    
+    for sheet_name in pxl_doc.sheetnames:
+        sheet = pxl_doc[sheet_name]
+        
+        for i, image in enumerate(sheet._images):
+            if isinstance(image, Image):
+                img_data = image.ref
+                pil_image = PILImage.open(img_data)
+
+                img_name = f"{sheet_name}_image_{i}.png"
+                saved_img_path = save_img_s3(s3fs, img_name, pil_image)
+                
+                all_images[img_name] = saved_img_path
+
+    return all_images
 
 
 def format_timestamp(timestamp:float) ->str:

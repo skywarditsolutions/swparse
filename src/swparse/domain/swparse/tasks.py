@@ -24,10 +24,9 @@ from PIL import Image
 from s3fs import S3FileSystem
 from unoserver import client
 
-import openpyxl
 from openpyxl.drawing.image import Image
-from PIL import Image as PILImage
-from .utils import save_img_s3
+
+from .utils import extract_excel_images
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -62,9 +61,9 @@ s3fs = S3FileSystem(
     use_ssl=False,
 )
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
+    logger.info("Started parse_xlsx_s3")
 
     result = {}
-    logger.info("Started parse_xlsx_s3")
     try:
         with s3fs.open(s3_url, mode="rb") as doc:
             content = doc.read()
@@ -84,6 +83,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             csv_content = "" 
             html_content = ""
             md_content = "" 
+            images = extract_excel_images(s3fs, content, sheet_index) 
             
             for df in df.values():
                 csv_content += df.to_csv(index=False, na_rep="")
@@ -101,8 +101,13 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             
             csv_content = df.to_csv(index=False, na_rep="")
             html_content = df.to_html(index=False, na_rep="")
-            md_content = df.to_markdown()          
-            
+            md_content = df.to_markdown()   
+            images = extract_excel_images(s3fs, content) 
+        
+           
+        img_file_name = change_file_ext(file_name, "json")
+        img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(images))
+    
         csv_file_name = change_file_ext(file_name, "csv")
         csv_file_path = save_file_s3(s3fs, csv_file_name, csv_content)
 
@@ -116,12 +121,13 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         text_content = html_text.extract_text(html_content)
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3fs, text_file_name, text_content)
- 
+
         result = {
             ContentType.CSV.value: csv_file_path,
             ContentType.MARKDOWN.value: md_file_path,
             ContentType.HTML.value: html_file_path,
             ContentType.TEXT.value: txt_file_path,
+            ContentType.IMAGES.value: img_file_path
         }
 
         if table_query:
