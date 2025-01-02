@@ -1,3 +1,17 @@
+## v0.7.5 (2025-01-02)
+
+### Features
+
+- Integrated images into the extracted results of Excel files, such as in HTML and Markdown formats.
+- Removed the `sheet_index_type` parameter to make the sheet indexing more intuitive.
+- Introduced a fallback mechanism for reading sheet indexes when specified as a number and improved handling of incorrect sheet names.
+- Added a plain_text (bool) parameter to extract text only from PDF files.
+
+### Fixes
+
+- Resolved an issue where images were missing when extracting from Excel files.
+
+
 ## v0.7.4 (2024-12-23)
 
 ### Feat

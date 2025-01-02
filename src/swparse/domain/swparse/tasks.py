@@ -9,7 +9,7 @@ import tempfile
 import time
 from typing import TYPE_CHECKING, Optional 
 from uuid import uuid4
-
+import pymupdf  
 import html_text
 import mammoth
 
@@ -24,10 +24,10 @@ from PIL import Image
 from s3fs import S3FileSystem
 from unoserver import client
 
-import openpyxl
 from openpyxl.drawing.image import Image
-from PIL import Image as PILImage
-from .utils import save_img_s3
+from openpyxl import load_workbook
+
+from .utils import extract_excel_images
 
 from pydantic import TypeAdapter, ValidationError
 
@@ -61,10 +61,11 @@ s3fs = S3FileSystem(
     secret=MINIO_ROOT_PASSWORD,
     use_ssl=False,
 )
+
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
+    logger.info("Started parse_xlsx_s3")
 
     result = {}
-    logger.info("Started parse_xlsx_s3")
     try:
         with s3fs.open(s3_url, mode="rb") as doc:
             content = doc.read()
@@ -77,32 +78,49 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         file_name = get_file_name(s3_url)
         str_buffer = io.BytesIO(content)
    
-        if sheet_index is not None:
-             
-            df = pd.read_excel(str_buffer, sheet_name=sheet_index, header=0, na_filter=False)
+        if sheet_index is None:
             
-            csv_content = "" 
-            html_content = ""
-            md_content = "" 
-            
-            for df in df.values():
-                csv_content += df.to_csv(index=False, na_rep="")
-                csv_content += "\n"
+            pxl_doc = load_workbook(filename=str_buffer)
+            sheet_index = pxl_doc.sheetnames
+            sheet_index = [] if sheet_index is None else sheet_index
+  
+        csv_content = "" 
+        html_content = ""
+        md_content = "" 
+        images = {}
+        for sheet_name in sheet_index:
+            try:
+                df = pd.read_excel(str_buffer, sheet_name=sheet_name, header=0, na_filter=False)
+            except Exception as e:
                 
-                html_content += df.to_html(index=False, na_rep="")
-                html_content += "<br>"   
-     
-                md_content += df.to_markdown(index=False)
-                md_content += "\n"
-             
-        else:
-            df = pd.read_excel(str_buffer, header=0,  na_filter=False)
-            df = df.fillna("")
+                if sheet_name.isdigit():
+                    sheet_name = int(sheet_name)
+                    try:
+                        df = pd.read_excel(str_buffer, sheet_name=sheet_name, header=0, na_filter=False)
+                    except ValueError as e:
+                        logger.error(f"Sheet index {sheet_name} is out of range.")
+                        continue
+                else:
+                    logger.error(f"sheet: {sheet_name} is not found in the provided file!")
+                    continue
+    
+            images = extract_excel_images(s3fs, str_buffer, sheet_name) 
+        
+            csv_content += df.to_csv(index=False, na_rep="")
+            csv_content += "\n"
+
+            md_content += df.to_markdown(index=False)
+            md_content += "\n"
             
-            csv_content = df.to_csv(index=False, na_rep="")
-            html_content = df.to_html(index=False, na_rep="")
-            md_content = df.to_markdown()          
+            html_content += df.to_html(index=False, na_rep="")
+            html_content += "<br>"
             
+            # Adding extracted images
+            for image_key in images.keys():
+                md_content += f"\n![{image_key}]({image_key})\n\n"
+                
+                html_content += f'<br><img src=\"{image_key}" alt=\"{image_key}\" /><br><br>'
+                       
         csv_file_name = change_file_ext(file_name, "csv")
         csv_file_path = save_file_s3(s3fs, csv_file_name, csv_content)
 
@@ -116,14 +134,19 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         text_content = html_text.extract_text(html_content)
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3fs, text_file_name, text_content)
- 
+
         result = {
             ContentType.CSV.value: csv_file_path,
             ContentType.MARKDOWN.value: md_file_path,
             ContentType.HTML.value: html_file_path,
-            ContentType.TEXT.value: txt_file_path,
+            ContentType.TEXT.value: txt_file_path
         }
 
+        if images:
+            img_file_name = change_file_ext(file_name, "json")
+            img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(images))
+            result[ContentType.IMAGES.value] = img_file_path
+            
         if table_query:
             tables_content = extract_tables_gliner(table_query["tables"], md_content, table_query["output"])
             tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
@@ -270,14 +293,25 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     return result
 
 
-async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False) -> dict[str, str]:
+async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
-    logger.info("force_ocr")
-    logger.info(force_ocr)
+
+    file_name = get_file_name(s3_url)
+    
+    if plain_text:
+        with s3fs.open(s3_url, mode="rb") as doc:
+            content = doc.read()
+            
+        with pymupdf.open(stream=io.BytesIO(content), filetype="pdf") as doc:
+            text = chr(12).join([page.get_text("text") for page in doc]) 
+            
+        text_file_name = change_file_ext(file_name, "txt")
+        txt_file_path = save_file_s3(s3fs, text_file_name, text)
+        return { ContentType.TEXT.value: txt_file_path}
+    
     results = _pdf_exchange(s3_url, force_ocr= force_ocr)
 
     if table_query:
-        file_name = get_file_name(s3_url)
         markdown = get_file_content(s3fs, results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])

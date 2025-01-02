@@ -40,6 +40,7 @@ dependencies = [
     "nltk>=3.9.1",
     "markdown-it-py>=3.0.0",
     "mdit-plain>=1.0.1",
+    "pymupdf>=1.25.1",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
@@ -47,7 +48,7 @@ license = { text = "BUSINESS" }
 name = "swparse"
 readme = "README.md"
 requires-python = "==3.12.*"
-version = "0.8.0"
+version = "0.7.5"
 
 
 [project.scripts]

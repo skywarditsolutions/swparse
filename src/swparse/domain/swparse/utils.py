@@ -5,6 +5,7 @@ import json
 import math
 import hashlib
 import base64
+
 from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
@@ -41,6 +42,10 @@ from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata
 from litestar.exceptions import HTTPException
 
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image
+from PIL import Image as PILImage
+
 if TYPE_CHECKING:
     from PIL.Image import Image
 
@@ -69,7 +74,7 @@ def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> st
         f.write(content)
         return s3_url
 
-def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"Image") -> str:
+def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
     image_name = image_name.lower()
     buffered = io.BytesIO()
     image.save(buffered, format=image_name.split(".")[-1])
@@ -419,9 +424,7 @@ def extract_tables_gliner(table_queries: list[dict], markdownText: str, output: 
         }
 
 
-
-
-def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
+def get_hashed_file_name(filename: str, hashed_input: dict[str, Any]) -> str:
     """
     Generate a hashed file name based on file content or additional input data.
 
@@ -434,24 +437,18 @@ def get_hashed_file_name(filename: str, input_data: bytes | dict) -> str:
     """
     file_ext = filename.split(".")[-1]
 
-    if isinstance(input_data, dict):
-        input_data["content"] = base64.b64encode(input_data["content"]).decode("utf-8")
-      
-        sheet_index = input_data["sheet_index"]
-        index_type = input_data["sheet_index_type"]
-        logger.info("sheet index")
-        logger.info(sheet_index)
-        if index_type == "name":
-            input_data["sheet_index"] = sorted(sheet_index, key=str.lower)
-        else:
-            input_data["sheet_index"]  = sorted(sheet_index) 
-        logger.info("Sorted")
-        logger.info( input_data["sheet_index"]  )
-        input_bytes = json.dumps(input_data, sort_keys=True).encode("utf-8")
-        logger.info("Hashed value")
-        logger.info(input_bytes)
+    key_len = len(list(hashed_input.keys()))
+    
+    if key_len == 1:
+        input_bytes = hashed_input["content"]
+        
     else:
-        input_bytes = input_data
+        hashed_input["content"] = base64.b64encode(hashed_input["content"]).decode("utf-8")
+        
+        if hashed_input.get("sheet_index"):
+            hashed_input["sheet_index"] = sorted(hashed_input["sheet_index"], key=lambda x: str(x))
+        
+        input_bytes = json.dumps(hashed_input, sort_keys=True).encode("utf-8")
  
     check_sum = hashlib.md5(input_bytes).hexdigest()
     return f"{check_sum}.{file_ext}"
@@ -686,6 +683,34 @@ class MdAnalyser:
 def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], list[dict[str, str]]]:
     analyser = MdAnalyser(markdown_content)
     return analyser.extract_components()
+
+
+def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
+    """
+    Extract images from an Excel file and store them in S3.
+    return a dictionary mapping image names to S3 paths.
+    """
+    pxl_doc = load_workbook(filename= excel_content)
+    all_images = {}
+     
+    # openpyxl only work with sheet name
+    if isinstance(sheet_name, int):
+        # retrieve sheet name based on the sheet index
+        sheet_name = pxl_doc.sheetnames[sheet_name] 
+     
+    sheet = pxl_doc[sheet_name]
+
+    for i, image in enumerate(sheet._images):
+        if isinstance(image, Image):
+            img_data = image.ref
+            pil_image = PILImage.open(img_data)
+
+            img_name = f"sheet_{sheet_name}_image_{i}.png"
+            saved_img_path = save_img_s3(s3fs, img_name, pil_image)
+            
+            all_images[img_name] = saved_img_path
+
+    return all_images
 
 
 def format_timestamp(timestamp:float) ->str:

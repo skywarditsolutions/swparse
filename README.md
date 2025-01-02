@@ -81,6 +81,46 @@ students = first name: text, last name: text, age: int, Favorite Subjects: text[
 
 Query syntax can be tested at `/api/parsing/query_syntax` endpoint
 
+---
+
+### Parsing XLSX/XLS Files with Indexing
+
+This functionality allows users to extract sheets from XLSX/XLS files using two types of indexing:
+
+- `name`: Refers to the sheet name.
+- `index`: Refers to the sheet index (starting from 0).
+
+To specify which sheets to extract, provide a list of sheet names or indexes in the sheet_index field of the request body. For example, to extract sheet index 0 and sheet name vendor, use the following curl command:
+
+```bash
+curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
+-H "Authorization: Bearer <API-KEY>" \
+-H "Content-Type: multipart/form-data" \
+-F "file=@<file-path>" \
+-F "sheet_index[]=0" \
+-F "sheet_index[]=vendor"
+```
+
+**Note**: If a number is provided as the sheet name, it will first attempt to retrieve the sheet by name. If this fails, the function will treat the value as an index and attempt to retrieve the sheet by index again. If the provided sheet names or indexes cannot be found, they will be ignored during parsing.
+
+<hr>
+
+### PDF File Extraction in Plain Text Mode
+
+The `plain_text` parameter allows users to extract only the text from PDF files, ignoring the layout and reading order. This mode focuses solely on retrieving the raw text content, optimizing for speed and minimal processing.
+
+To enable this mode, include the `plain_text` parameter in the request body as follows:
+
+```bash
+curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
+-H "Authorization: Bearer <API-KEY>" \
+-H "Content-Type: multipart/form-data" \
+-F "file=@<file-path>" \
+-F "plain_text=true"
+```
+
+This will extract the plain text from the PDF file, skipping any layout or reading order detection.
+
 <hr>
 
 To quickly get a development environment running, run the following:
@@ -466,19 +506,3 @@ Loading environment configuration from .env
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ```
-
-
-### Parsing XLSX/XLS Files with Indexing
-
-This functionality allows users to extract sheets from XLSX/XLS files using two types of indexing:
-
-- `name`: Refers to the sheet name.
-- `index`: Refers to the sheet index (starting from 0).
-
-To specify the sheets to extract, use the following keys in the request body:
-
-- `sheet_index`: A list of sheet indexes or names to extract.
-- `sheet_index_type`: Defines the indexing type. Accepted values are `name` and `index`
-
-**Note:** When the indexing type is defined as index, all values in the sheet_index list must be integers. Similarly, when the indexing type is defined as name, all values in the sheet_index list must be strings.
-
