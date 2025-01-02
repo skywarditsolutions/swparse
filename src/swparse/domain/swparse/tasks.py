@@ -83,9 +83,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             pxl_doc = load_workbook(filename=str_buffer)
             sheet_index = pxl_doc.sheetnames
             sheet_index = [] if sheet_index is None else sheet_index
-        else:
-            sheet_index = [int(x) if x.isdigit() else x for x in sheet_index]
-            
+  
         csv_content = "" 
         html_content = ""
         md_content = "" 
@@ -94,9 +92,17 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             try:
                 df = pd.read_excel(str_buffer, sheet_name=sheet_name, header=0, na_filter=False)
             except Exception as e:
-                logger.error("error occur while reading sheet")
-                logger.error(e)
-                continue
+                
+                if sheet_name.isdigit():
+                    sheet_name = int(sheet_name)
+                    try:
+                        df = pd.read_excel(str_buffer, sheet_name=sheet_name, header=0, na_filter=False)
+                    except ValueError as e:
+                        logger.error(f"Sheet index {sheet_name} is out of range.")
+                        continue
+                else:
+                    logger.error(f"sheet: {sheet_name} is not found in the provided file!")
+                    continue
     
             images = extract_excel_images(s3fs, str_buffer, sheet_name) 
         
