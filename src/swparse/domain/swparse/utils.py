@@ -691,7 +691,7 @@ def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_na
     return a dictionary mapping image names to S3 paths.
     """
     pxl_doc = load_workbook(filename= excel_content)
-    all_images = {}
+    sheet_images = {}
      
     # openpyxl only work with sheet name
     if isinstance(sheet_name, int):
@@ -708,9 +708,9 @@ def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_na
             img_name = f"sheet_{sheet_name}_image_{i}.png"
             saved_img_path = save_img_s3(s3fs, img_name, pil_image)
             
-            all_images[img_name] = saved_img_path
+            sheet_images[img_name] = saved_img_path
 
-    return all_images
+    return sheet_images
 
 
 def format_timestamp(timestamp:float) ->str:

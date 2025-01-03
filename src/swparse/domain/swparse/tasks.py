@@ -87,7 +87,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         csv_content = "" 
         html_content = ""
         md_content = "" 
-        images = {}
+        all_images = {}
         for sheet_name in sheet_index:
             try:
                 df = pd.read_excel(str_buffer, sheet_name=sheet_name, header=0, na_filter=False)
@@ -103,9 +103,9 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
                 else:
                     logger.error(f"sheet: {sheet_name} is not found in the provided file!")
                     continue
-    
+            
             images = extract_excel_images(s3fs, str_buffer, sheet_name) 
-        
+            all_images.update(images)
             csv_content += df.to_csv(index=False, na_rep="")
             csv_content += "\n"
 
@@ -142,9 +142,9 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             ContentType.TEXT.value: txt_file_path
         }
 
-        if images:
+        if all_images:
             img_file_name = change_file_ext(file_name, "json")
-            img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(images))
+            img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(all_images))
             result[ContentType.IMAGES.value] = img_file_path
             
         if table_query:
