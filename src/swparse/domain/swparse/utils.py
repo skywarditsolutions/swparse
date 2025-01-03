@@ -704,8 +704,7 @@ def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_na
         if isinstance(image, Image):
             img_data = image.ref
             pil_image = PILImage.open(img_data)
-
-            img_name = f"sheet_{sheet_name}_image_{i}.png"
+            img_name = f"sheet_{sheet_name.lower()}_image_{i}.png"
             saved_img_path = save_img_s3(s3fs, img_name, pil_image)
             
             sheet_images[img_name] = saved_img_path
