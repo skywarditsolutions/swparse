@@ -111,6 +111,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
             # saving images onto Minio bucket
             image_dict =  paginated_images.get(pageIdx, {})
             for image_name, image in image_dict.items():
+                image_name = image_name.lower()
                 saved_img_file_path = save_img_s3(s3fs, image_name, image)
                 # collecting images per page
                 saved_image_list.append({image_name:saved_img_file_path})

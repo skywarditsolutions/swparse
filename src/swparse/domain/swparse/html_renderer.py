@@ -63,6 +63,7 @@ class LLAMAHTMLRenderer(BaseRenderer):
                 if self.extract_images:
                     image = self.extract_image(document, ref_block_id)
                     image_name = f"{ref_block_id.to_path()}.png"
+                    image_name = image_name.lower()
                     images[image_name] = image
                     
                     # paginated images collection

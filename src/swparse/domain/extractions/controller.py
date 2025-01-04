@@ -100,7 +100,7 @@ class ExtractionController(Controller):
         for file in data.file:
             content = await file.read()
             uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
-            job = await extraction_service.create_job(uploaded_file, data.sheet_index, data.force_ocr)
+            job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = data.force_ocr)
             extraction = ExtractionModel(
                 file_name=file.filename,
                 file_size=len(content),

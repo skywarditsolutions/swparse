@@ -72,7 +72,6 @@ class ParserController(Controller):
         hashed_input ={
             "content": content
         }
-
         if data.sheet_index:
             hashed_input["sheet_index"] = data.sheet_index
             
