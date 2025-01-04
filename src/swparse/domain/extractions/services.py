@@ -31,11 +31,12 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
         self.repository: ExtractionRepository = self.repository_type(**repo_kwargs)
         self.model_type = self.repository.model_type
 
-    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None) -> JobStatus:
+    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None, force_ocr:bool = False) -> JobStatus:
         form_data = {}
         if sheet_index and len(sheet_index) > 0 :            
             form_data = {
                 "sheet_index": sheet_index,
+                "force_ocr": force_ocr
             }
         async with httpx.AsyncClient() as client:
             try:
