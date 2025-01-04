@@ -48,7 +48,7 @@ s3fs = S3FileSystem(
 )
 
 class UploadBody(BaseStruct):
-    file: UploadFile
+    file: list[UploadFile]
     sheet_index: Optional[list[str | int]] = None 
 
 class ExtractionController(Controller):
@@ -94,23 +94,26 @@ class ExtractionController(Controller):
         extraction_service: ExtractionService,
         data: Annotated[UploadBody, Body(media_type=RequestEncodingType.MULTI_PART)],
         current_user: User,
-    ) -> Extraction:
-        file = data.file
-        content = await file.read()
-        sheet_index = data.sheet_index
-        uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
-        job = await extraction_service.create_job(uploaded_file, sheet_index)
-        extraction = ExtractionModel(
-            file_name=file.filename,
-            file_size=len(content),
-            file_path=job.s3_url,
-            user_id=current_user.id,
-            job_id=job.id,
-        )
+    ) -> list[Extraction]:
+        extractions:list[Extraction] = []
+        for file in data.file:
+            content = await file.read()
+            sheet_index = data.sheet_index
+            uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
+            job = await extraction_service.create_job(uploaded_file, sheet_index)
+            extraction = ExtractionModel(
+                file_name=file.filename,
+                file_size=len(content),
+                file_path=job.s3_url,
+                user_id=current_user.id,
+                job_id=job.id,
+            )
 
-        extraction = await extraction_service.create(extraction)
+            extraction = await extraction_service.create(extraction)
 
-        return extraction_service.to_schema(data=extraction, schema_type=Extraction)
+            extraction = extraction_service.to_schema(data=extraction, schema_type=Extraction)
+            extractions.append(extraction)
+        return extractions
 
     @get(
         operation_id="CheckExtraction",

@@ -189,6 +189,8 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_oc
     with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
     start_time = time.time()
+    logger.info("force_ocr")
+    logger.info(force_ocr)
     result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
     end_time = time.time()
 

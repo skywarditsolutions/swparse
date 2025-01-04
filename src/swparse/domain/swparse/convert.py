@@ -62,9 +62,10 @@ def pdf_markdown(
 
         config = {
             "paginate_output": True,
-            "force_ocr":   ocr_all_pages,
-            "skip_layout_detection": True
+            "force_ocr":   True,
         }
+        logger.info("conifg")
+        logger.info(config)
         config_parser = ConfigParser(config)
         pdf_converter = PdfConverter(
                 config=config_parser.generate_config_dict(),
