@@ -62,7 +62,7 @@ def pdf_markdown(
 
         config = {
             "paginate_output": True,
-            "force_ocr":   True,
+            "strip_existing_ocr": ocr_all_pages,
         }
         logger.info("conifg")
         logger.info(config)

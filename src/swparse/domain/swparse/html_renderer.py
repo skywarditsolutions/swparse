@@ -71,7 +71,7 @@ class LLAMAHTMLRenderer(BaseRenderer):
                     else:
                         paginated_images[f"{ref_block_id.page_id}"] = {image_name: image}
 
-                    ref.replace_with(BeautifulSoup(f"<p><img src='{image_name}'></p>", 'html.parser'))
+                    ref.replace_with(BeautifulSoup(f"<p><img alt='{image_name}' src='{image_name}'></p>", 'html.parser'))
                 else:
                     ref.replace_with('')
             elif ref_block_id.block_type in self.page_blocks:
