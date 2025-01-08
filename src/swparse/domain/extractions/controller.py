@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import mimetypes
 import os
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Optional
 from uuid import UUID
 
 import httpx
@@ -49,8 +49,8 @@ s3fs = S3FileSystem(
 
 class UploadBody(BaseStruct):
     file: list[UploadFile]
+    force_ocr: list[bool]
     sheet_index: Optional[list[str | int]] = None 
-    force_ocr: bool = False
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -97,10 +97,14 @@ class ExtractionController(Controller):
         current_user: User,
     ) -> list[Extraction]:
         extractions:list[Extraction] = []
-        for file in data.file:
+        
+        for index, file in enumerate(data.file):
             content = await file.read()
             uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
-            job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = data.force_ocr)
+            
+            force_ocr = data.force_ocr[index] if index < len(data.force_ocr) else False
+            job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = force_ocr)
+     
             extraction = ExtractionModel(
                 file_name=file.filename,
                 file_size=len(content),
