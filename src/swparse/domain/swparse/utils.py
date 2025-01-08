@@ -448,6 +448,9 @@ def get_hashed_file_name(filename: str, hashed_input: dict[str, Any]) -> str:
         if hashed_input.get("sheet_index"):
             hashed_input["sheet_index"] = sorted(hashed_input["sheet_index"], key=lambda x: str(x))
         
+        if hashed_input.get("force_ocr"):
+            hashed_input["force_ocr"] = True
+        
         input_bytes = json.dumps(hashed_input, sort_keys=True).encode("utf-8")
  
     check_sum = hashlib.md5(input_bytes).hexdigest()
