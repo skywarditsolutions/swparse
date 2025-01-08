@@ -49,7 +49,7 @@ s3fs = S3FileSystem(
 
 class UploadBody(BaseStruct):
     file: list[UploadFile]
-    force_ocr: list[bool]
+    force_ocr: Optional[list[bool]] = None 
     sheet_index: Optional[list[str | int]] = None 
 
 class ExtractionController(Controller):
@@ -97,10 +97,13 @@ class ExtractionController(Controller):
         current_user: User,
     ) -> list[Extraction]:
         extractions:list[Extraction] = []
-        
+        if data.force_ocr is None:
+            data.force_ocr = []
+            
         for index, file in enumerate(data.file):
             content = await file.read()
             uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
+            
             
             force_ocr = data.force_ocr[index] if index < len(data.force_ocr) else False
             job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = force_ocr)
