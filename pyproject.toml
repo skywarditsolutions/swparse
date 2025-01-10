@@ -2,7 +2,7 @@
 authors = [{ name = "Phyo Arkar Lwin", email = "phyoakl@hexcode.tech" }]
 dependencies = [
     "litestar[full]>=2.11",
-    "advanced-alchemy[uuid]>=0.10.0",
+    "advanced-alchemy==0.26.2",
     "asyncpg>=0.28.0",
     "python-dotenv>=1.0.0",
     "passlib[argon2]>=1.7.4",
@@ -41,6 +41,7 @@ dependencies = [
     "markdown-it-py>=3.0.0",
     "mdit-plain>=1.0.1",
     "pymupdf>=1.25.1",
+    "psutil>=6.1.1",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
