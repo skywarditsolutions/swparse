@@ -42,6 +42,7 @@ dependencies = [
     "mdit-plain>=1.0.1",
     "pymupdf>=1.25.1",
     "psutil>=6.1.1",
+    "uuid-utils>=0.10.0",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
