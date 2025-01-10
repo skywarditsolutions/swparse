@@ -310,6 +310,9 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
             
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3fs, text_file_name, text)
+        memory_info = get_memory_usage()
+        logger.info(f"plain text  (end) Memory usage : {memory_info.rss / 1024**2:.2f} MB")
+ 
         return { ContentType.TEXT.value: txt_file_path}
     
     results = _pdf_exchange(s3_url, force_ocr= force_ocr)

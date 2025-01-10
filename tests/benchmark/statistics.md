@@ -20,6 +20,17 @@
 |                |                       |                     |                     |
 | Avg Time       | `0 min 8 sec 937 ms`  |`0 min 22 sec 971 ms`|`0 min 3 sec 421 ms` |
 
+
+#### Memory Usage 
+
+| Process            | Markdown     | force_ocr    | plain_text |
+| ------------------ | ------------ | ------------ | ---------- |
+| Before parsing pdf | 860.38 MB    | 855.18 MB    | 844.02 MB  |
+| After model loaded | 1397.14 MB   | 1396.24 MB   | ---        |
+| End of parsing pdf | 2031.27 MB   | 2190.67 MB   | 859.04 MB  |
+|                    |              |              |            |
+| Memory usage       | `1170.89 MB` | `1335.49 MB` | `15.02 MB` |
+
 ---
 
 ### Test 2
@@ -38,6 +49,16 @@
 | 5th Attempt    | 0 min 47 sec 285 ms   | 0 min 52 sec 495 ms  |0 min 4 sec 387 ms   |
 |                |                       |                      |                     |
 | Avg Time       | `0 min 47 sec 772 ms` | `0 min 50 sec 259 ms`|`0 min 7 sec 286 ms` |
+
+#### Memory Usage 
+ 
+| Process            | Memory usage | force_ocr    | plain_text |
+| ------------------ | ------------ | ------------ | ---------- |
+| Before parsing pdf | 860.38 MB    | 860.54 MB    | 867.04 MB  |
+| After Model loaded | 1380.74 MB   | 1401.60 MB   | ---        |
+| End of parsing pdf | 2587.70 MB   | 2666.20 MB   | 867.17 MB  |
+|                    |              |              |            |
+| Memory usage       | `1727.32 MB` | `1805.66 MB` | `0.13 MB`  |
 
 ---
 
@@ -58,8 +79,40 @@
 |                |                             |                      |                     |
 | Avg Time       | `0 min 57 sec 535 ms`       |`3 min 56 sec 463 ms` |`0 min 3 sec 991 ms` |
 
+#### Memory Usage 
 
+| Process            | Memory usage | force_ocr | plain_text |
+| ------------------ | ------------ | --------- | ---------- |
+| Before parsing pdf | 860.88 MB    |880.55 MB  | 867.17 MB  |
+| After Model loaded | 1401.60 MB   |1411.45 MB |    ---     |
+| End of parsing pdf | 3937.88 MB   |4263.92 MB | 884.55 MB  |
+|                    |              |           |            |
+| Memory usage       | 3077.00 MB   |3383.37 MB | `17.38 MB` |
 
 ## Findings
 
 When working with rich text files, enabling the `force_ocr` option significantly increases processing time.However, for image-rich files, the difference in time between enabling and disabling `force_ocr` is negligible. In the latest Marker v1.2.3 update, the Surya OCR has been improved; it can now intelligently decide whether reapplying OCR is necessary.
+
+
+
+# Concurrent testing
+
+Bombarding http://52.202.108.42:8000 with 10000 requests using 150 connections:
+
+| Metric                | Value            |
+| --------------------- | ---------------- |
+| Requests/sec          | 54.98            |
+| Requests/sec Stdev    | 60.75            |
+| Max Requests/sec      | 576.37           |
+| Latency (Avg)         | 1.80s            |
+| Latency (Stdev)       | 7.63s            |
+| Max Latency           | 2.31m            |
+| 1xx HTTP Codes        | 0                |
+| 2xx HTTP Codes        | 9969             |
+| 3xx HTTP Codes        | 0                |
+| 4xx HTTP Codes        | 0                |
+| 5xx HTTP Codes        | 0                |
+| Other HTTP Codes      | 31               |
+| Timeout Errors        | 15               |
+| I/O Timeout Errors    | 4                |
+| Throughput            | 800.66KB/s       |
