@@ -5,7 +5,7 @@ import json
 import math
 import hashlib
 import base64
-
+import psutil
 from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
@@ -718,3 +718,9 @@ def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_na
 def format_timestamp(timestamp:float) ->str:
     value = datetime.fromtimestamp(timestamp)
     return value.strftime('%S:') + f"{int(value.strftime('%f')) // 1000}"
+
+
+def get_memory_usage():
+    process = psutil.Process(os.getpid())
+    return process.memory_info()
+   

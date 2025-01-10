@@ -22,6 +22,7 @@ from swparse.domain.swparse.utils import (
     handle_result_type,
     parse_table_query,
     save_job_metadata,
+    get_memory_usage
 )
 from swparse.lib.schema import BaseStruct
 from .urls import PARSER_BASE
@@ -60,6 +61,8 @@ class ParserController(Controller):
         self,
         data: Annotated[UploadBody, Body(media_type=RequestEncodingType.MULTI_PART)],
     ) -> JobStatus:
+        memory_info =  get_memory_usage()
+        logger.info(f"Memory usage of upload controller start: {memory_info.rss / 1024**2:.2f} MB")
         file = data.file
         content = await file.read()
         filename = file.filename
@@ -209,6 +212,9 @@ class ParserController(Controller):
 
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
+        
+        memory_info =  get_memory_usage()
+        logger.info(f"Memory usage of upload controller end: {memory_info.rss / 1024**2:.2f} MB")
 
         return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
 

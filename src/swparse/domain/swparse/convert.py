@@ -4,7 +4,7 @@ import tempfile
 from typing import Any, TYPE_CHECKING
 from marker.config.parser import ConfigParser
 
-# from .utils import format_timestamp
+from .utils import get_memory_usage
 from marker.converters.pdf import PdfConverter
 from swparse.config.base import get_settings
 from marker.models import create_model_dict
@@ -32,6 +32,8 @@ def pdf_markdown(
     max_pages: int = 40,
     ocr_all_pages: bool = False,
 ) -> "LLAMAJSONOutput":
+    memory_info = get_memory_usage()
+    logger.info(f"Parser Start - Memory usage: {memory_info.rss / 1024**2:.2f} MB")
     global models_dict
     if not models_dict:
         models_dict = create_model_dict()
@@ -73,7 +75,8 @@ def pdf_markdown(
                 processor_list=processors,
                 renderer= "swparse.domain.swparse.llama_json_renderer.LLAMAJSONRenderer"
         )
- 
+        memory_info = get_memory_usage()
+        logger.info(f"Parser End - Memory usage: {memory_info.rss / 1024**2:.2f} MB")
         return pdf_converter(filename)
 
  

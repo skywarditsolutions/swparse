@@ -43,6 +43,7 @@ from swparse.domain.swparse.utils import (
     get_file_content,
     get_file_name,
     save_file_s3,
+    get_memory_usage
 )
 
 from .schemas import Page, LLAMAJSONOutput
@@ -189,8 +190,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_oc
     with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
     start_time = time.time()
-    logger.info("force_ocr")
-    logger.info(force_ocr)
+  
     result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
     end_time = time.time()
 
@@ -298,8 +298,9 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
 
+    memory_info = get_memory_usage()
+    logger.info(f"parse_pdf_s3 (start) Memory usage : {memory_info.rss / 1024**2:.2f} MB")
     file_name = get_file_name(s3_url)
-    
     if plain_text:
         with s3fs.open(s3_url, mode="rb") as doc:
             content = doc.read()
@@ -322,6 +323,8 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
     metadata = json.dumps(results)
     s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    memory_info = get_memory_usage()
+    logger.info(f"parse_pdf_s3 (end) Memory usage: {memory_info.rss / 1024**2:.2f} MB")
     return results
 
 
