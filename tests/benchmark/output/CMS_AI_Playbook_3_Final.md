@@ -35,9 +35,9 @@ Updates are organized through a versioning system where major changes will incre
 | 4. | Implementation and Operation of AI at CMS 26 |  |
 | 5. | Appendices | A-1 |
 
-|  | Version Information | i |
+|  |  | Version Information i |
 | --- | --- | --- |
-| 1. | Introduction | 1 |
+| 1. |  | Introduction 1 |
 |  | 1.1. | Purpose and Use 1 |
 |  | 1.2. | Contents 1 |
 |  | 1.3. | Audience and Objectives 1 |
@@ -174,7 +174,7 @@ Updates are organized through a versioning system where major changes will incre
 
 As the steward of health coverage for over 160 million Americans, the Centers for Medicare & Medicaid Services (CMS) is embracing artificial intelligence (AI) to improve health care administration and delivery. This AI Playbook outlines practical frameworks and actionable insights to harness AI effectively within CMS's operations, aiming to enhance service delivery, optimize efficiency, and uphold the highest standards of care and ethical responsibility.
 
-### **1.1. Purpose and Use**
+#### **1.1. Purpose and Use**
 
 Following the National Artificial Intelligence Initiative Act (NAIIA) of 2020 to accelerate AI research and application across the federal government, the Office of Information Technology (OIT) in CMS launched the AI Explorers (AIE) Program. AIE strives to broaden the understanding of AI and its uses in CMS. Built upon experience from across CMS and contributing sources across the United States federal government, this Playbook is a culminating effort to fit the world of AI into a smaller, CMS-specific "box" giving readers a one-stop shop to dive responsibly into AI development.
 
@@ -207,7 +207,7 @@ Those shaping policies and compliance measures will find this Playbook valuable 
 | Development, and | steps in pursuing the | CMS provides detailed steps for technical |
 | Data Practitioners | implementation and operation | practitioners and AI product teams pursuing AI |
 |  | of an AI-based solution? | implementation. |
-|  | • • Are there examples of AI | Appendix A Case Studies provides overviews of |
+|  | • Are there examples of AI • | Appendix A Case Studies provides overviews of |
 |  | implementations within CMS | two AI case studies that have been implemented |
 |  | that can serve as benchmarks | at CMS. |
 |  | for new projects? |  |
@@ -452,7 +452,7 @@ As AI maturity increases across the organization, aligning AI with goals tailore
 
 Aligning AI with CMS goals requires careful consideration. The guiding principles covered in the next section will provide guidance on implementation and emphasize a holistic approach to the design and development of AI-based projects, tools, and software.
 
-### **3.2. Example Guiding Principles for AI at CMS**
+## **3.2. Example Guiding Principles for AI at CMS**
 
 CMS is a significant contributor to our nation's healthcare sector. The agency's actions set an example and have many downstream impacts. These effects don't happen in a vacuum, especially when it comes to AI, which sits at the crossroads of people, tools, data, agency integration, and ethics. This section introduces four principles to serve as an exemplar foundation throughout the Playbook in guiding the implementation and operation of AI within the agency.
 
@@ -1320,7 +1320,8 @@ During the early stages of developing an AI project, teams should assess, evalua
 
 | Model | Description |
 | --- | --- |
-| Cloud-Based | Model for enabling ubiquitous, convenient, on-demand network access to a shared pool of configurable computing resources (e.g., networks, servers, storage, applications, and |
+| Cloud-Based | Model for enabling ubiquitous, convenient, on-demand network access to a shared pool of |
+|  | configurable computing resources (e.g., networks, servers, storage, applications, and |
 |  | services) that can be rapidly provisioned and released with minimal management effort or |
 |  | service provider interaction (Mell and Grance 2011). |
 | On-Premises | Housing hardware and software resources locally on the physical premises. |
@@ -1421,8 +1422,6 @@ As shown in Figure 5, below, the step of Engineering AI Models includes the phas
 
 ![_page_51_picture_5.png](_page_51_picture_5.png)
 
-![_page_51_picture_6.png](_page_51_picture_6.png)
-
 *Understand the Problem*
 
 *Data Gathering & Exploration*
@@ -1437,7 +1436,7 @@ Thorough data cleaning minimizes the impact of outliers and irrelevant data poin
 
 Particularly when dealing with generative AI/LLMs, additional considerations come into play, such as the diversity of data sources and the risk of bias in training data, especially in language-centric tasks where 
 
-![_page_51_picture_14.png](_page_51_picture_14.png)
+![_page_51_picture_13.png](_page_51_picture_13.png)
 
 nuances and cultural context are paramount (Ramesh 2023), (Arsanjani 2023). Throughout this process, adherence to data ethics and privacy considerations is paramount, ensuring appropriate data access, collection, and usage (Lee, Zankl and Chang 2016).
 
@@ -2933,17 +2932,18 @@ Unabridged documentation of the OHC AI Pilot and Time-To-Hire Calculator, includ
 
 | Task | Research and Design | Model Development | Implementation and Scaling |
 | --- | --- | --- | --- |
-| Reliability and • | T18. Algorithm pre-design | • T24. Algorithm performance | • T28. Algorithm |
-| Robustness • | T21. Algorithm deployment metrics | monitoring design | version control |
+| Reliability and | • T18. Algorithm pre-design | • T24. Algorithm performance | • T28. Algorithm |
+| Robustness | • T21. Algorithm deployment metrics | monitoring design | version control |
 |  | design | • T25. Algorithm health checks | • T38. Data |
-| • | T22. Algorithm operational metrics | design | quality |
+|  | • T22. Algorithm operational metrics | design | quality |
 |  | design | • T26. Algorithm verification | monitoring |
-| • | T23. Algorithm version control design | and validation | • T39. Data |
-| • | T33. Data pre-processing | • T27. Algorithm approval | health checks |
-| • | T34. Data quality assurance | • T35. Data quality metrics |  |
-| • | T40. AI system harms and impacts | • T36. Data quality monitoring |  |
+|  | • T23. Algorithm version control design | and validation | • T39. Data |
+|  | • T33. Data pre-processing | • T27. Algorithm approval | health checks |
+|  | • T34. Data quality assurance | • T35. Data quality metrics |  |
+|  | • T40. AI system harms and impacts | • T36. Data quality monitoring |  |
 |  | pre-assessment | design |  |
-| • | T44. AI system impact minimization | • T37. Data health check design |  |
+|  | • T44. AI system impact minimization | • T37. Data health check design |  |
 |  |  | • T58. AI system operations |  |
 
 ![_page_101_picture_2.png](_page_101_picture_2.png)
+

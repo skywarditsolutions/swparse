@@ -16,7 +16,7 @@ These HMO-POS plans are available in Ascension, East Baton Rouge, East Feliciana
 
 These PPO plans are available statewide.
 
-### Peoples Health
+## Peoples Health
 
 Founded in by medical providers and physicians in Louisiana
 
@@ -34,7 +34,7 @@ Health Maintenance Organization (HMO-POS*) Preferred Provider Organization (PPO)
 
 * Point-of-service (POS) option allows out-of-network dental services. Those services may have higher costs.
 
-## 2024 Choices 65, Medicare Advantage LA-0004, and PPO Plan Highlights
+# 2024 Choices 65, Medicare Advantage LA-0004, and PPO Plan Highlights
 
 ![_page_2_picture_1.png](_page_2_picture_1.png)
 
@@ -307,7 +307,7 @@ Members can get coverage for plan-covered services while traveling outside their
 | Tier 4 | $100 | $300 |
 | Tier 5 | 33% coinsurance | 30-day supply only |
 
-## 4 Stages of Part D Drug Coverage
+# 4 Stages of Part D Drug Coverage
 
 January 1
 
@@ -545,7 +545,7 @@ We pay part of your Medicare Part B premium, putting money back in your pocket.
 
 · Out-of-network dental services may have higher member costs.
 
-### Online Search Tools
+## Online Search Tools
 
 ![_page_28_picture_1.png](_page_28_picture_1.png)
 
@@ -574,8 +574,9 @@ Special Enrollment Period (SEP) for people who:
 
 ![_page_30_picture_0.png](_page_30_picture_0.png)
 
-### **Live your best life with Peoples Health.**
+### Live your best life with Peoples Health.
 
 We look forward to serving you.
 
-Plans are insured through UnitedHealthcare Insurance Company or one of its affiliated companies. For Medicare Advantage Plans: A Medicare Advantage organization with a Medicare contract. Enrollment in the plan depends on the plan's contract renewal. Out-of-network/noncontracted providers are under no obligation to treat plan members, except in emergency situations. Please call our customer service number or see your Evidence of Coverage for more information, including the cost-sharing that applies to out-of-network services. This information is not a complete description of benefits. Call 1-800-222-8600 for more information. TTY users may call 711. Y0066_24AEPC6501_0004_PPO_SP_M
+Plans are insured through UnitedHeathoare Insurance Company or one of its affiliated companies: For Medicare Advantage Plans: A Medicare Advantage organization with a Medicare contract. Enrollment in the plan depends on the plants contract renewal. Out-of-network/noncontracted providers are under no obligation to treat plan members, except in emergency situations. Please call our customer senice number or see your Evidence of Coverage for more information, including the costsharing that applies to out-of-network services. This information is not a complete description of benefits. Call 1-800-222-8600 for more information. TTY users may call 711. Y0066 24AEPC6501 0004 PPO SP M
+

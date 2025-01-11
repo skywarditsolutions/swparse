@@ -199,7 +199,7 @@ If the HIPAA-Covered Data Disclosure Form needs to be updated due to changes to 
 
 **Note:** You can revise your entity/practice's HIPAA form as many times as you wish. Whenever your entity's HIPAA form is revised, any previously signed HIPAA will be captured under the "Retired" category.
 
-## **Downloading the HIPAA-Covered Data Disclosure Form**
+### **Downloading the HIPAA-Covered Data Disclosure Form**
 
 To download a copy of an executed HIPAA form, please follow the steps below.
 
@@ -218,7 +218,7 @@ If an entity or practice wants to transfer ownership to another corporation, CMS
 
 To sign a Novation Agreement, you must have the role of APM Executive or Practice Primary Contact. The transferee, if not already in 4i, will need to be invited as a user to complete their required portion of the agreement and can only sign after the Transferor has completed their portion. Upon the Transferee signing the entity/practice's Novation Agreement, the status of the agreement will change to "Pending CMS Signature." This status is an indicator that the agreement has been signed by both preceding parties and is now awaiting CMS' review and countersignature. The Novation Agreement will not be considered "Active" or "Fully Executed" until CMS has reviewed and countersigned the agreement.
 
-## **Signing the Novation Agreement as a Transferor**
+### **Signing the Novation Agreement as a Transferor**
 
 In all cases, the transferring entity's APM Executive or Practice's Primary Contact may be required to sign the Novation Agreement on behalf of their entity or practice as the Transferor. This indicates that the transferring entity or practice legally agrees to release all rights and responsibilities to the new corporation. To sign the Novation Agreement as the Transferor, follow the steps below:
 
@@ -265,6 +265,8 @@ Since the Novation Agreement is required to be countersigned before it is consid
 |  | signing window has closed. |
 |  | ii. CMS declines to countersign the agreement. |
 
+![_page_9_picture_8.png](_page_9_picture_8.png)
+
 ![_page_10_picture_1.png](_page_10_picture_1.png)
 
 | Signature | Definitions |
@@ -308,3 +310,4 @@ Call **1-888-734-6433** and then select one of the following:
 - **PCF**  option 4
 - **ACO REACH** option 1, and then option 1 again
 - **KCC** option 1, and then option 3
+

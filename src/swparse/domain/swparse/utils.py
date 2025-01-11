@@ -46,6 +46,8 @@ from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
 from PIL import Image as PILImage
 
+import torch
+
 if TYPE_CHECKING:
     from PIL.Image import Image
 
@@ -723,4 +725,11 @@ def format_timestamp(timestamp:float) ->str:
 def get_memory_usage():
     process = psutil.Process(os.getpid())
     return process.memory_info()
+   
+def get_vram_usage():
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated() / 1024**2   
+        cached = torch.cuda.memory_reserved() / 1024**2   
+        return allocated, cached
+        
    

@@ -217,7 +217,7 @@ class ParserController(Controller):
         logger.info(f"Memory usage of upload controller end: {memory_info.rss / 1024**2:.2f} MB")
 
         return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
-
+ 
     @post(
         path="upload/page/{page:int}",
         name="parsers:page",
