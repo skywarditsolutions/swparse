@@ -77,7 +77,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         document_output = document.render()
         paginated_html = {}
         paginated_images= {}
-        full_html, images, paginated_html, paginated_images = self.extract_html(document, document_output, paginated_html, paginated_images)
+        full_html, images , paginated_html, paginated_images = self.extract_html(document, document_output, paginated_html, paginated_images)
 
         md_cls = Markdownify(
             True,

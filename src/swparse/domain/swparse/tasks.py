@@ -192,7 +192,9 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_oc
     start_time = time.time()
     memory_info = get_memory_usage()
     logger.info(f"Marker parsing (Before) Memory usage: {memory_info.rss / 1024**2:.2f} MB")
+    
     result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
+    
     memory_info = get_memory_usage()
     logger.info(f"Marker parsing (After) Memory usage: {memory_info.rss / 1024**2:.2f} MB")
     end_time = time.time()
