@@ -2,35 +2,10 @@
 
 ### Feat
 
-- cleanup test code and logging
-- JWT omit on testing routes
-- benchmark testing atomatic statistics generation in md, GPU VRAM log
-- added concurrent stress testing and memory usage statistics
-- pdm lock file resolve
-- pdm lock for psutil dependency
-- added memory usage log using psutil
 
-### Fix
+- **Benchmark Testing**: Implemented automatic generation of statistics in markdown format,
+- Added concurrent stress testing result using bombardier with 10000 requests under 100 connections, along with memory usage statistics and findings.
 
-- memory usage log position adjust
-- pdm lock to resolve uuid_utils dependency issue
-
-## v0.7.6 (2025-01-14)
-
-### Feat
-
-- cleanup test code and logging
-- JWT omit on testing routes
-- benchmark testing atomatic statistics generation in md, GPU VRAM log
-- added concurrent stress testing and memory usage statistics
-- pdm lock file resolve
-- pdm lock for psutil dependency
-- added memory usage log using psutil
-
-### Fix
-
-- memory usage log position adjust
-- pdm lock to resolve uuid_utils dependency issue
 
 ## v0.7.6 (2025-01-09)
 
