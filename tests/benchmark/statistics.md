@@ -23,13 +23,14 @@
 
 #### Memory Usage 
 
-| Process            | Markdown     | force_ocr    | plain_text |
-| ------------------ | ------------ | ------------ | ---------- |
-| Before parsing pdf | 860.38 MB    | 855.18 MB    | 844.02 MB  |
-| After model loaded | 1397.14 MB   | 1396.24 MB   | ---        |
-| End of parsing pdf | 2031.27 MB   | 2190.67 MB   | 859.04 MB  |
-|                    |              |              |            |
-| Memory usage       | `1170.89 MB` | `1335.49 MB` | `15.02 MB` |
+| Process              | Markdown     | force_ocr    | plain_text |
+| ---------------------| ------------ | ------------ | ---------- |
+| Before parsing pdf   | 864.46 MB    | 855.18 MB    | 844.02 MB  |
+| Modle storage on VRAM| 860.38 MB    | 855.18 MB    | 844.02 MB  |
+| After parsing pdf    | 1336.91 MB  | 1396.24 MB   | ---        |
+| End of parsing pdf   | 2328.97 MB   | 2190.67 MB   | 859.04 MB  |
+|                      |              |              |            |
+| Memory usage         | `1170.89 MB` | `1335.49 MB` | `15.02 MB` |
 
 ---
 
