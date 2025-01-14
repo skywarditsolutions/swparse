@@ -36,9 +36,14 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     
 # setup_multiprocessing()
 models_dict:dict[str, Any] = {}    
-
+if not models_dict:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device == "cpu":
+        models_dict = create_model_dict()
+    else:
+        models_dict = create_model_dict(device=device,  dtype=torch.float16)
 # PDF conversion 
-def pdf_markdown(
+async def pdf_markdown(
     in_file: bytes,
     langs: list[str] = ["en"],
     start_page: int = 0,
@@ -54,8 +59,6 @@ def pdf_markdown(
     #     logger.info(f"(Before model loading) VRAM ")
     #     logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
     
-    if not models_dict:
-        models_dict = create_model_dict()
   
 
     logger.info("Model loaded")
@@ -82,7 +85,7 @@ def pdf_markdown(
         "marker.processors.debug.DebugProcessor",
     ]
  
-    with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
+    async with tempfile.NamedTemporaryFile(suffix=".pdf") as temp_pdf:
         temp_pdf.write(in_file)
         temp_pdf.seek(0)
         filename = temp_pdf.name

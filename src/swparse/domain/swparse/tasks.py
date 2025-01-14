@@ -275,7 +275,7 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
     #     content = doc.read()
     logger.info("After reading content with s3fs")
     
-    result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
+    result:LLAMAJSONOutput  = await pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
  
     data:dict[str, str] = {}
     

@@ -205,7 +205,7 @@ class ServerSettings:
 class SaqSettings:
     """Server configurations."""
 
-    PROCESSES: int = field(default_factory=lambda: int(os.getenv("SAQ_PROCESSES", "3")))
+    PROCESSES: int = field(default_factory=lambda: int(os.getenv("SAQ_PROCESSES", "1")))
     """The number of worker processes to start.
 
     Default is set to 1.
