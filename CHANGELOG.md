@@ -1,3 +1,20 @@
+## v0.7.6 (2025-01-14)
+
+### Feat
+
+- cleanup test code and logging
+- JWT omit on testing routes
+- benchmark testing atomatic statistics generation in md, GPU VRAM log
+- added concurrent stress testing and memory usage statistics
+- pdm lock file resolve
+- pdm lock for psutil dependency
+- added memory usage log using psutil
+
+### Fix
+
+- memory usage log position adjust
+- pdm lock to resolve uuid_utils dependency issue
+
 ## v0.7.6 (2025-01-09)
 
 ### Features
