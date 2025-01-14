@@ -10,23 +10,33 @@ from marker.converters.pdf import PdfConverter
 from swparse.config.base import get_settings
 from marker.models import create_model_dict
 
- 
+import multiprocessing
+
 if TYPE_CHECKING:
     from .schemas import LLAMAJSONOutput
 
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
 
-settings = get_settings()
+# settings = get_settings()
 logger = structlog.get_logger()
-MEMORY_USAGE_LOG = settings.app.MEMORY_USAGE_LOG
+# MEMORY_USAGE_LOG = settings.app.MEMORY_USAGE_LOG
  
  
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
- 
-models_dict:dict[str, Any] = {}
+
+# def setup_multiprocessing():
+#     try:
+#         multiprocessing.set_start_method('spawn')
+#     except RuntimeError:
+#         # Already set 
+#         pass
+    
+# setup_multiprocessing()
+models_dict:dict[str, Any] = {}    
+
 # PDF conversion 
 def pdf_markdown(
     in_file: bytes,
@@ -36,27 +46,26 @@ def pdf_markdown(
     ocr_all_pages: bool = False,
 ) -> "LLAMAJSONOutput":
     global models_dict
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     
-    
-    if MEMORY_USAGE_LOG:
-        allocated, cached  = get_vram_usage()
+    # if MEMORY_USAGE_LOG:
+    #     allocated, cached  = get_vram_usage()
         
-        logger.info(f"(Before model loading) VRAM ")
-        logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
+    #     logger.info(f"(Before model loading) VRAM ")
+    #     logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
     
     if not models_dict:
-        models_dict = create_model_dict(device=device, dtype=torch.float16)
+        models_dict = create_model_dict()
   
 
     logger.info("Model loaded")
     logger.info(list(models_dict.keys()))
     
-    if MEMORY_USAGE_LOG:
-        logger.info(f"(After model loaded) VRAM ")
-        allocated, cached = get_vram_usage()
-        logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
-
+    # if MEMORY_USAGE_LOG:
+    #     logger.info(f"(After model loaded) VRAM ")
+    #     allocated, cached = get_vram_usage()
+    #     logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
+    pass
     processors = [
         "marker.processors.blockquote.BlockquoteProcessor",
         # "marker.processors.code.CodeProcessor",

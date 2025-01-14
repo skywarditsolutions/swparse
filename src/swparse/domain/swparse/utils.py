@@ -45,7 +45,7 @@ from litestar.exceptions import HTTPException
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
 from PIL import Image as PILImage
-
+from swparse.config.app import settings
 import torch
 
 if TYPE_CHECKING:
@@ -54,7 +54,8 @@ if TYPE_CHECKING:
 logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 JOB_FOLDER = settings.storage.JOB_FOLDER
-
+MINIO_ROOT_USER = settings.storage.ROOT_USER
+MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
  
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
@@ -733,3 +734,9 @@ def get_vram_usage():
         return allocated, cached
         
    
+async def read_s3_file(s3fs: S3FileSystem, s3_url: str)->bytes:
+ 
+    with s3fs.open(s3_url, mode="rb") as doc:
+        return doc.read()
+ 
+ 

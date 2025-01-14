@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 from advanced_alchemy.utils.text import slugify
 from litestar.serialization import decode_json, encode_json
@@ -205,7 +205,7 @@ class ServerSettings:
 class SaqSettings:
     """Server configurations."""
 
-    PROCESSES: int = field(default_factory=lambda: int(os.getenv("SAQ_PROCESSES", "1")))
+    PROCESSES: int = field(default_factory=lambda: int(os.getenv("SAQ_PROCESSES", "3")))
     """The number of worker processes to start.
 
     Default is set to 1.
@@ -224,6 +224,7 @@ class SaqSettings:
     )
     """Auto start and stop `saq` processes when starting the Litestar application."""
 
+    MULTIPROCESSING_MODE: Literal["multiprocessing", "threading"] = field(default_factory=lambda: str(os.getenv("MULTIPROCESSING_MODE", "threading")))
 
 @dataclass
 class LogSettings:
