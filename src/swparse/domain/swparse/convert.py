@@ -19,6 +19,7 @@ warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree u
 
 settings = get_settings()
 logger = structlog.get_logger()
+MEMORY_USAGE_LOG = settings.app.MEMORY_USAGE_LOG
  
  
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
@@ -37,11 +38,12 @@ def pdf_markdown(
     global models_dict
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
- 
-    allocated, cached  = get_vram_usage()
     
-    logger.info(f"(Before model loading) VRAM ")
-    logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
+    if MEMORY_USAGE_LOG:
+        allocated, cached  = get_vram_usage()
+        
+        logger.info(f"(Before model loading) VRAM ")
+        logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
     
     if not models_dict:
         models_dict = create_model_dict(device=device, dtype=torch.float16)
@@ -50,13 +52,14 @@ def pdf_markdown(
     logger.info("Model loaded")
     logger.info(list(models_dict.keys()))
     
-    logger.info(f"(After model loaded) VRAM ")
-    allocated, cached = get_vram_usage()
-    logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
+    if MEMORY_USAGE_LOG:
+        logger.info(f"(After model loaded) VRAM ")
+        allocated, cached = get_vram_usage()
+        logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
 
     processors = [
         "marker.processors.blockquote.BlockquoteProcessor",
-        "marker.processors.code.CodeProcessor",
+        # "marker.processors.code.CodeProcessor",
         "marker.processors.document_toc.DocumentTOCProcessor",
         "marker.processors.equation.EquationProcessor",
         "marker.processors.footnote.FootnoteProcessor",

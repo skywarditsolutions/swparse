@@ -33,20 +33,6 @@ class AccessController(Controller):
         "User": User,
     }
 
-
-    @get(
-        path="/api/access/greet",
-    )
-    async def greet(self) -> str:
-        return "Hello World"
-
-    @get(
-        path="/api/access/greet/async",
-    )
-    async def greet_async(self) -> str:
-        return "Hello World"
-
-
     @post(
         operation_id="AccountLogin",
         name="account:login",

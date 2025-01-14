@@ -365,6 +365,8 @@ class AppSettings:
 
     CACHING_ON: bool = field(default_factory=lambda: os.getenv("CACHING_ON", "True") in TRUE_VALUES)
 
+    MEMORY_USAGE_LOG: bool = field(default_factory=lambda: os.getenv("MEMORY_USAGE_LOG", "false") in TRUE_VALUES)
+    
     @property
     def slug(self) -> str:
         """Return a slugified name.

@@ -1,35 +1,36 @@
 from __future__ import annotations
 
-import base64
-import io
-import json
 import os
+import io
 import re
+import base64
+import json
 import tempfile
-import time
+
 from typing import TYPE_CHECKING, Optional 
+from pydantic import TypeAdapter, ValidationError
+
 from uuid import uuid4
+
 import pymupdf  
 import html_text
 import mammoth
-
 import markdown as markdown_converter
 import mistletoe
 import pandas as pd
 import pypdfium2 as pdfium
 import structlog
+from PIL import Image
+from unoserver import client
 from html2text import html2text
 from markdownify import markdownify as md
-from PIL import Image
-from s3fs import S3FileSystem
-from unoserver import client
 
 from openpyxl.drawing.image import Image
 from openpyxl import load_workbook
 
 from .utils import extract_excel_images
 
-from pydantic import TypeAdapter, ValidationError
+from s3fs import S3FileSystem
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType
@@ -39,11 +40,9 @@ from swparse.domain.swparse.utils import (
     convert_pptx_to_md,
     convert_xls_to_xlsx_bytes,
     extract_tables_gliner,
-    format_timestamp,
     get_file_content,
     get_file_name,
     save_file_s3,
-    get_memory_usage
 )
 
 from .schemas import Page, LLAMAJSONOutput
@@ -55,6 +54,8 @@ logger = structlog.get_logger()
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+ 
+MEMORY_USAGE_LOG  = settings.app.MEMORY_USAGE_LOG 
  
 s3fs = S3FileSystem(
     endpoint_url=settings.storage.ENDPOINT_URL,
@@ -189,16 +190,9 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_oc
 
     with s3fs.open(s3_url, mode="rb") as doc:
         content = doc.read()
-    start_time = time.time()
-    memory_info = get_memory_usage()
-    logger.info(f"Marker parsing (Before) Memory usage: {memory_info.rss / 1024**2:.2f} MB")
-    
+ 
     result:LLAMAJSONOutput  = pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
-    
-    memory_info = get_memory_usage()
-    logger.info(f"Marker parsing (After) Memory usage: {memory_info.rss / 1024**2:.2f} MB")
-    end_time = time.time()
-
+ 
     data:dict[str, str] = {}
     
     # Markdown saving
@@ -220,9 +214,7 @@ def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_oc
         data[ContentType.JSON.value]  = save_file_s3(s3fs, json_file_name, json.dumps(result.pages))
         
         logger.info("Validation successful!\n")
-        logger.info(f"Start time: {format_timestamp(start_time)}\n")
-        logger.info(f"End time: {format_timestamp(end_time)}\n")
-        logger.info(f"Time taken: {format_timestamp(end_time - start_time)} ")
+ 
     except ValidationError as e:
         logger.error("Validation failed!")
         logger.error(e.json())
@@ -302,9 +294,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
-
-    memory_info = get_memory_usage()
-    logger.info(f"parse_pdf_s3 (start) Memory usage : {memory_info.rss / 1024**2:.2f} MB")
+ 
     file_name = get_file_name(s3_url)
     if plain_text:
         with s3fs.open(s3_url, mode="rb") as doc:
@@ -315,8 +305,6 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
             
         text_file_name = change_file_ext(file_name, "txt")
         txt_file_path = save_file_s3(s3fs, text_file_name, text)
-        memory_info = get_memory_usage()
-        logger.info(f"plain text  (end) Memory usage : {memory_info.rss / 1024**2:.2f} MB")
  
         return { ContentType.TEXT.value: txt_file_path}
     
@@ -330,9 +318,7 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         results[table_query["raw"]] = tables_file_path
 
     metadata = json.dumps(results)
-    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
-    memory_info = get_memory_usage()
-    logger.info(f"parse_pdf_s3 (end) Memory usage: {memory_info.rss / 1024**2:.2f} MB")
+    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)       
     return results
 
 
@@ -590,9 +576,7 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
         metadata[table_query["raw"]] = tables_file_path
-    logger.info("metadata")
-    logger.info(metadata)
-
+ 
     return metadata
 
 

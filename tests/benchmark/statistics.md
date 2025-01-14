@@ -98,22 +98,22 @@ When working with rich text files, enabling the `force_ocr` option significantly
 
 # Concurrent testing
 
-Bombarding http://52.202.108.42:8000 with 10000 requests using 150 connections:
+Bombarding to UAT Server http://52.202.108.42 with 10000 requests using 100 connections:
 
-| Metric                | Value            |
-| --------------------- | ---------------- |
-| Requests/sec          | 54.98            |
-| Requests/sec Stdev    | 60.75            |
-| Max Requests/sec      | 576.37           |
-| Latency (Avg)         | 1.80s            |
-| Latency (Stdev)       | 7.63s            |
-| Max Latency           | 2.31m            |
-| 1xx HTTP Codes        | 0                |
-| 2xx HTTP Codes        | 9969             |
-| 3xx HTTP Codes        | 0                |
-| 4xx HTTP Codes        | 0                |
-| 5xx HTTP Codes        | 0                |
-| Other HTTP Codes      | 31               |
-| Timeout Errors        | 15               |
-| I/O Timeout Errors    | 4                |
-| Throughput            | 800.66KB/s       |
+| **Statistics** | **Avg**    | **Stdev**    | **Max**     |
+|----------------|------------|--------------|-------------|
+| Reqs/sec       | 396.28     | 187.71       | 1972.47     |
+| Latency        | 251.54ms   | 76.41ms      | 1.30s       |
+
+| **HTTP Codes** | **Count** |
+|----------------|-----------|
+| 1xx            | 0         |
+| 2xx            | 10000     |
+| 3xx            | 0         |
+| 4xx            | 0         |
+| 5xx            | 0         |
+| others         | 0         |
+
+| **Throughput** | **Value** |
+|----------------|-----------|
+| Throughput     | 89.97KB/s |
