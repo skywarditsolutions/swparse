@@ -10,14 +10,13 @@ import psutil
 from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
-from logging import getLogger
 from operator import attrgetter
 from typing import IO, Any, TYPE_CHECKING, List
 
 import pandas as pd
 from gliner import GLiNER
 from lark import Lark, Token, Transformer
-
+import structlog
 import html_text
 import mistletoe
 from lxml import html
@@ -53,7 +52,7 @@ from concurrent.futures import ThreadPoolExecutor
 if TYPE_CHECKING:
     from PIL.Image import Image
 
-logger = getLogger(__name__)
+logger = structlog.get_logger()
 BUCKET = settings.storage.BUCKET
 JOB_FOLDER = settings.storage.JOB_FOLDER
 MINIO_ROOT_USER = settings.storage.ROOT_USER
@@ -69,9 +68,6 @@ def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
         workbook.save(buffer)
         buffer.seek(0)
         return buffer.read()
-
-
-
 
 
 def change_file_ext(file_name: str, extension: str) -> str:
@@ -676,7 +672,7 @@ def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], li
     return analyser.extract_components()
 
 
-def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
+async def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
     """
     Extract images from an Excel file and store them in S3.
     return a dictionary mapping image names to S3 paths.
@@ -696,7 +692,8 @@ def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_na
             img_data = image.ref
             pil_image = PILImage.open(img_data)
             img_name = f"sheet_{sheet_name.lower()}_image_{i}.png"
-            saved_img_path = save_img_s3(s3fs, img_name, pil_image)
+       
+            saved_img_path = await save_safe_img_s3(s3fs, img_name, pil_image)
             
             sheet_images[img_name] = saved_img_path
 
@@ -736,6 +733,25 @@ def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
     return save_file_s3(s3fs, image_name, img_b)
 
 
+def save_file_in_thread(s3fs:S3FileSystem, s3_url:str, content: bytes|str):
+    with s3fs.open(s3_url, mode="wb") as f:
+        f.write(content)
+    return s3_url
+
+async def save_safe_img_s3(s3fs: S3FileSystem, image_name: str, image: "PILImage") -> str:
+    # Lowercase the image name for consistency.
+    image_name = image_name.lower()
+
+    # Save image to a buffer (in-memory file).
+    buffered = io.BytesIO()
+    image.save(buffered, format=image_name.split(".")[-1])
+    img_b = buffered.getvalue()
+    
+    new_uuid = uuid4()
+    s3_url = f"{BUCKET}/{new_uuid}_{image_name}"
+ 
+    return await asyncio.to_thread(save_file_in_thread, s3fs, s3_url, img_b)
+
 
 async def save_file_s3_thread(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
     new_uuid = uuid4()
@@ -745,10 +761,7 @@ async def save_file_s3_thread(s3fs: S3FileSystem, file_name: str, content: bytes
         content = content.encode(encoding="utf-8", errors="ignore")
 
     # Offload the blocking file write operation to a separate thread
-    def save_file_in_thread(s3fs, s3_url, content):
-        with s3fs.open(s3_url, mode="wb") as f:
-            f.write(content)
-        return s3_url
+ 
 
     return await asyncio.to_thread(save_file_in_thread, s3fs, s3_url, content)
 
@@ -770,9 +783,6 @@ def get_file_name(s3_url: str) -> str:
  
  
 
-# Threadpool is used if there are shared resources like network connections, they may be getting blocked when two processes try to access them simultaneously.
-executor = ThreadPoolExecutor(max_workers=SAQ_PROCESSES) 
-
 def read_s3_file_sync(s3_url: str) -> bytes:
     s3fs = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -792,6 +802,17 @@ async def safe_read_s3_file(s3_url: str) -> bytes:
     
     """
     loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(executor, read_s3_file_sync, s3_url)
+    # Threadpool is used if there are shared resources like network connections, they may be getting blocked when two processes try to access them simultaneously.
+    executor = ThreadPoolExecutor(max_workers=SAQ_PROCESSES) 
 
+    try:
+        result = await loop.run_in_executor(executor, read_s3_file_sync, s3_url)
+        logger.info(f"Successfully read file: {s3_url}")
+        return result
+    except Exception as e:
+        logger.error(f"Error reading file from S3: {e}")
+        raise
+    finally:
+        executor.shutdown(wait=True)
 
+ 

@@ -8,7 +8,7 @@ import json
 import tempfile
 from typing import TYPE_CHECKING, Optional 
 from pydantic import TypeAdapter, ValidationError
-import asyncio
+
 from uuid import uuid4
 
 import pymupdf  
@@ -26,11 +26,7 @@ from markdownify import markdownify as md
 
 from openpyxl.drawing.image import Image
 from openpyxl import load_workbook
-
-from .utils import extract_excel_images
-
-
-
+ 
 from swparse.config.app import settings
 from swparse.db.models import ContentType
 from swparse.domain.swparse.convert import pdf_markdown
@@ -43,39 +39,38 @@ from swparse.domain.swparse.utils import (
     get_file_name,
     save_file_s3,
     safe_read_s3_file,
-    safe_save_s3_file
+    safe_save_s3_file,
+    extract_excel_images
 )
 from s3fs import S3FileSystem
- 
 from .schemas import Page, LLAMAJSONOutput
+ 
 if TYPE_CHECKING:
     from saq.types import Context
-
 
 logger = structlog.get_logger()
 BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
- 
 MEMORY_USAGE_LOG  = settings.app.MEMORY_USAGE_LOG 
+SAQ_PROCESSES = settings.saq.PROCESSES
 
-
-
+ 
+s3fs = S3FileSystem(
+    endpoint_url=settings.storage.ENDPOINT_URL,
+    key=MINIO_ROOT_USER,
+    secret=MINIO_ROOT_PASSWORD,
+    use_ssl=False,
+)
 
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
     
-    
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
+    logger.info(f"SAQ_PROCESSES: {SAQ_PROCESSES}")
     logger.info("Started parse_xlsx_s3")
     result = {}
     try:
-        with s3fs.open(s3_url, mode="rb") as doc:
-            content = doc.read()
+        content = await safe_read_s3_file(s3_url)
+     
         if isinstance(content, str):
             content = content.encode()
 
@@ -110,8 +105,11 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
                 else:
                     logger.error(f"sheet: {sheet_name} is not found in the provided file!")
                     continue
-            
-            images = extract_excel_images(s3fs, str_buffer, sheet_name) 
+    
+            logger.info("Extracting images")
+            images = await extract_excel_images(s3fs, str_buffer, sheet_name) 
+            logger.info("Finished Extracting images")
+     
             all_images.update(images)
             csv_content += df.to_csv(index=False, na_rep="")
             csv_content += "\n"
@@ -129,18 +127,18 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
                 html_content += f'<br><img src=\"{image_key}" alt=\"{image_key}\" /><br><br>'
                        
         csv_file_name = change_file_ext(file_name, "csv")
-        csv_file_path = save_file_s3(s3fs, csv_file_name, csv_content)
+        csv_file_path = await safe_save_s3_file(csv_file_name, csv_content)
 
         html_file_name = change_file_ext(file_name, "html")
-        html_file_path = save_file_s3(s3fs, html_file_name, html_content)
+        html_file_path = await safe_save_s3_file(html_file_name, html_content)
 
         md_file_name = change_file_ext(file_name, "md")
-        md_file_path = save_file_s3(s3fs, md_file_name, md_content)
+        md_file_path = await safe_save_s3_file(md_file_name, md_content)
 
         # Parsing to Text
         text_content = html_text.extract_text(html_content)
         text_file_name = change_file_ext(file_name, "txt")
-        txt_file_path = save_file_s3(s3fs, text_file_name, text_content)
+        txt_file_path = await safe_save_s3_file(text_file_name, text_content)
 
         result = {
             ContentType.CSV.value: csv_file_path,
@@ -151,13 +149,13 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
         if all_images:
             img_file_name = change_file_ext(file_name, "json")
-            img_file_path = save_file_s3(s3fs, img_file_name, json.dumps(all_images))
+            img_file_path = await safe_save_s3_file(img_file_name, json.dumps(all_images))
             result[ContentType.IMAGES.value] = img_file_path
             
         if table_query:
             tables_content = extract_tables_gliner(table_query["tables"], md_content, table_query["output"])
             tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-            tables_file_path = save_file_s3(s3fs, tables_file_name, tables_content)
+            tables_file_path = safe_save_s3_file(tables_file_name, tables_content)
             result[table_query["raw"]] = tables_file_path
 
         metadata = json.dumps(result)
@@ -166,6 +164,9 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
     except Exception as e:
         logger.error(f"Error parsing XLSX file from S3: {e}")
         raise
+    
+    logger.info("result")
+    logger.info(result)
     return result
 
 
@@ -192,15 +193,13 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: di
     return result
 
 
-
-
 async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_ocr:bool = False) -> dict[str, str]:
     
     file_name = get_file_name(s3_url)
-    
     logger.info("Reading content with thread")
     content = await safe_read_s3_file(s3_url)
-    logger.info("Finished reading content with s3fs")
+  
+    logger.info("Finished reading content")
     
     result:LLAMAJSONOutput  = await pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
  
@@ -216,7 +215,6 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
     txt_file_name = change_file_ext(file_name, "txt")
     data[ContentType.TEXT.value] = await safe_save_s3_file(txt_file_name, result.text)
 
-  
     try:
         page_adapter = TypeAdapter(list[Page])
         page_adapter.validate_python(result.pages)
@@ -228,7 +226,6 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
     except ValidationError as e:
         logger.error("Validation failed!")
         logger.error(e.json())
-
 
     # Saving image metadata
     img_file_name = change_file_ext(file_name, "json")
