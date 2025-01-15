@@ -3,6 +3,7 @@ import os
 import re
 import json
 import math
+import asyncio
 import hashlib
 import base64
 import psutil
@@ -47,6 +48,7 @@ from openpyxl.drawing.image import Image
 from PIL import Image as PILImage
 from swparse.config.app import settings
 import torch
+from concurrent.futures import ThreadPoolExecutor
 
 if TYPE_CHECKING:
     from PIL.Image import Image
@@ -56,6 +58,7 @@ BUCKET = settings.storage.BUCKET
 JOB_FOLDER = settings.storage.JOB_FOLDER
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+SAQ_PROCESSES = settings.saq.PROCESSES
  
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
@@ -68,25 +71,7 @@ def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
         return buffer.read()
 
 
-def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
-    new_uuid = uuid4()
-    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
-    if isinstance(content, str):
-        content = content.encode(encoding="utf-8", errors="ignore")
-    with s3fs.open(s3_url, mode="wb") as f:
-        f.write(content)
-        return s3_url
 
-def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
-    image_name = image_name.lower()
-    buffered = io.BytesIO()
-    image.save(buffered, format=image_name.split(".")[-1])
-    img_b = buffered.getvalue()
-    return save_file_s3(s3fs, image_name, img_b)
-
-
-def get_file_name(s3_url: str) -> str:
-    return os.path.basename(s3_url).split("/")[-1]
 
 
 def change_file_ext(file_name: str, extension: str) -> str:
@@ -734,9 +719,69 @@ def get_vram_usage():
         return allocated, cached
         
    
-async def read_s3_file(s3fs: S3FileSystem, s3_url: str)->bytes:
+def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
+    new_uuid = uuid4()
+    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+    if isinstance(content, str):
+        content = content.encode(encoding="utf-8", errors="ignore")
+    with s3fs.open(s3_url, mode="wb") as f:
+        f.write(content)
+        return s3_url
+
+def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
+    image_name = image_name.lower()
+    buffered = io.BytesIO()
+    image.save(buffered, format=image_name.split(".")[-1])
+    img_b = buffered.getvalue()
+    return save_file_s3(s3fs, image_name, img_b)
+
+
+
+async def save_file_s3_thread(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
+    new_uuid = uuid4()
+    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+    
+    if isinstance(content, str):
+        content = content.encode(encoding="utf-8", errors="ignore")
+
+    # Offload the blocking file write operation to a separate thread
+    def save_file_in_thread(s3fs, s3_url, content):
+        with s3fs.open(s3_url, mode="wb") as f:
+            f.write(content)
+        return s3_url
+
+    return await asyncio.to_thread(save_file_in_thread, s3fs, s3_url, content)
+
+
+async def safe_save_s3_file(file_name: str, content: bytes | str) -> str:
+    s3fs = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
+    return await save_file_s3_thread(s3fs, file_name, content)
+
+
+
+
+def get_file_name(s3_url: str) -> str:
+    return os.path.basename(s3_url).split("/")[-1]
  
+ 
+
+def read_s3_file_sync(s3_url: str) -> bytes:
+    s3fs = S3FileSystem(
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        key=MINIO_ROOT_USER,
+        secret=MINIO_ROOT_PASSWORD,
+        use_ssl=False,
+    )
     with s3fs.open(s3_url, mode="rb") as doc:
         return doc.read()
+
+async def safe_read_s3_file(s3_url: str) -> bytes:
  
- 
+    return await  asyncio.to_thread(read_s3_file_sync, s3_url )
+
+
