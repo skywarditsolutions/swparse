@@ -67,13 +67,13 @@ services:
       SAQ_USE_SERVER_LIFESPAN: "false"
     env_file:
       - .env
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
   worker:
     image: swparse:latest
     command: litestar workers run
@@ -87,13 +87,13 @@ services:
       - .env
     volumes:
       - ./huggingface:/root/.cache/huggingface
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
   migrator:
     image: swparse:latest
     restart: "no"
