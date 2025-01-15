@@ -76,7 +76,7 @@ services:
               capabilities: [gpu]
   worker:
     image: swparse:latest
-    command: litestar workers run
+    command: litestar workers run --workers ${SAQ_BACKGROUND_WORKERS}
     restart: always
     depends_on:
       db:
