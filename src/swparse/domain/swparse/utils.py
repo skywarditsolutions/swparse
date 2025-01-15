@@ -770,6 +770,9 @@ def get_file_name(s3_url: str) -> str:
  
  
 
+# Threadpool is used if there are shared resources like network connections, they may be getting blocked when two processes try to access them simultaneously.
+executor = ThreadPoolExecutor(max_workers=SAQ_PROCESSES) 
+
 def read_s3_file_sync(s3_url: str) -> bytes:
     s3fs = S3FileSystem(
         endpoint_url=settings.storage.ENDPOINT_URL,
@@ -781,7 +784,14 @@ def read_s3_file_sync(s3_url: str) -> bytes:
         return doc.read()
 
 async def safe_read_s3_file(s3_url: str) -> bytes:
- 
-    return await  asyncio.to_thread(read_s3_file_sync, s3_url )
+    """
+    This function reads the content of a file from S3 asynchronously.
+    Since the `read_s3_file_sync` function is blocking (it opens and reads a file from S3),
+    we offload it to a separate thread using the ThreadPoolExecutor. 
+    This prevents blocking the event loop while still allowing the code to run concurrently.
+    
+    """
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(executor, read_s3_file_sync, s3_url)
 
 
