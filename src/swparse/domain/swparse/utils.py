@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from itertools import islice
 from operator import attrgetter
 from typing import IO, Any, TYPE_CHECKING, List
-
+import mimetypes
 import pandas as pd
 from gliner import GLiNER
 from lark import Lark, Token, Transformer
@@ -47,8 +47,11 @@ from openpyxl.drawing.image import Image
 from PIL import Image as PILImage
 from swparse.config.app import settings
 import torch
-from concurrent.futures import ThreadPoolExecutor
-
+ 
+import boto3
+import aioboto3
+from botocore.config import Config
+ 
 if TYPE_CHECKING:
     from PIL.Image import Image
 
@@ -57,6 +60,7 @@ BUCKET = settings.storage.BUCKET
 JOB_FOLDER = settings.storage.JOB_FOLDER
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
+
 SAQ_PROCESSES = settings.saq.PROCESSES
  
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
@@ -716,33 +720,110 @@ def get_vram_usage():
         return allocated, cached
         
    
-def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
+def save_file_s3(file_name: str, content: bytes | str) -> str:
+ 
     new_uuid = uuid4()
+ 
     s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+ 
     if isinstance(content, str):
         content = content.encode(encoding="utf-8", errors="ignore")
-    with s3fs.open(s3_url, mode="wb") as f:
-        f.write(content)
-        return s3_url
+ 
+    s3_client = boto3.client(
+        "s3",
+        endpoint_url= settings.storage.ENDPOINT_URL,
+        aws_access_key_id=MINIO_ROOT_USER,
+        aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        config=boto3.session.Config(signature_version="s3v4"),
+    )
+
+    s3_client.put_object(
+        Bucket=BUCKET,
+        Key=f"{new_uuid}_{file_name}",
+        Body=content,
+        ContentType="application/octet-stream" 
+    )
+
+    return s3_url
+
 
 def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
     image_name = image_name.lower()
     buffered = io.BytesIO()
     image.save(buffered, format=image_name.split(".")[-1])
     img_b = buffered.getvalue()
-    return save_file_s3(s3fs, image_name, img_b)
+    return save_file_s3(image_name, img_b)
 
 
-def save_file_in_thread(s3fs:S3FileSystem, s3_url:str, content: bytes|str):
-    with s3fs.open(s3_url, mode="wb") as f:
-        f.write(content)
-    return s3_url
+def get_file_name(s3_url: str) -> str:
+    return os.path.basename(s3_url).split("/")[-1]
+ 
 
+ 
+def parse_minio_url(s3_url: str):
+    """Parse MinIO-style S3 URL into bucket name and key."""
+    parts = s3_url.split("/", 1)
+    if len(parts) != 2:
+        raise ValueError("Invalid MinIO URL format. Expected 'BUCKET/KEY'.")
+    return parts[0], parts[1]
+
+async def safe_read_s3_file(s3_url: str) -> bytes:
+    """Asynchronously read the content of a file from MinIO using aioboto3."""
+    # Parse the MinIO URL to get s3 url
+    bucket_name, key = parse_minio_url(s3_url)
+
+    session = aioboto3.Session()
+    async with session.client(
+        "s3",
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        aws_access_key_id=MINIO_ROOT_USER,
+        aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        config=Config(signature_version="s3v4"),
+    ) as s3_client:
+    
+        response = await s3_client.get_object(Bucket=bucket_name, Key=key)
+        async with response["Body"] as stream:
+            content = await stream.read()
+    return content 
+
+def parse_s3_url(s3_url: str):
+    """Parse S3 URL into bucket name and key."""
+    if not s3_url.startswith("s3://"):
+        raise ValueError("Invalid S3 URL")
+    parts = s3_url[5:].split("/", 1)
+    return parts[0], parts[1]
+
+
+
+async def save_file(s3_url: str, content: bytes) -> str:
+    """Asynchronously save file content to MinIO."""
+ 
+    bucket_name, key = s3_url.split("/", 1)
+
+    session = aioboto3.Session()
+    
+    async with session.client(
+        "s3",
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        aws_access_key_id=MINIO_ROOT_USER,
+        aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        config=Config(signature_version="s3v4"),
+    ) as s3_client:
+
+        await s3_client.put_object(Bucket=bucket_name, Key=key, Body=content)
+        return s3_url
+
+
+async def safe_save_s3_file(file_name: str, content:bytes) -> str:
+    new_uuid = uuid4()
+    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+    return await save_file(s3_url, content)
+
+ 
 async def save_safe_img_s3(s3fs: S3FileSystem, image_name: str, image: "PILImage") -> str:
     # Lowercase the image name for consistency.
     image_name = image_name.lower()
 
-    # Save image to a buffer (in-memory file).
     buffered = io.BytesIO()
     image.save(buffered, format=image_name.split(".")[-1])
     img_b = buffered.getvalue()
@@ -750,69 +831,30 @@ async def save_safe_img_s3(s3fs: S3FileSystem, image_name: str, image: "PILImage
     new_uuid = uuid4()
     s3_url = f"{BUCKET}/{new_uuid}_{image_name}"
  
-    return await asyncio.to_thread(save_file_in_thread, s3fs, s3_url, img_b)
+    return await save_file(s3_url, img_b)
 
 
-async def save_file_s3_thread(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
-    new_uuid = uuid4()
-    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
-    
-    if isinstance(content, str):
-        content = content.encode(encoding="utf-8", errors="ignore")
 
-    # Offload the blocking file write operation to a separate thread
+async def save_metadata_to_minio(s3_url: str, metadata: dict) -> None:
+    """Asynchronously save metadata to a separate S3 object."""
  
+    metadata_json = json.dumps(metadata)
 
-    return await asyncio.to_thread(save_file_in_thread, s3fs, s3_url, content)
-
-
-async def safe_save_s3_file(file_name: str, content: bytes | str) -> str:
-    s3fs = S3FileSystem(
+ 
+    bucket_name, key = s3_url.split("/", 1)
+    session = aioboto3.Session()
+ 
+    async with session.client(
+        "s3",
         endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
-    return await save_file_s3_thread(s3fs, file_name, content)
-
-
-
-
-def get_file_name(s3_url: str) -> str:
-    return os.path.basename(s3_url).split("/")[-1]
- 
- 
-
-def read_s3_file_sync(s3_url: str) -> bytes:
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
-    with s3fs.open(s3_url, mode="rb") as doc:
-        return doc.read()
-
-async def safe_read_s3_file(s3_url: str) -> bytes:
-    """
-    This function reads the content of a file from S3 asynchronously.
-    Since the `read_s3_file_sync` function is blocking (it opens and reads a file from S3),
-    we offload it to a separate thread using the ThreadPoolExecutor. 
-    This prevents blocking the event loop while still allowing the code to run concurrently.
-    
-    """
-    loop = asyncio.get_event_loop()
-    # Threadpool is used if there are shared resources like network connections, they may be getting blocked when two processes try to access them simultaneously.
-    executor = ThreadPoolExecutor(max_workers=SAQ_PROCESSES) 
-
-    try:
-        result = await loop.run_in_executor(executor, read_s3_file_sync, s3_url)
-        logger.info(f"Successfully read file: {s3_url}")
-        return result
-    except Exception as e:
-        logger.error(f"Error reading file from S3: {e}")
-        raise
-    finally:
-        executor.shutdown(wait=True)
-
- 
+        aws_access_key_id=MINIO_ROOT_USER,
+        aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        config=Config(signature_version="s3v4"),
+    ) as s3_client:
+   
+        await s3_client.put_object(
+            Bucket=bucket_name,
+            Key=key,
+            Body=metadata_json,
+            ContentType="application/json",
+        )

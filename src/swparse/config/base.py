@@ -205,26 +205,23 @@ class ServerSettings:
 class SaqSettings:
     """Server configurations."""
 
-    PROCESSES: int = field(default_factory=lambda: int(os.getenv("SAQ_PROCESSES", "1")))
+    PROCESSES: int = int(os.getenv("SAQ_PROCESSES", "1"))
     """The number of worker processes to start.
 
     Default is set to 1.
     """
-    CONCURRENCY: int = field(default_factory=lambda: int(os.getenv("SAQ_CONCURRENCY", "10")))
+    CONCURRENCY: int = int(os.getenv("SAQ_CONCURRENCY", "10"))
     """The number of concurrent jobs allowed to execute per worker process.
 
     Default is set to 10.
     """
-    WEB_ENABLED: bool = field(
-        default_factory=lambda: os.getenv("SAQ_WEB_ENABLED", "True") in TRUE_VALUES,
-    )
+    WEB_ENABLED: bool =  os.getenv("SAQ_WEB_ENABLED", "True") in TRUE_VALUES
+    
     """If true, the worker admin UI is hosted on worker startup."""
-    USE_SERVER_LIFESPAN: bool = field(
-        default_factory=lambda: os.getenv("SAQ_USE_SERVER_LIFESPAN", "True") in TRUE_VALUES,
-    )
+    USE_SERVER_LIFESPAN: bool =  os.getenv("SAQ_USE_SERVER_LIFESPAN", "True") in TRUE_VALUES
     """Auto start and stop `saq` processes when starting the Litestar application."""
 
-    MULTIPROCESSING_MODE: Literal["multiprocessing", "threading"] = field(default_factory=lambda: str(os.getenv("MULTIPROCESSING_MODE", "threading")))
+    MULTIPROCESSING_MODE: Literal["multiprocessing", "threading"] = str(os.getenv("MULTIPROCESSING_MODE", "threading"))
 
 @dataclass
 class LogSettings:

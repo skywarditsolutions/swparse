@@ -40,7 +40,8 @@ from swparse.domain.swparse.utils import (
     save_file_s3,
     safe_read_s3_file,
     safe_save_s3_file,
-    extract_excel_images
+    extract_excel_images,
+    save_metadata_to_minio
 )
 from s3fs import S3FileSystem
 from .schemas import Page, LLAMAJSONOutput
@@ -65,7 +66,6 @@ s3fs = S3FileSystem(
 
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
     
-    logger.info(f"SAQ_PROCESSES: {SAQ_PROCESSES}")
     logger.info("Started parse_xlsx_s3")
     result = {}
     try:
@@ -159,7 +159,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             result[table_query["raw"]] = tables_file_path
 
         metadata = json.dumps(result)
-        s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+        await save_metadata_to_minio(s3_url, metadata=metadata)
 
     except Exception as e:
         logger.error(f"Error parsing XLSX file from S3: {e}")
@@ -202,7 +202,7 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
     logger.info("Finished reading content")
     
     result:LLAMAJSONOutput  = await pdf_markdown(content, start_page=start_page, max_pages=end_page, ocr_all_pages=force_ocr) 
- 
+    logger.info("Finished parsing")
     data:dict[str, str] = {}
  
     md_file_name = change_file_ext(file_name, "md")
@@ -305,7 +305,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 
     metadata = json.dumps(result)
-    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+    await save_metadata_to_minio(s3_url, metadata=metadata)
     return result
 
 
@@ -343,7 +343,7 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         results[table_query["raw"]] = tables_file_path
 
     metadata = json.dumps(results)
-    s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)       
+    await save_metadata_to_minio(s3_url, metadata=metadata)       
  
     return results
 
@@ -510,7 +510,7 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
             results[table_query["raw"]] = tables_file_path
 
         metadata = json.dumps(results)
-        s3fs.setxattr(s3_url, copy_kwargs={"ContentType": ext}, metadata=metadata)
+        await save_metadata_to_minio(s3_url, metadata=metadata)
 
     return results
 

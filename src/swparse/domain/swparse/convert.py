@@ -14,7 +14,7 @@ from marker.models import create_model_dict
  
 if TYPE_CHECKING:
     from .schemas import LLAMAJSONOutput
-
+import multiprocessing
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)  # Filter torch pytree user warnings
 
@@ -27,16 +27,14 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
 
-# def setup_multiprocessing():
-#     try:
-#         multiprocessing.set_start_method('spawn')
-#     except RuntimeError:
-#         # Already set 
-#         pass
-    
-# setup_multiprocessing()
-models_dict:dict[str, Any] = {}    
  
+models_dict:dict[str, Any] = {}    
+
+# def setup_spwan():
+#     multiprocessing.set_start_method("spawn") 
+
+
+# setup_spwan()
 
 @asynccontextmanager
 async def create_temp_file_async(file: bytes, suffix: str):
@@ -51,14 +49,14 @@ async def create_temp_file_async(file: bytes, suffix: str):
 # PDF conversion 
 async def pdf_markdown(
     in_file: bytes,
-    langs: list[str] = ["en"],
+    langs: list[str] = ["en"], 
     start_page: int = 0,
     max_pages: int = 40,
     ocr_all_pages: bool = False,
 ) -> "LLAMAJSONOutput":
     global models_dict
     if not models_dict:
-        models_dict = create_model_dict()
+        models_dict = create_model_dict(device="cpu")
 
     
     if MEMORY_USAGE_LOG:
