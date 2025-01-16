@@ -3,20 +3,20 @@ import os
 import re
 import json
 import math
-import asyncio
 import hashlib
 import base64
 import psutil
 from uuid import uuid4
 from datetime import UTC, datetime
 from itertools import islice
+from logging import getLogger
 from operator import attrgetter
 from typing import IO, Any, TYPE_CHECKING, List
-import mimetypes
+
 import pandas as pd
 from gliner import GLiNER
 from lark import Lark, Token, Transformer
-import structlog
+
 import html_text
 import mistletoe
 from lxml import html
@@ -45,23 +45,16 @@ from litestar.exceptions import HTTPException
 from openpyxl import load_workbook
 from openpyxl.drawing.image import Image
 from PIL import Image as PILImage
-from swparse.config.app import settings
+
 import torch
- 
-import boto3
-import aioboto3
-from botocore.config import Config
- 
+
 if TYPE_CHECKING:
     from PIL.Image import Image
 
-logger = structlog.get_logger()
+logger = getLogger(__name__)
 BUCKET = settings.storage.BUCKET
 JOB_FOLDER = settings.storage.JOB_FOLDER
-MINIO_ROOT_USER = settings.storage.ROOT_USER
-MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
-SAQ_PROCESSES = settings.saq.PROCESSES
  
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
@@ -72,6 +65,27 @@ def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
         workbook.save(buffer)
         buffer.seek(0)
         return buffer.read()
+
+
+def save_file_s3(s3fs: S3FileSystem, file_name: str, content: bytes | str) -> str:
+    new_uuid = uuid4()
+    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
+    if isinstance(content, str):
+        content = content.encode(encoding="utf-8", errors="ignore")
+    with s3fs.open(s3_url, mode="wb") as f:
+        f.write(content)
+        return s3_url
+
+def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
+    image_name = image_name.lower()
+    buffered = io.BytesIO()
+    image.save(buffered, format=image_name.split(".")[-1])
+    img_b = buffered.getvalue()
+    return save_file_s3(s3fs, image_name, img_b)
+
+
+def get_file_name(s3_url: str) -> str:
+    return os.path.basename(s3_url).split("/")[-1]
 
 
 def change_file_ext(file_name: str, extension: str) -> str:
@@ -676,7 +690,7 @@ def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], li
     return analyser.extract_components()
 
 
-async def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
+def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
     """
     Extract images from an Excel file and store them in S3.
     return a dictionary mapping image names to S3 paths.
@@ -696,8 +710,7 @@ async def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sh
             img_data = image.ref
             pil_image = PILImage.open(img_data)
             img_name = f"sheet_{sheet_name.lower()}_image_{i}.png"
-       
-            saved_img_path = await save_safe_img_s3(s3fs, img_name, pil_image)
+            saved_img_path = save_img_s3(s3fs, img_name, pil_image)
             
             sheet_images[img_name] = saved_img_path
 
@@ -720,141 +733,3 @@ def get_vram_usage():
         return allocated, cached
         
    
-def save_file_s3(file_name: str, content: bytes | str) -> str:
- 
-    new_uuid = uuid4()
- 
-    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
- 
-    if isinstance(content, str):
-        content = content.encode(encoding="utf-8", errors="ignore")
- 
-    s3_client = boto3.client(
-        "s3",
-        endpoint_url= settings.storage.ENDPOINT_URL,
-        aws_access_key_id=MINIO_ROOT_USER,
-        aws_secret_access_key=MINIO_ROOT_PASSWORD,
-        config=boto3.session.Config(signature_version="s3v4"),
-    )
-
-    s3_client.put_object(
-        Bucket=BUCKET,
-        Key=f"{new_uuid}_{file_name}",
-        Body=content,
-        ContentType="application/octet-stream" 
-    )
-
-    return s3_url
-
-
-def save_img_s3(s3fs: S3FileSystem, image_name:str, image:"PILImage") -> str:
-    image_name = image_name.lower()
-    buffered = io.BytesIO()
-    image.save(buffered, format=image_name.split(".")[-1])
-    img_b = buffered.getvalue()
-    return save_file_s3(image_name, img_b)
-
-
-def get_file_name(s3_url: str) -> str:
-    return os.path.basename(s3_url).split("/")[-1]
- 
-
- 
-def parse_minio_url(s3_url: str):
-    """Parse MinIO-style S3 URL into bucket name and key."""
-    parts = s3_url.split("/", 1)
-    if len(parts) != 2:
-        raise ValueError("Invalid MinIO URL format. Expected 'BUCKET/KEY'.")
-    return parts[0], parts[1]
-
-async def safe_read_s3_file(s3_url: str) -> bytes:
-    """Asynchronously read the content of a file from MinIO using aioboto3."""
-    # Parse the MinIO URL to get s3 url
-    bucket_name, key = parse_minio_url(s3_url)
-
-    session = aioboto3.Session()
-    async with session.client(
-        "s3",
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        aws_access_key_id=MINIO_ROOT_USER,
-        aws_secret_access_key=MINIO_ROOT_PASSWORD,
-        config=Config(signature_version="s3v4"),
-    ) as s3_client:
-    
-        response = await s3_client.get_object(Bucket=bucket_name, Key=key)
-        async with response["Body"] as stream:
-            content = await stream.read()
-    return content 
-
-def parse_s3_url(s3_url: str):
-    """Parse S3 URL into bucket name and key."""
-    if not s3_url.startswith("s3://"):
-        raise ValueError("Invalid S3 URL")
-    parts = s3_url[5:].split("/", 1)
-    return parts[0], parts[1]
-
-
-
-async def save_file(s3_url: str, content: bytes) -> str:
-    """Asynchronously save file content to MinIO."""
- 
-    bucket_name, key = s3_url.split("/", 1)
-
-    session = aioboto3.Session()
-    
-    async with session.client(
-        "s3",
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        aws_access_key_id=MINIO_ROOT_USER,
-        aws_secret_access_key=MINIO_ROOT_PASSWORD,
-        config=Config(signature_version="s3v4"),
-    ) as s3_client:
-
-        await s3_client.put_object(Bucket=bucket_name, Key=key, Body=content)
-        return s3_url
-
-
-async def safe_save_s3_file(file_name: str, content:bytes) -> str:
-    new_uuid = uuid4()
-    s3_url = f"{BUCKET}/{new_uuid}_{file_name}"
-    return await save_file(s3_url, content)
-
- 
-async def save_safe_img_s3(s3fs: S3FileSystem, image_name: str, image: "PILImage") -> str:
-    # Lowercase the image name for consistency.
-    image_name = image_name.lower()
-
-    buffered = io.BytesIO()
-    image.save(buffered, format=image_name.split(".")[-1])
-    img_b = buffered.getvalue()
-    
-    new_uuid = uuid4()
-    s3_url = f"{BUCKET}/{new_uuid}_{image_name}"
- 
-    return await save_file(s3_url, img_b)
-
-
-
-async def save_metadata_to_minio(s3_url: str, metadata: dict) -> None:
-    """Asynchronously save metadata to a separate S3 object."""
- 
-    metadata_json = json.dumps(metadata)
-
- 
-    bucket_name, key = s3_url.split("/", 1)
-    session = aioboto3.Session()
- 
-    async with session.client(
-        "s3",
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        aws_access_key_id=MINIO_ROOT_USER,
-        aws_secret_access_key=MINIO_ROOT_PASSWORD,
-        config=Config(signature_version="s3v4"),
-    ) as s3_client:
-   
-        await s3_client.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=metadata_json,
-            ContentType="application/json",
-        )

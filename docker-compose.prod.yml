@@ -74,9 +74,29 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-  worker:
+  worker-1:
     image: swparse:latest
-    command: litestar workers run --workers ${SAQ_BACKGROUND_WORKERS}
+    command: litestar workers run --debug
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./huggingface:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  worker-2:
+    image: swparse:latest
+    command: litestar workers run --debug
     restart: always
     depends_on:
       db:
