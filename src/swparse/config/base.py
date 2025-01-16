@@ -308,8 +308,8 @@ class RedisSettings:
     HOST: str = field(default_factory=lambda: os.getenv("REDIS_HOST", "redis://localhost:6379"))
     """A Redis Host."""
     SOCKET_CONNECT_TIMEOUT: int = field(default_factory=lambda: int(os.getenv("REDIS_CONNECT_TIMEOUT", "5")))
-    """Length of time to wait (in seconds) for a connection to become
-    active."""
+    """Length of time to wait (in seconds) for a connection to become active."""
+    
     HEALTH_CHECK_INTERVAL: int = field(default_factory=lambda: int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "5")))
     """Length of time to wait (in seconds) before testing connection health."""
     SOCKET_KEEPALIVE: bool = field(
