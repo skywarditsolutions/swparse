@@ -43,6 +43,7 @@ saq = SAQConfig(
     queue_configs=[
         QueueConfig(
             name="swparse",
+            multiprocessing_mode=settings.saq.MULTIPROCESSING_MODE,
             tasks=[
                 "swparse.domain.swparse.tasks.parse_docx_s3",
                 "swparse.domain.swparse.tasks.parse_image_s3",

@@ -69,8 +69,10 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     result = {}
     try:
+        logger.info(f"read s3_url: {s3_url}")
         with s3fs.open(s3_url, mode="rb") as doc:
             content = doc.read()
+        logger.info("successfully read content")
         if isinstance(content, str):
             content = content.encode()
 
@@ -294,7 +296,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
- 
+    logger.info(f"read s3_url :{s3_url}")
     file_name = get_file_name(s3_url)
     if plain_text:
         with s3fs.open(s3_url, mode="rb") as doc:

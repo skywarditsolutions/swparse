@@ -9,7 +9,7 @@ from .utils import get_memory_usage, get_vram_usage
 from marker.converters.pdf import PdfConverter
 from swparse.config.base import get_settings
 from marker.models import create_model_dict
-
+import multiprocessing
  
 if TYPE_CHECKING:
     from .schemas import LLAMAJSONOutput
@@ -26,6 +26,13 @@ os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
     "1"  # For some reason, transformers decided to use .isin for a simple op, which is not supported on MPS
 )
  
+
+def pdf_markdown_worker(models_dict: dict, in_file: bytes, langs: list[str]):
+ 
+    logger.info(f"Using models: {list(models_dict.keys())}")
+    
+    
+     
 models_dict:dict[str, Any] = {}
 # PDF conversion 
 def pdf_markdown(
