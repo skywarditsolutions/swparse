@@ -40,9 +40,9 @@ from swparse.domain.swparse.utils import (
     extract_excel_images,
     save_file,
     read_file,
-    save_metadata
+    save_metadata,
+    get_metadata
 )
-from s3fs import S3FileSystem
 from .schemas import Page, LLAMAJSONOutput
 
 if TYPE_CHECKING:
@@ -55,13 +55,6 @@ MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 MEMORY_USAGE_LOG  = settings.app.MEMORY_USAGE_LOG
 SAQ_PROCESSES = settings.saq.PROCESSES
 
-
-s3fs = S3FileSystem(
-    endpoint_url=settings.storage.ENDPOINT_URL,
-    key=MINIO_ROOT_USER,
-    secret=MINIO_ROOT_PASSWORD,
-    use_ssl=False,
-)
 
 async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, sheet_index: Optional[list[str|int]]= None) -> dict[str, str]:
 
@@ -106,7 +99,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
                     continue
 
             logger.info("Extracting images")
-            images = await extract_excel_images(s3fs, str_buffer, sheet_name)
+            images = await extract_excel_images(str_buffer, sheet_name)
             logger.info("Finished Extracting images")
 
             all_images.update(images)
@@ -175,14 +168,14 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: di
     file_name = get_file_name(s3_url)
     txt_file_name = change_file_ext(file_name, "txt")
 
-    with s3fs.open(s3_url, mode="rb") as doc:
-        byte_string = doc.read()
-        try:
-            out_txt = str(byte_string.decode("utf-8"))
-            text_file_path = await save_file(txt_file_name, out_txt)
-        except UnicodeDecodeError:
-            out_txt = str(byte_string)
-            text_file_path = await save_file(txt_file_name, out_txt)
+    byte_string = await read_file(s3_url)
+       
+    try:
+        out_txt = str(byte_string.decode())
+        text_file_path = await save_file(txt_file_name, out_txt)
+    except UnicodeDecodeError:
+        out_txt = str(byte_string)
+        text_file_path = await save_file(txt_file_name, out_txt)
     results = {ContentType.TEXT.value: text_file_path}
 
     await save_metadata(s3_url, metadata=results)
@@ -203,7 +196,7 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
     data:dict[str, str] = {}
 
     md_file_name = change_file_ext(file_name, "md")
-    # session = await s3fs.set_session()
+
     data[ContentType.MARKDOWN.value] = await save_file(md_file_name, results.markdown)
     # HTML results
     html_file_name = change_file_ext(file_name, "html")
@@ -234,38 +227,31 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
 
 async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
-
+ 
     logger.info("Started parse_docx_s3")
-
     file_name = get_file_name(s3_url)
 
     # HTML parsing
-    with s3fs.open(s3_url, mode="rb") as byte_content:
-        html_data = mammoth.convert_to_html(byte_content)  # type: ignore
-        htmlData: str = html_data.value  # type: ignore
-        # TODO: refactor using a html tree
+    byte_content = await read_file(s3_url)
+    html_data = mammoth.convert_to_html(byte_content)  # type: ignore
+    htmlData: str = html_data.value  # type: ignore
+    # TODO: refactor using a html tree
 
-        img_tags = re.findall(r'<img\s+[^>]*src=[\'"].+?[\'"][^>]*>', htmlData)
+    img_tags = re.findall(r'<img\s+[^>]*src=[\'"].+?[\'"][^>]*>', htmlData)
 
-        images = {}
+    images = {}
 
-        for i, img in enumerate(img_tags):
+    for i, img in enumerate(img_tags):
 
-            src = re.search(r'src=[\'"]([^\'"]+)[\'"]', img).group(1)
-            header, encoded = src.split(",", 1)
-            image_type = header.split(";")[0].split(":")[1].split("/")[1]
-            image_bytes = base64.b64decode(encoded)
+        src = re.search(r'src=[\'"]([^\'"]+)[\'"]', img).group(1)
+        header, encoded = src.split(",", 1)
+        image_type = header.split(";")[0].split(":")[1].split("/")[1]
+        image_bytes = base64.b64decode(encoded)
 
-            image_key = f"image-{i}.{image_type}"
-            htmlData = htmlData.replace(img, f'<img src="{image_key}" alt="{image_key}" />', 1)
-            image_file_path = await save_file(image_key, image_bytes)
-            images[image_key] = image_file_path
+        image_key = f"image-{i}.{image_type}"
+        htmlData = htmlData.replace(img, f'<img src="{image_key}" alt="{image_key}" />', 1)
+        image_file_path = await save_file(image_key, image_bytes)
+        images[image_key] = image_file_path
 
 
     html_file_name = change_file_ext(file_name, "html")
@@ -305,14 +291,6 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 
 async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
-
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
-
     logger.info("Started parse_pdf_s3")
 
     file_name = get_file_name(s3_url)
@@ -327,11 +305,10 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
         return { ContentType.TEXT.value: txt_file_path}
 
-    logger.info("passed s3fs creation")
     results = await _pdf_exchange(s3_url, force_ocr= force_ocr)
-    logger.info("passed pdf_exchange")
+  
     if table_query:
-        markdown = get_file_content(s3fs, results["markdown"])
+        markdown = await get_file_content(results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
@@ -348,16 +325,10 @@ async def parse_pdf_page_s3(ctx: Context, *, s3_url: str, page: int) -> dict[str
 
 async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr:bool = False) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     logger.info("Started parse_image_s3")
+    content_byte = await read_file(s3_url)
 
-    with s3fs.open(s3_url, mode="rb") as doc:
-        pil_image = Image.open(doc).convert("RGB")
+    pil_image = Image.open(io.BytesIO(content_byte)).convert("RGB")
     pdf = pdfium.PdfDocument.new()
 
     image = pdfium.PdfImage.new(pdf)
@@ -370,15 +341,20 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     page = pdf.new_page(width, height)
     page.insert_obj(image)
     page.gen_content()
+    
+    pdf_buffer = io.BytesIO()
+    pdf.save(pdf_buffer)
+    pdf_buffer.seek(0) 
+    
     pdf_s3_url = change_file_ext(s3_url, "pdf")
-    with s3fs.open(pdf_s3_url, "wb") as output:
-        pdf.save(output)
-
+    pdf_content = pdf_buffer.read()
+ 
+    await save_file(pdf_s3_url, pdf_content)
     results = await _pdf_exchange(pdf_s3_url, force_ocr)
 
     if table_query:
         file_name = get_file_name(pdf_s3_url)
-        markdown = get_file_content(s3fs, results["markdown"])
+        markdown = await get_file_content(results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
@@ -391,65 +367,55 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
 
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
+   
     logger.info("Started extract_text_files")
     results = {}
     try:
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-        file_name = get_file_name(s3_url)
-        with s3fs.open(s3_url, mode="rb") as doc:
-            content = doc.read()
-            if isinstance(content, bytes):
-                content = content.decode("utf-8")
-
-            text_file_name = change_file_ext(file_name, "txt")
-            text_file_path = await save_file(text_file_name, content)
-
-            if ext == "text/xml":
-                df = pd.read_xml(io.StringIO(content))
-                html_content = df.to_html(index=False)
-
-            elif ext == "text/csv":
-                csv_buffer = io.StringIO(content)
-                df = pd.read_csv(csv_buffer, index_col=False)
-                txt_content = df.to_string(index=False)
-                text_file_name = change_file_ext(file_name, "txt")
-                text_file_path = await save_file(text_file_name, txt_content)
-                html_content = df.to_html(index=False)
-
-            else:
-                html_content = markdown_converter.markdown(content)
-            html_file_name = change_file_ext(file_name, "html")
-            html_file_path = await save_file(html_file_name, html_content)
-
-            # Markdown Parsing
-            markdown = html2text(html_content)
-            md_file_name = change_file_ext(file_name, "md")
-            md_file_path = await save_file(md_file_name, markdown)
-
-            results = {
-                ContentType.MARKDOWN.value: md_file_path,
-                ContentType.TEXT.value: text_file_path,
-                ContentType.HTML.value: html_file_path,
-            }
-            if table_query:
-                tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-                tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
-                tables_file_path = await save_file(tables_file_name, tables_content)
-                results[table_query["raw"]] = tables_file_path
-
     
-            await save_metadata(s3_url, metadata=results)
+        file_name = get_file_name(s3_url)
+       
+        content = await read_file(s3_url)
+        if isinstance(content, bytes):
+            content = content.decode("utf-8")
+
+        text_file_name = change_file_ext(file_name, "txt")
+        text_file_path = await save_file(text_file_name, content)
+
+        if ext == "text/xml":
+            df = pd.read_xml(io.StringIO(content))
+            html_content = df.to_html(index=False)
+
+        elif ext == "text/csv":
+            csv_buffer = io.StringIO(content)
+            df = pd.read_csv(csv_buffer, index_col=False)
+            txt_content = df.to_string(index=False)
+            text_file_name = change_file_ext(file_name, "txt")
+            text_file_path = await save_file(text_file_name, txt_content)
+            html_content = df.to_html(index=False)
+
+        else:
+            html_content = markdown_converter.markdown(content)
+        html_file_name = change_file_ext(file_name, "html")
+        html_file_path = await save_file(html_file_name, html_content)
+
+        # Markdown Parsing
+        markdown = html2text(html_content)
+        md_file_name = change_file_ext(file_name, "md")
+        md_file_path = await save_file(md_file_name, markdown)
+
+        results = {
+            ContentType.MARKDOWN.value: md_file_path,
+            ContentType.TEXT.value: text_file_path,
+            ContentType.HTML.value: html_file_path,
+        }
+        if table_query:
+            tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
+            tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+            tables_file_path = await save_file(tables_file_name, tables_content)
+            results[table_query["raw"]] = tables_file_path
+
+
+        await save_metadata(s3_url, metadata=results)
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
@@ -459,20 +425,17 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
 
 async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
+ 
     file_name = get_file_name(s3_url)
-
+    content_byte = await read_file(s3_url)
+ 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_input_path = os.path.join(temp_dir, file_name)
-        with s3fs.open(s3_url, "rb") as s3_file:
-            with open(temp_input_path, "wb") as local_file:
-                local_file.write(s3_file.read())
-
+        
+        with open(temp_input_path, "wb") as local_file:
+            local_file.write(content_byte)
+                
+ 
         conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote")
         results = {}
 
@@ -510,19 +473,15 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
 async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
+ 
     file_name = get_file_name(s3_url)
+    byte_content = await read_file(s3_url)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_input_path = os.path.join(temp_dir, file_name)
-        with s3fs.open(s3_url, "rb") as s3_file:
-            with open(temp_input_path, "wb") as local_file:
-                local_file.write(s3_file.read())
+   
+        with open(temp_input_path, "wb") as local_file:
+            local_file.write(byte_content)
 
         conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote")
 
@@ -537,8 +496,11 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         md_file_name = change_file_ext(file_name, "md")
         new_uuid = uuid4()
         md_file_path = f"{BUCKET}/{new_uuid}_{md_file_name}"
-        with s3fs.open(pptx_s3_path, "rb") as pptx_file:
-            markdown = convert_pptx_to_md(pptx_file, file_name)
+        
+        pptx_content = await read_file(pptx_s3_path)
+        pptx_file_like = io.BytesIO(pptx_content)  
+        markdown = convert_pptx_to_md(pptx_file_like, file_name)
+        
         html_results = mistletoe.markdown(markdown)
         text_results = html_text.extract_text(html_results, guess_layout=True)
 
@@ -561,16 +523,13 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
 async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     file_name = get_file_name(s3_url)
     md_file_name = change_file_ext(file_name, "md")
-    with s3fs.open(s3_url, mode="rb") as pptx_file:
-        markdown_content = convert_pptx_to_md(pptx_file, file_name)
+    
+    pptx_content = await read_file(s3_url)
+    pptx_file_like = io.BytesIO(pptx_content)  
+    
+    markdown_content = convert_pptx_to_md(pptx_file_like, file_name)
     md_file_path = await save_file(md_file_name, markdown_content)
 
     html_content = mistletoe.markdown(markdown_content)
@@ -602,17 +561,9 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
 async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | None) -> dict[str, str]:
 
-    s3fs = S3FileSystem(
-        endpoint_url=settings.storage.ENDPOINT_URL,
-        key=MINIO_ROOT_USER,
-        secret=MINIO_ROOT_PASSWORD,
-        use_ssl=False,
-    )
     logger.info("working get_extracted_url")
-    metadata_json_str = s3fs.getxattr(s3_url, "metadata")
-    metadata = json.loads(metadata_json_str)
-    
-
+    metadata = await get_metadata(s3_url=s3_url)
+  
     image_file_path = metadata.get("images")
     # images metadata normalization
     if image_file_path:
@@ -630,7 +581,7 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
 
     if table_query:
         file_name = get_file_name(s3_url)
-        markdown = get_file_content(s3fs, metadata["markdown"])
+        markdown = await get_file_content(metadata["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)

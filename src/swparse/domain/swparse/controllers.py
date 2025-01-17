@@ -297,8 +297,9 @@ class ParserController(Controller):
         if not job:
             logger.info("retrieve from job json metata")
             results = await get_job_metadata(job_id)
-            logger.info("Meta data")
-            logger.info(results)
+         
+            if "metadata" not in results:
+                raise HTTPException(f"Job {job_id} hasn't cached") 
             metadata: dict[str, str] = results["metadata"]
         else:
             metadata = job.result

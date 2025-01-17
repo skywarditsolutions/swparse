@@ -5,13 +5,12 @@ import json
 import math
 import base64
 import hashlib
-import asyncio
 import mimetypes
 from uuid import uuid4
 from itertools import islice
 from operator import attrgetter
 from datetime import UTC, datetime
-from typing import IO, Any, TYPE_CHECKING, List
+from typing import Any, TYPE_CHECKING, List
 
  
 import torch
@@ -27,7 +26,6 @@ from gliner import GLiNER
 from lark import Lark, Token, Transformer
 from litestar.exceptions import HTTPException, NotFoundException
 from lxml import html
-from s3fs import S3FileSystem
 from markdown_it import MarkdownIt
 from mdit_plain.renderer import RendererPlain
 from nltk import download, tokenize
@@ -201,7 +199,7 @@ def process_shapes(shapes: list[BaseShape], file: SnakeMdDocument):
         raise Exception
 
 
-def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
+def convert_pptx_to_md(pptx_content: io.BytesIO, pptx_filename: str) -> str:
     try:
         prs = Presentation(pptx_content)
         md_file = SnakeMdDocument()
@@ -645,7 +643,7 @@ def extract_md_components(markdown_content: str)->tuple[list[dict[str, Any]], li
     return analyser.extract_components()
 
 
-async def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
+async def extract_excel_images(excel_content: io.BytesIO, sheet_name: str|int) -> dict[str, str]:
     """
     Extract images from an Excel file and store them in S3.
     return a dictionary mapping image names to S3 paths.
@@ -886,16 +884,16 @@ async def save_job_metadata(job_id: str, metadata: dict[str, str]) -> dict[str, 
             response = await s3_client.get_object(Bucket=bucket, Key=job_file_key)
             content = await response["Body"].read()
             existing_job_metadata = json.loads(content)
-        except s3_client.exceptions.ClientError as e:
-            if e.response["Error"]["Code"] == "404":
-                # File does not exist; create new metadata
-                existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
-            else:
-                raise HTTPException(status_code=500, detail=f"Error checking job file: {e}")
-
-        # Update metadata
+            logger.info("existing_job_metadata")
+            logger.info(existing_job_metadata)
+        except Exception as e:
+            pass
+            
+        # File does not exist; create new metadata
+        if not existing_job_metadata:
+            existing_job_metadata["metadata"] = {"created_at": datetime.now(UTC).isoformat()}
+            
         existing_job_metadata["metadata"].update(metadata)
-
 
         # Save updated metadata
         try:
