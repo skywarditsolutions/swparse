@@ -688,7 +688,7 @@ def get_vram_usage():
 
 
 
-def get_file_name(s3_url: str) -> str:
+async def get_file_name(s3_url: str) -> str:
     return os.path.basename(s3_url).split("/")[-1]
 
 

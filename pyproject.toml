@@ -14,7 +14,6 @@ dependencies = [
     "pip>=24.1.2",
     "premailer>=3.10.0",
     "openpyxl>=3.1.5",
-    "s3fs>=2024.9.0",
     "filetype>=1.2.0",
     "transformers==4.45.2",
     "streamlit>=1.36.0",
