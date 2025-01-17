@@ -13,7 +13,7 @@ from marker.schema import BlockTypes
 from marker.schema.document import Document
 
 from .html_renderer import LLAMAHTMLRenderer
-from .utils import save_img_s3
+from .utils import save_image
 from .schemas import LLAMAJSONOutput
 from swparse.config.app import settings
 from s3fs import S3FileSystem
@@ -112,7 +112,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
             image_dict =  paginated_images.get(pageIdx, {})
             for image_name, image in image_dict.items():
                 image_name = image_name.lower()
-                saved_img_file_path = save_img_s3(s3fs, image_name, image)
+                saved_img_file_path = save_image(s3fs, image_name, image)
                 # collecting images per page
                 saved_image_list.append({image_name:saved_img_file_path})
                 # collecting all imges as dict
