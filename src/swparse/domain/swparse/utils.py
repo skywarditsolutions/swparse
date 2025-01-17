@@ -5,6 +5,7 @@ import json
 import math
 import base64
 import hashlib
+import asyncio
 import mimetypes
 from uuid import uuid4
 from itertools import islice
@@ -16,10 +17,11 @@ from typing import IO, Any, TYPE_CHECKING, List
 import torch
 import psutil
 import structlog
-import aioboto3
 import html_text
 import mistletoe
 import pandas as pd
+import aioboto3
+from botocore.exceptions import ClientError
 from botocore.config import Config
 from gliner import GLiNER
 from lark import Lark, Token, Transformer
@@ -731,11 +733,15 @@ async def read_file(s3_url: str) -> bytes | str:
         return content
 
 
-async def save_file(filename: str, content: bytes) -> str:
+async def save_file(filename: str, content: bytes, randomize:bool = True) -> str:
     """Asynchronously save file content to MinIO."""
-    new_uuid = uuid4()
-    
-    key = f"{new_uuid}_{filename}"
+   
+    if randomize:
+        new_uuid = uuid4()
+        key = f"{new_uuid}_{filename}"
+    else:
+        key = filename
+        
     s3_url = f"{BUCKET}/{key}"
     mime_type, _ = mimetypes.guess_type(filename)
 
@@ -753,7 +759,27 @@ async def save_file(filename: str, content: bytes) -> str:
         return s3_url
 
 
+def save_image_sync(s3_client: Any, image_name: str, image: "PILImage") -> str:
+    """Synchronous wrapper around async_save_image."""
+ 
+    image_name = image_name.lower()
+    buffered = io.BytesIO()
+    image.save(buffered, format=image_name.split(".")[-1])
+    img_b = buffered.getvalue()
+  
+    new_uuid = uuid4()
+ 
+    key = f"{new_uuid}_{image_name}"
+    s3_url = f"{BUCKET}/{key}"
+    mime_type, _ = mimetypes.guess_type(image_name)
 
+    try:
+        s3_client.put_object(Bucket=BUCKET, Key=key, Body=img_b, ContentType=mime_type)
+        return s3_url
+    except ClientError as e:
+        logger.error(f"Error uploading image: {e}")
+        raise Exception(f"Failed to save image: {e}")
+    
 async def save_image(image_name: str, image: "PILImage") -> str:
     # Lowercase the image name for consistency.
     image_name = image_name.lower()
@@ -840,7 +866,7 @@ async def save_job_metadata(job_id: str, metadata: dict[str, str]) -> dict[str, 
         aws_secret_access_key=MINIO_ROOT_PASSWORD,
         config=Config(signature_version="s3v4"),
     ) as s3_client:
-        # Check if folder exists (S3 does not have folders, we simulate existence by checking for keys starting with the folder path)
+        # Check if folder exists 
         try:
             response = await s3_client.list_objects_v2(Bucket=bucket, Prefix=job_folder_key, MaxKeys=1)
             folder_exists = "Contents" in response
@@ -848,13 +874,12 @@ async def save_job_metadata(job_id: str, metadata: dict[str, str]) -> dict[str, 
             raise HTTPException(status_code=500, detail=f"Error checking folder existence: {err}")
 
         if not folder_exists:
-            # Create a placeholder file to simulate the folder
+           
             try:
-                await s3_client.put_object(Bucket=bucket, Key=f"{job_folder_key}placeholder", Body="")
+                await s3_client.put_object(Bucket=bucket, Key=f"{job_folder_key}", Body="")
             except Exception as err:
                 raise HTTPException(status_code=500, detail=f"Error creating folder: {err}")
 
-        # Check if job file exists
         try:
             await s3_client.head_object(Bucket=bucket, Key=job_file_key)
             # File exists; fetch existing metadata
@@ -871,6 +896,7 @@ async def save_job_metadata(job_id: str, metadata: dict[str, str]) -> dict[str, 
         # Update metadata
         existing_job_metadata["metadata"].update(metadata)
 
+
         # Save updated metadata
         try:
             await s3_client.put_object(
@@ -881,3 +907,53 @@ async def save_job_metadata(job_id: str, metadata: dict[str, str]) -> dict[str, 
             return existing_job_metadata
         except Exception as err:
             raise HTTPException(status_code=500, detail=f"Error saving job metadata: {err}")
+
+
+async def is_file_exist(s3_url: str) -> bool:
+    """Check if a file exists in S3/MinIO."""
+    bucket_name, key = s3_url.split("/", 1)
+
+    session = aioboto3.Session()
+
+    async with session.client(
+        "s3",
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        aws_access_key_id=MINIO_ROOT_USER,
+        aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        config=Config(signature_version="s3v4"),
+    ) as s3_client:
+        try:
+         
+            await s3_client.head_object(Bucket=bucket_name, Key=key)
+            return True
+        except Exception as e:
+            ## File does not exist
+            return False
+         
+
+
+async def get_metadata(s3_url: str) -> dict[str, str]:
+    """Asynchronously retrieve metadata from an S3 object."""
+    
+    bucket_name, key = s3_url.split("/", 1)
+    session = aioboto3.Session()
+    try:
+        async with session.client(
+            "s3",
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            aws_access_key_id=MINIO_ROOT_USER,
+            aws_secret_access_key=MINIO_ROOT_PASSWORD,
+            config=Config(signature_version="s3v4"),
+        ) as s3_client:
+  
+            response = await s3_client.head_object(Bucket=bucket_name, Key=key)
+            
+  
+            metadata = response.get("Metadata", {})
+            if isinstance(metadata, str):
+                return json.loads(metadata)
+            return metadata
+    except Exception as e:
+        logger.error(e)
+        raise NotFoundException(detail=f"Object not found: {s3_url}")
+  

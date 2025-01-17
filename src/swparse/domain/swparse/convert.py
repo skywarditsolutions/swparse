@@ -55,7 +55,7 @@ async def pdf_markdown(
 ) -> "LLAMAJSONOutput":
     global models_dict
     if not models_dict:
-        models_dict = create_model_dict(device="cpu")
+        models_dict = create_model_dict()
 
     
     if MEMORY_USAGE_LOG:

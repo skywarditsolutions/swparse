@@ -10,7 +10,6 @@ from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
 from litestar.params import Body
 from litestar_saq import Job, Queue
-from s3fs import S3FileSystem
 
 from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
@@ -22,7 +21,10 @@ from swparse.domain.swparse.utils import (
     handle_result_type,
     parse_table_query,
     save_job_metadata,
-    get_memory_usage
+    get_memory_usage,
+    is_file_exist,
+    get_metadata,
+    save_file
 )
 from swparse.lib.schema import BaseStruct
 from .urls import PARSER_BASE
@@ -66,12 +68,7 @@ class ParserController(Controller):
         file = data.file
         content = await file.read()
         filename = file.filename
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
+
         hashed_input ={
             "content": content
         }
@@ -100,11 +97,11 @@ class ParserController(Controller):
                     raise HTTPException(detail="Invalid result type", status_code=400)
             metadata["result_type"] = data.parsing_instruction
 
-        if s3fs.exists(s3_url):
+        if await is_file_exist(s3_url):
             logger.info("it's already exist")
             if CACHING_ON:
-                metadata_json_str = s3fs.getxattr(s3_url, "metadata")
-                if metadata_json_str:
+                metadata_json = await get_metadata(s3_url)
+                if metadata_json:
                     del kwargs["ext"]
                     job = await queue.enqueue(
                         Job(
@@ -113,11 +110,12 @@ class ParserController(Controller):
                             timeout=0,
                         ),
                     )
-                    save_job_metadata(s3fs, job.id, metadata)
+                    # save metadata in separate json file with job id
+                    await save_job_metadata(job.id, metadata_json)
                     return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
         else:
-            with s3fs.open(s3_url, "wb") as f:
-                f.write(content)
+           
+            await save_file(hashed_filename, content, randomize=False)
 
         if file.content_type in ["application/pdf"]:
             job = await queue.enqueue(
@@ -208,7 +206,7 @@ class ParserController(Controller):
 
         if not job:
             raise HTTPException(detail="JOB ERROR", status_code=400)
-        save_job_metadata(s3fs, job.id, metadata)
+        await save_job_metadata(job.id, metadata)
 
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
@@ -240,16 +238,9 @@ class ParserController(Controller):
         content = await data.read()
         filename = data.filename
         new_uuid = uuid4()
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-
+ 
         s3_url = f"{BUCKET}/{new_uuid}_{filename}"
-        with s3fs.open(s3_url, "wb") as f:
-            f.write(content)  # type: ignore
+        await save_file(s3_url, content)
         if data.content_type in ["application/pdf"]:
             job = await queue.enqueue(
                 "parse_docx_s3",
@@ -304,16 +295,20 @@ class ParserController(Controller):
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)
         if not job:
+            logger.info("retrieve from job json metata")
             results = await get_job_metadata(job_id)
+            logger.info("Meta data")
+            logger.info(results)
             metadata: dict[str, str] = results["metadata"]
         else:
             metadata = job.result
             await job.refresh(1)
-        results = await save_job_metadata(job_id, metadata)
-        metadata: dict[str, str] = results["metadata"]
+            results = await save_job_metadata(job_id, metadata)
+            logger.info("save job metadata")
+            metadata: dict[str, str] = results["metadata"]
 
         try:
-            return handle_result_type(result_type, metadata, jm, job_key)
+            return await handle_result_type(result_type, metadata, jm, job_key)
         except Exception as err:
             logger.error(err)
             raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")
