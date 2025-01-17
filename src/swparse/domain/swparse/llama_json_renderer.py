@@ -4,8 +4,8 @@ from typing import Any
 
 import re
 import regex
+import asyncio
 import html_text
-
 from markdownify import MarkdownConverter
 from bs4 import MarkupResemblesLocatorWarning
 
@@ -112,7 +112,8 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
             image_dict =  paginated_images.get(pageIdx, {})
             for image_name, image in image_dict.items():
                 image_name = image_name.lower()
-                saved_img_file_path = save_image(s3fs, image_name, image)
+    
+                saved_img_file_path = asyncio.run(save_image(image_name, image))
                 # collecting images per page
                 saved_image_list.append({image_name:saved_img_file_path})
                 # collecting all imges as dict

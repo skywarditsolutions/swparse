@@ -10,7 +10,7 @@ from uuid import uuid4
 from itertools import islice
 from operator import attrgetter
 from datetime import UTC, datetime
-from typing import IO, Any, TYPE_CHECKING
+from typing import IO, Any, TYPE_CHECKING, List
 
  
 import torch
@@ -22,7 +22,7 @@ import mistletoe
 import pandas as pd
 from botocore.config import Config
 from gliner import GLiNER
-from lark import Lark
+from lark import Lark, Token, Transformer
 from litestar.exceptions import HTTPException, NotFoundException
 from lxml import html
 from s3fs import S3FileSystem
@@ -38,11 +38,10 @@ from pptx.shapes.shapetree import SlideShapes
 from snakemd import Document as SnakeMdDocument
 from snakemd.elements import MDList
 from xls2xlsx import XLS2XLSX
-
+from PIL import Image as PILImage
 
 from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
-from swparse.domain.swparse.convert import MdAnalyser, TreeToJson
 from swparse.domain.swparse.schemas import JobMetadata
 
 
@@ -74,9 +73,9 @@ def change_file_ext(file_name: str, extension: str) -> str:
     return ".".join(file_path)
 
 
-def extract_tables_from_html(s3fs: S3FileSystem, html_file_path: str) -> list[str] | None:
-    with s3fs.open(html_file_path, mode="rb") as doc:
-        content = doc.read().decode()
+async def extract_tables_from_html(html_file_path: str) -> list[str] | None:
+    content = await read_file(html_file_path)
+    content = content.decode()
 
     tree = html.fromstring(content)
     tables = tree.xpath("//table")
@@ -212,6 +211,169 @@ def convert_pptx_to_md(pptx_content: IO[bytes], pptx_filename: str) -> str:
     except Exception as e:
         raise Exception
 
+
+
+
+
+class MdAnalyser:
+    def __init__(self, markdown_content: str):
+        self.markdown_content = markdown_content
+        self.components = []
+        self.links = []
+        self.lines = markdown_content.splitlines()
+
+        # Compile patterns once for efficiency
+        self.patterns = {
+            "heading": re.compile(r"^(#{1,6})\s*(.+)$"),
+            "table_row": re.compile(r"^\|.*\|$"),
+            "paragraph": re.compile(r"^(?!\!\[.*\]\(.*\))(?!.*https?://)[^\|#\s].+$"),
+            "table_separator": re.compile(r"^\|[-|]*\|$"),
+            "links": re.compile(r"http?s?://[^\s]+")
+        }
+
+    def extract_components(self) -> tuple[List[dict[str,Any]], list[dict[str, str]]]:
+        """Extracts components from the markdown content."""
+        current_table = []
+
+        for line in self.lines:
+            if not line.strip():
+                continue
+            # Process different patterns
+            self.extract_link(line)
+            line = self.remove_links(line)
+            if self.patterns["heading"].match(line):
+                self._flush_table(current_table)
+                self.add_heading(line)
+            elif self.patterns["table_row"].match(line):
+                if not self.patterns["table_separator"].match(line):
+                    current_table.append(line)
+            elif self.patterns["paragraph"].match(line):
+                self._flush_table(current_table)
+                self.add_paragraph(line)
+
+
+        self._flush_table(current_table)
+
+        return self.components, self.links
+
+
+    def add_table(self, current_table: List[str]):
+        """Processes and adds a table component."""
+        rows = [
+            [cell.strip() for cell in re.findall(r"\|([^|]+)", row)]
+            for row in current_table
+        ]
+        self.components.append({
+            "type": "table",
+            "md": "\n".join(current_table),
+            "rows": rows,
+            "bBox": self._get_bbox(),
+        })
+
+    def _flush_table(self, current_table: List[str]):
+        """Adds the current table to components if not empty."""
+        if current_table:
+            self.add_table(current_table)
+            current_table.clear()
+
+
+    def extract_link(self, line: str):
+        """Extract links from the given line and adds them to self.links."""
+        matches = self.patterns["links"].findall(line)
+        for match in matches:
+            self.links.append({
+                "text": match,
+                "url": match
+            })
+
+    def remove_links(self, line: str) -> str:
+        """Remove links from a line while keeping the remaining text."""
+        return self.patterns["links"].sub("", line).strip()
+
+    def add_heading(self, line: str):
+        """Processes and adds a heading component."""
+        match = self.patterns["heading"].match(line)
+        level = len(match.group(1))
+        text = match.group(2).strip()
+        self.components.append({
+            "type": "heading",
+            "level": level,
+            "md": line,
+            "value": text,
+            "bBox": self._get_bbox()
+        })
+
+    def add_paragraph(self, line: str):
+        """Processes and adds a text component."""
+        self.components.append({
+            "type": "text",
+            "md": line,
+            "value": self.md_to_text(line),
+            "bBox": self._get_bbox()
+        })
+
+    @staticmethod
+    def md_to_text(md: str) -> str:
+        """Converts Markdown to plain text (basic implementation)."""
+        return re.sub(r"(\*\*|__|`|~~)", "", md).strip()
+
+    @staticmethod
+    def _get_bbox() -> dict:
+        """Returns a default bounding box structure."""
+        return {"x": 0.0, "y": 0.0, "w": 0.0, "h": 0.0}
+
+
+
+class TreeToJson(Transformer):
+    def __init__(self, visit_tokens: bool = True):
+        super().__init__(visit_tokens)
+        self.tables = set()
+
+    def start(self, items: list[Token]):
+        return {"tables": items[0:-1], "output": items[-1].lower()}
+
+    def instruction(self, items: list[Token]):
+        headers = [label["name"] for label in items[1:-1]]
+        if len(headers) != len(dict.fromkeys(headers)):
+            raise ValueError("Duplicate labels")
+        return {"mode": items[-1], "table_name": items[0], "labels": items[1:-1]}
+
+    def mode(self, items: list[Token]):
+        mode_map = {
+            "by_sentence": "sent",
+            "sent": "sent",
+            "bysentence": "sent",
+            "by_line": "ln",
+            "ln": "ln",
+            "byline": "ln",
+        }
+        if not len(items):
+            return "sent"
+        return mode_map[items[0].value.replace(" ", "_").lower()]
+
+    def output(self, items: list[Token]):
+        if not len(items):
+            return "json"
+        return items[0].value.lower()
+
+    def table_ident(self, items: list[Token]):
+        table_name = items[0].value.replace(" ", "_").lower()
+        if table_name in self.tables:
+            raise Exception(f"Duplicate table name: {table_name}")
+        self.tables.add(table_name)
+        return table_name
+
+    def value(self, items: list[Token]):
+        name = items[0].replace(" ", "_").lower()
+        if len(items) == 1:
+            return {"name": name, "type": "string"}
+        return {"name": name, "type": items[1]}
+
+    def field(self, items: list[Token]):
+        return items[0].value
+
+    def type(self, items: list[Token]):
+        return items[0].value
 
 
 
@@ -390,16 +552,15 @@ def get_hashed_file_name(filename: str, hashed_input: dict[str, Any]) -> str:
 
 
 
-def get_file_content(s3fs: S3FileSystem, file_path: str) -> str:
-    with s3fs.open(file_path, mode="r") as f:
-        content = f.read()
-        if isinstance(content, bytes):
-            content = content.decode()
+async def get_file_content(file_path: str) -> str:
+    content = await read_file(file_path)
+    if isinstance(content, bytes):
+        content = content.decode()
     return content
 
 
-def handle_result_type(
-    result_type: str, results: dict[str, str], s3fs: S3FileSystem, jm: JobMetadata, job_key: str
+async def handle_result_type(
+    result_type: str, results: dict[str, str], jm: JobMetadata, job_key: str
 ) -> dict:
     if results.get("result_type"):
         result_type_check = results["result_type"]
@@ -408,26 +569,26 @@ def handle_result_type(
     try:
         result = {"job_metadata": jm.__dict__}
         if result_type_check == ContentType.MARKDOWN.value:
-            markdown = get_file_content(s3fs, results["markdown"])
+            markdown = await get_file_content(results["markdown"])
             result[result_type] = markdown
 
         elif result_type_check == ContentType.HTML.value:
-            html = get_file_content(s3fs, results["html"])
+            html = await get_file_content(results["html"])
             result[result_type] = html
 
         elif result_type_check == ContentType.TEXT.value:
-            text = get_file_content(s3fs, results["text"])
+            text =  await get_file_content(results["text"])
             result[result_type] = text
 
         elif result_type_check == ContentType.TABLE.value:
-            html = extract_tables_from_html(s3fs, results["html"])
+            html = await extract_tables_from_html(results["html"])
             result_html = "<br><br>"
             if html:
                 result_html = result_html.join(html)
             result[result_type] = result_html
 
         elif result_type_check == ContentType.JSON.value:
-            json_str = get_file_content(s3fs, results["json"])
+            json_str =  await get_file_content(results["json"])
             json_pages = json.loads(json_str)
             result = {
                 'pages':json_pages,
@@ -437,10 +598,11 @@ def handle_result_type(
         elif result_type_check == ContentType.MARKDOWN_TABLE.value:
             table_file_path = results.get("table")
             if table_file_path:
-                with s3fs.open(results["table"], mode="r") as out_file_html:
-                    result_html = out_file_html.read()
+                 
+                result_html = await get_file_content(results["table"])
+                result_html = result_html.decode()
             else:
-                html = extract_tables_from_html(s3fs, results["html"])
+                html = await extract_tables_from_html(results["html"])
                 result_html = "<br><br>".join(html)
 
             dfs = pd.read_html(result_html)
@@ -453,14 +615,13 @@ def handle_result_type(
             result[result_type] = markdown_tbls
 
         elif result_type_check == ContentType.IMAGES.value:
-            with s3fs.open(results["images"], mode="r") as f:
-                json_image_meta = f.read()
+           
+            json_image_meta = await get_file_content(results["images"])
 
             result[result_type] = json.loads(json_image_meta)
         else:
-            with s3fs.open(results[result_type_check], mode="r") as tables_file:
-                tables_content = tables_file.read()
-                result[result_type] = tables_content
+            tables_content = await get_file_content(results[result_type_check])
+            result[result_type] = tables_content
 
         if result:
             return result
@@ -503,7 +664,7 @@ async def extract_excel_images(s3fs: S3FileSystem, excel_content: io.BytesIO, sh
             pil_image = PILImage.open(img_data)
             img_name = f"sheet_{sheet_name.lower()}_image_{i}.png"
 
-            saved_img_path = await save_image(s3fs, img_name, pil_image)
+            saved_img_path = await save_image(img_name, pil_image)
 
             sheet_images[img_name] = saved_img_path
 
@@ -550,7 +711,7 @@ def parse_minio_url(s3_url: str):
 
 
 
-async def read_file(s3_url: str) -> bytes:
+async def read_file(s3_url: str) -> bytes | str:
     """Asynchronously read file content from MinIO."""
 
     bucket_name, key = parse_minio_url(s3_url)
@@ -608,11 +769,68 @@ async def save_image(image_name: str, image: "PILImage") -> str:
 
 async def save_metadata(s3_url: str, metadata: dict) -> None:
     """Asynchronously save metadata to a separate S3 object."""
-
-    metadata_json = json.dumps(metadata)
-
-
+   
     bucket_name, key = s3_url.split("/", 1)
+    session = aioboto3.Session()
+    try:
+        async with session.client(
+            "s3",
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            aws_access_key_id=MINIO_ROOT_USER,
+            aws_secret_access_key=MINIO_ROOT_PASSWORD,
+            config=Config(signature_version="s3v4"),
+        ) as s3_client:
+            response = await s3_client.get_object(Bucket=bucket_name, Key=key)
+            content = await response["Body"].read()
+            
+            if content is None:
+                raise NotFoundException(detail=f"There is no {s3_url}")
+            
+            await s3_client.put_object(
+                Bucket=bucket_name,
+                Key=key,
+                Body=content,
+                ContentType="application/json",
+                Metadata=metadata
+            )
+    except Exception as e:
+        logger.info(e)
+        logger.info("error when working with")
+        # logger.info(metadata)
+        logger.info(type(metadata))
+
+
+ 
+
+async def get_job_metadata(job_id: str) -> dict[str, dict[str, str]]:
+    """Asynchronously fetch job metadata from an S3 object."""
+    key = f"{JOB_FOLDER}/{job_id}.json"
+
+    session = aioboto3.Session()
+    async with session.client(
+        "s3",
+        endpoint_url=settings.storage.ENDPOINT_URL,
+        aws_access_key_id=MINIO_ROOT_USER,
+        aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        config=Config(signature_version="s3v4"),
+    ) as s3_client:
+        try:
+            response = await s3_client.get_object(Bucket=BUCKET, Key=key)
+            content = await response["Body"].read()
+            return json.loads(content)
+        except s3_client.exceptions.NoSuchKey:
+            # metatadata not found
+            return {}
+
+ 
+async def save_job_metadata(job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
+    """Save job metadata asynchronously to an S3-compatible storage."""
+    bucket = BUCKET
+    job_file_key = f"{JOB_FOLDER}/{job_id}.json"
+    job_folder_key = f"{JOB_FOLDER}/"
+
+    existing_job_metadata: dict[str, dict] = {"metadata": {}}
+
     session = aioboto3.Session()
 
     async with session.client(
@@ -622,51 +840,44 @@ async def save_metadata(s3_url: str, metadata: dict) -> None:
         aws_secret_access_key=MINIO_ROOT_PASSWORD,
         config=Config(signature_version="s3v4"),
     ) as s3_client:
-        response = await s3_client.get_object(Bucket=bucket_name, Key=key)
-        content = await response["Body"].read()
-        
-        if content is None:
-            raise NotFoundException(detail=f"There is no {s3_url}")
+        # Check if folder exists (S3 does not have folders, we simulate existence by checking for keys starting with the folder path)
+        try:
+            response = await s3_client.list_objects_v2(Bucket=bucket, Prefix=job_folder_key, MaxKeys=1)
+            folder_exists = "Contents" in response
+        except Exception as err:
+            raise HTTPException(status_code=500, detail=f"Error checking folder existence: {err}")
 
-        await s3_client.put_object(
-            Bucket=bucket_name,
-            Key=key,
-            Body=content,
-            ContentType="application/json",
-            metadata={
-                'metadata':metadata_json
-            }
-        )
+        if not folder_exists:
+            # Create a placeholder file to simulate the folder
+            try:
+                await s3_client.put_object(Bucket=bucket, Key=f"{job_folder_key}placeholder", Body="")
+            except Exception as err:
+                raise HTTPException(status_code=500, detail=f"Error creating folder: {err}")
 
+        # Check if job file exists
+        try:
+            await s3_client.head_object(Bucket=bucket, Key=job_file_key)
+            # File exists; fetch existing metadata
+            response = await s3_client.get_object(Bucket=bucket, Key=job_file_key)
+            content = await response["Body"].read()
+            existing_job_metadata = json.loads(content)
+        except s3_client.exceptions.ClientError as e:
+            if e.response["Error"]["Code"] == "404":
+                # File does not exist; create new metadata
+                existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
+            else:
+                raise HTTPException(status_code=500, detail=f"Error checking job file: {e}")
 
+        # Update metadata
+        existing_job_metadata["metadata"].update(metadata)
 
-def get_job_metadata(s3fs: Any, job_id: str) -> dict[str, dict[str, str]]:
-    job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
-    content = {}
-    if s3fs.exists(job_file_path):
-        with s3fs.open(job_file_path, mode="r") as f:
-            content = json.loads(f.read())
-    return content
-
-
-def save_job_metadata(s3fs: Any, job_id: str, metadata: dict[str, str]) -> dict[str, dict[str, str]]:
-    job_file_path = f"{BUCKET}/{JOB_FOLDER}/{job_id}.json"
-    job_folder_path = f"{BUCKET}/{JOB_FOLDER}/"
-
-    existing_job_metadata: dict[str, dict] = {"metadata": {}}
-    if not s3fs.exists(job_folder_path):
-        s3fs.mkdir(job_folder_path)
-
-    if not s3fs.exists(job_file_path):
-        existing_job_metadata["metadata"].update({"created_at": datetime.now(UTC).isoformat()})
-    else:
-        existing_job_metadata = get_job_metadata(s3fs, job_id)
-
-    existing_job_metadata["metadata"].update(metadata)
-
-    try:
-        with s3fs.open(job_file_path, mode="w") as f:
-            f.write(json.dumps(existing_job_metadata, indent=4))
-        return existing_job_metadata
-    except Exception as err:
-        raise HTTPException(status_code=500, detail=f"Save job metadata error: {err}")
+        # Save updated metadata
+        try:
+            await s3_client.put_object(
+                Bucket=bucket,
+                Key=job_file_key,
+                Body=json.dumps(existing_job_metadata, indent=4),
+            )
+            return existing_job_metadata
+        except Exception as err:
+            raise HTTPException(status_code=500, detail=f"Error saving job metadata: {err}")

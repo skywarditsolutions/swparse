@@ -292,12 +292,7 @@ class ParserController(Controller):
         path="job/{job_id:str}/result/{result_type:str}",
     )
     async def get_result(self, job_id: str, result_type: str = "markdown") -> dict|list:
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
+
         jm = JobMetadata(
             credits_used=0,
             credits_max=1000000,
@@ -309,16 +304,16 @@ class ParserController(Controller):
         job_key = queue.job_key_from_id(job_id)
         job = await queue.job(job_key)
         if not job:
-            results = get_job_metadata(s3fs, job_id)
+            results = await get_job_metadata(job_id)
             metadata: dict[str, str] = results["metadata"]
         else:
             metadata = job.result
             await job.refresh(1)
-        results = save_job_metadata(s3fs, job_id, metadata)
+        results = await save_job_metadata(job_id, metadata)
         metadata: dict[str, str] = results["metadata"]
 
         try:
-            return handle_result_type(result_type, metadata, s3fs, jm, job_key)
+            return handle_result_type(result_type, metadata, jm, job_key)
         except Exception as err:
             logger.error(err)
             raise HTTPException(f"Format {result_type} is currently unsupported for {job_id}")

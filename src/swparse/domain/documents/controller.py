@@ -32,7 +32,7 @@ from swparse.domain.swparse.utils import (
     extract_tables_from_html,
     get_file_name,
     parse_table_query,
-    save_file_s3,
+    save_file,
 )
 
 from . import urls
@@ -218,7 +218,7 @@ class DocumentController(Controller):
                 result_html = "<br><br>".join(html_tables)
                 file_name = get_file_name(html_file_path)
                 html_file_name = change_file_ext(file_name, "html")
-                tbl_file_path = save_file_s3(s3fs, html_file_name, result_html)
+                tbl_file_path = save_file(html_file_name, result_html)
                 extracted_file_paths[ContentType.TABLE.value] = tbl_file_path
 
             if result_type == ContentType.MARKDOWN_TABLE.value:
@@ -234,7 +234,7 @@ class DocumentController(Controller):
 
                 file_name = get_file_name(table_file_path)
                 md_tbl_file_name = change_file_ext(file_name, "html")
-                md_tbl_file_path = save_file_s3(s3fs, md_tbl_file_name, markdown_tbls)
+                md_tbl_file_path = save_file(md_tbl_file_name, markdown_tbls)
                 extracted_file_paths[ContentType.MARKDOWN_TABLE.value] = md_tbl_file_path
 
             await doc_service.update(item_id=document.id, data={"extracted_file_paths": extracted_file_paths})
