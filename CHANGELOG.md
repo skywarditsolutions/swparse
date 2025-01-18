@@ -1,6 +1,6 @@
 ## v0.7.8 (2025-01-18)
 
-### New Features
+### Feat
 
 - Added analysis and test results comparing `docling` and `markitdown` with `Swparse`.
 - Added benchmarking to evaluate performance improvements after implementing asynchronous functionality.
@@ -29,7 +29,7 @@
 
 ## v0.7.6 (2025-01-09)
 
-### Features
+### Feat
 
 - Added benchmark for Markdown extraction, `force_ocr`, and `plain_text` processing in swparse.
 - Refactor the `force_ocr` option handling in the extraction controller to support multiple extractions.
@@ -48,7 +48,7 @@
 
 ## v0.7.5 (2025-01-02)
 
-### Features
+### Feat
 
 - Integrated images into the extracted results of Excel files, such as in HTML and Markdown formats.
 - Removed the sheet_index_type parameter to make the sheet indexing more intuitive.
