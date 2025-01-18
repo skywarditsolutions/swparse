@@ -282,6 +282,28 @@ The API returns error responses in the following format:
 - `400`: Bad request syntax or unsupported method.
 - `404`: Not found.
 
+
+
+# Scalability
+
+The system supports scaling by increasing the number of workers, allowing for more concurrent jobs to be processed. Each worker is deployed in its own separate container, ensuring that each worker has its own dedicated memory space. This containerized approach provides isolation, preventing memory or resource conflicts between workers.
+
+If you prefer to run multiple workers within a single container rather than having separate containers for each, you can fine-tune the following configuration variables via `env` file to optimize your environment:
+
+- `SAQ_BACKGROUND_WORKERS (int)`: Defines the number of background workers that will run within one container. 
+- `SAQ_CONCURRENCY (int)`: Controls the number of concurrent tasks a worker can handle. 
+- `MULTIPROCESSING_MODE (Literal["multiprocessing", "threading"])`: Specifies whether the workers should use multiprocessing or threading for concurrency. 
+- `SAQ_PROCESSES (int)`: Defines the number of processes to spawn per worker.
+
+
+## Monitoring Workers and Jobs
+
+Users can monitor the workers and their job statuses via the SAQ admin UI. The UI provides insights into the number of completed, retried, and failed jobs per worker. 
+
+```bash
+<API-ENDPOINT>:<PORT>/saq/queues/
+```
+
 ## App Commands
 
 ```bash

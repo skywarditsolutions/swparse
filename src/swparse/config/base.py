@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, Literal
 
 from advanced_alchemy.utils.text import slugify
 from litestar.serialization import decode_json, encode_json
@@ -205,25 +205,23 @@ class ServerSettings:
 class SaqSettings:
     """Server configurations."""
 
-    PROCESSES: int = field(default_factory=lambda: int(os.getenv("SAQ_PROCESSES", "1")))
+    PROCESSES: int = int(os.getenv("SAQ_PROCESSES", "1"))
     """The number of worker processes to start.
 
     Default is set to 1.
     """
-    CONCURRENCY: int = field(default_factory=lambda: int(os.getenv("SAQ_CONCURRENCY", "10")))
+    CONCURRENCY: int = int(os.getenv("SAQ_CONCURRENCY", "10"))
     """The number of concurrent jobs allowed to execute per worker process.
 
     Default is set to 10.
     """
-    WEB_ENABLED: bool = field(
-        default_factory=lambda: os.getenv("SAQ_WEB_ENABLED", "True") in TRUE_VALUES,
-    )
+    WEB_ENABLED: bool =  os.getenv("SAQ_WEB_ENABLED", "True") in TRUE_VALUES
+    
     """If true, the worker admin UI is hosted on worker startup."""
-    USE_SERVER_LIFESPAN: bool = field(
-        default_factory=lambda: os.getenv("SAQ_USE_SERVER_LIFESPAN", "True") in TRUE_VALUES,
-    )
+    USE_SERVER_LIFESPAN: bool =  os.getenv("SAQ_USE_SERVER_LIFESPAN", "True") in TRUE_VALUES
     """Auto start and stop `saq` processes when starting the Litestar application."""
 
+    MULTIPROCESSING_MODE: Literal["multiprocessing", "threading"] = str(os.getenv("MULTIPROCESSING_MODE", "threading"))
 
 @dataclass
 class LogSettings:
@@ -310,8 +308,8 @@ class RedisSettings:
     HOST: str = field(default_factory=lambda: os.getenv("REDIS_HOST", "redis://localhost:6379"))
     """A Redis Host."""
     SOCKET_CONNECT_TIMEOUT: int = field(default_factory=lambda: int(os.getenv("REDIS_CONNECT_TIMEOUT", "5")))
-    """Length of time to wait (in seconds) for a connection to become
-    active."""
+    """Length of time to wait (in seconds) for a connection to become active."""
+    
     HEALTH_CHECK_INTERVAL: int = field(default_factory=lambda: int(os.getenv("REDIS_HEALTH_CHECK_INTERVAL", "5")))
     """Length of time to wait (in seconds) before testing connection health."""
     SOCKET_KEEPALIVE: bool = field(
@@ -365,6 +363,8 @@ class AppSettings:
 
     CACHING_ON: bool = field(default_factory=lambda: os.getenv("CACHING_ON", "True") in TRUE_VALUES)
 
+    MEMORY_USAGE_LOG: bool = field(default_factory=lambda: os.getenv("MEMORY_USAGE_LOG", "false") in TRUE_VALUES)
+    
     @property
     def slug(self) -> str:
         """Return a slugified name.

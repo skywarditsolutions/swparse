@@ -4,8 +4,9 @@ from typing import Any
 
 import re
 import regex
+import boto3
+from botocore.config import Config
 import html_text
-
 from markdownify import MarkdownConverter
 from bs4 import MarkupResemblesLocatorWarning
 
@@ -13,15 +14,16 @@ from marker.schema import BlockTypes
 from marker.schema.document import Document
 
 from .html_renderer import LLAMAHTMLRenderer
-from .utils import save_img_s3
+from .utils import save_image_sync
 from .schemas import LLAMAJSONOutput
 from swparse.config.app import settings
-from s3fs import S3FileSystem
-
+import structlog
 from swparse.domain.swparse.utils import extract_md_components
 
 # Ignore beautifulsoup warnings
 import warnings
+
+logger = structlog.getLogger()
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 BUCKET = settings.storage.BUCKET
@@ -39,12 +41,12 @@ def cleanup_text(full_text:str):
 class Markdownify(MarkdownConverter):
     paginated_md:dict[str, str]= {}
 
-    def __init__(self, paginate_output, page_separator, **kwargs):
+    def __init__(self, paginate_output:bool, page_separator:str, **kwargs:Any):
         super().__init__(**kwargs)
         self.paginate_output = paginate_output
         self.page_separator = page_separator
 
-    def convert_div(self, el, text, convert_as_inline) -> str:
+    def convert_div(self, el:Any, text:str, convert_as_inline:Any) -> str:
         is_page = el.has_attr('class') and el['class'][0] == 'page'
         if self.paginate_output and is_page:
             page_id = el['data-page-id']
@@ -54,7 +56,7 @@ class Markdownify(MarkdownConverter):
          
         return text
 
-    def convert_p(self, el, text, *args):
+    def convert_p(self, el:Any, text:str, *args:Any):
         hyphens = r'-—¬'
         has_continuation = el.has_attr('class') and 'has-continuation' in el['class']
         if has_continuation:
@@ -77,7 +79,7 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         document_output = document.render()
         paginated_html = {}
         paginated_images= {}
-        full_html, images, paginated_html, paginated_images = self.extract_html(document, document_output, paginated_html, paginated_images)
+        full_html, images , paginated_html, paginated_images = self.extract_html(document, document_output, paginated_html, paginated_images)
 
         md_cls = Markdownify(
             True,
@@ -97,25 +99,30 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
 
         llama_json_result:list[dict[str,Any]] = []
         full_text = ""
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-
+ 
         all_images = {}
+        s3_client = boto3.client(
+            "s3",
+            endpoint_url=settings.storage.ENDPOINT_URL,
+            aws_access_key_id=MINIO_ROOT_USER,
+            aws_secret_access_key=MINIO_ROOT_PASSWORD,
+            config=Config(signature_version="s3v4"),
+        )
         for pageIdx in pageKeys:
             saved_image_list:list[dict[str, str]] = []
 
             # saving images onto Minio bucket
             image_dict =  paginated_images.get(pageIdx, {})
             for image_name, image in image_dict.items():
-                saved_img_file_path = save_img_s3(s3fs, image_name, image)
+       
+                saved_img_file_path = save_image_sync(s3_client, image_name, image)
+       
                 # collecting images per page
                 saved_image_list.append({image_name:saved_img_file_path})
                 # collecting all imges as dict
                 all_images[image_name] = saved_img_file_path
+                
+                
             md = paginated_md[pageIdx]
             html_result = paginated_html.get(pageIdx)
             if html_result is None:

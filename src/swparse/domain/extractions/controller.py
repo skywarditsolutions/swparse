@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import mimetypes
 import os
-from typing import Annotated, Optional, Literal
+from typing import Annotated, Optional
 from uuid import UUID
 
 import httpx
@@ -15,8 +15,7 @@ from litestar.exceptions import HTTPException, NotAuthorizedException
 from litestar.pagination import OffsetPagination
 from litestar.params import Body
 from litestar.repository.filters import CollectionFilter
-from s3fs import S3FileSystem
-
+ 
 from swparse.config.app import settings
 from swparse.db.models.document import Document as DocumentModel
 from swparse.db.models.extraction import Extraction as ExtractionModel
@@ -26,6 +25,7 @@ from swparse.domain.accounts.guards import requires_active_user
 from swparse.domain.documents.dependencies import provide_document_service
 from swparse.domain.documents.services import DocumentService
 from swparse.domain.swparse.schemas import JobStatus, Status
+from swparse.domain.swparse.utils import read_file
 
 from .dependencies import provide_extraction_serivice
 from .schemas import Extraction
@@ -40,15 +40,10 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 BUCKET = settings.storage.BUCKET
 
-s3fs = S3FileSystem(
-    endpoint_url=settings.storage.ENDPOINT_URL,
-    key=MINIO_ROOT_USER,
-    secret=MINIO_ROOT_PASSWORD,
-    use_ssl=False,
-)
 
 class UploadBody(BaseStruct):
-    file: UploadFile
+    file: list[UploadFile]
+    force_ocr: Optional[list[bool]] = None 
     sheet_index: Optional[list[str | int]] = None 
 
 class ExtractionController(Controller):
@@ -94,23 +89,32 @@ class ExtractionController(Controller):
         extraction_service: ExtractionService,
         data: Annotated[UploadBody, Body(media_type=RequestEncodingType.MULTI_PART)],
         current_user: User,
-    ) -> Extraction:
-        file = data.file
-        content = await file.read()
-        sheet_index = data.sheet_index
-        uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
-        job = await extraction_service.create_job(uploaded_file, sheet_index)
-        extraction = ExtractionModel(
-            file_name=file.filename,
-            file_size=len(content),
-            file_path=job.s3_url,
-            user_id=current_user.id,
-            job_id=job.id,
-        )
+    ) -> list[Extraction]:
+        extractions:list[Extraction] = []
+        if data.force_ocr is None:
+            data.force_ocr = []
+            
+        for index, file in enumerate(data.file):
+            content = await file.read()
+            uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
+            
+            
+            force_ocr = data.force_ocr[index] if index < len(data.force_ocr) else False
+            job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = force_ocr)
+     
+            extraction = ExtractionModel(
+                file_name=file.filename,
+                file_size=len(content),
+                file_path=job.s3_url,
+                user_id=current_user.id,
+                job_id=job.id,
+            )
 
-        extraction = await extraction_service.create(extraction)
+            extraction = await extraction_service.create(extraction)
 
-        return extraction_service.to_schema(data=extraction, schema_type=Extraction)
+            extraction = extraction_service.to_schema(data=extraction, schema_type=Extraction)
+            extractions.append(extraction)
+        return extractions
 
     @get(
         operation_id="CheckExtraction",
@@ -205,15 +209,9 @@ class ExtractionController(Controller):
         if extraction.status != ExtractionStatus.FAILED:
             raise HTTPException(detail="Unsupported by state", status_code=409)
 
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
-
-        with s3fs.open(extraction.file_path, "rb") as f:
-            content: bytes = f.read()
+      
+        content: bytes = await read_file(extraction.file_path)
+        
         content_type, _ = mimetypes.guess_type(url=extraction.file_path)
         old_file = UploadFile(filename=extraction.file_name, file_data=content, content_type=content_type)
         job = await extraction_service.create_job(old_file)

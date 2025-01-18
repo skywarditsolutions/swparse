@@ -5,10 +5,7 @@ from litestar.connection import ASGIConnection
 from litestar.handlers.base import BaseRouteHandler
 from dotenv import load_dotenv
 from swparse.config.app import settings
-import structlog
  
-logger = structlog.get_logger()
-
 load_dotenv()
 DEFAULT_API_KEY =settings.app.PARSER_API_KEY
 

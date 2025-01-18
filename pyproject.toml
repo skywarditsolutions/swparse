@@ -2,7 +2,7 @@
 authors = [{ name = "Skyward IT Solutions", email = "info@skywarditsolutions.com" }]
 dependencies = [
     "litestar[full]>=2.11",
-    "advanced-alchemy[uuid]>=0.10.0",
+    "advanced-alchemy==0.26.2",
     "asyncpg>=0.28.0",
     "python-dotenv>=1.0.0",
     "passlib[argon2]>=1.7.4",
@@ -14,16 +14,15 @@ dependencies = [
     "pip>=24.1.2",
     "premailer>=3.10.0",
     "openpyxl>=3.1.5",
-    "s3fs>=2024.9.0",
     "filetype>=1.2.0",
     "transformers==4.45.2",
     "streamlit>=1.36.0",
-    "marker-pdf==1.0.2",
+    "marker-pdf==1.2.3",
     "pillow>=10.4.0",
     "llama-parse>=0.5.7",
     "mammoth>=1.8.0",
     "openpyxl>=3.1.5",
-    "surya-ocr==0.7.0",
+    "surya-ocr~=0.8.3",
     "html2text>=2024.2.26",
     "markdownify>=0.13.1",
     "xls2xlsx>=0.2.0",
@@ -41,6 +40,10 @@ dependencies = [
     "markdown-it-py>=3.0.0",
     "mdit-plain>=1.0.1",
     "pymupdf>=1.25.1",
+    "psutil>=6.1.1",
+    "uuid-utils>=0.10.0",
+    "botocore>=1.35.81",
+    "aioboto3>=13.3.0",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
@@ -48,7 +51,7 @@ license = { text = "BUSINESS" }
 name = "swparse"
 readme = "README.md"
 requires-python = "==3.12.*"
-version = "0.7.5"
+version = "0.7.8"
 
 
 [project.scripts]

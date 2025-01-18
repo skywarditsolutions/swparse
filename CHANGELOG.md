@@ -1,18 +1,65 @@
+## v0.7.8 (2025-01-18)
+
+### Feat
+
+- Added analysis and test results comparing `docling` and `markitdown` with `Swparse`.
+- Added benchmarking to evaluate performance improvements after implementing asynchronous functionality.
+- Replaced `s3fs` with `botocore` and `aioboto3` in PDM dependencies.
+- Adjusted `parse_pdf` functionality to run in threading mode for improved concurrency.
+- Refactored file and metadata I/O operations to leverage the `aioboto3` library for asynchronous support.
+- Added documentation with a new scalability section.
+- Added comparison metrics for performance between multiple file uploads and sequential uploads.
+- Introduced horizontal scaling with worker containers in the production Docker Compose setup.
+- Configured `Swparse` to run with multiple workers for better scaling.
+
+### Improvements
+
+- Horizontal scaling support with multiple workers.
+- Migrated `Swparse` tasks to an asynchronous environment, resulting in improved performance.
+
+
+## v0.7.7 (2025-01-14)
+
+### Feat
+
+
+- **Benchmark Testing**: Implemented automatic generation of statistics in markdown format,
+- Added concurrent stress testing result using bombardier with 10000 requests under 100 connections, along with memory usage statistics and findings.
+
+
+## v0.7.6 (2025-01-09)
+
+### Feat
+
+- Added benchmark for Markdown extraction, `force_ocr`, and `plain_text` processing in swparse.
+- Refactor the `force_ocr` option handling in the extraction controller to support multiple extractions.
+
+### Fixes
+
+- Updated the file checksum logic to account for the `force_ocr` option.
+- Normalized image keys extracted from Excel files.
+- Resolved an issue where saved images were overwriting those from previous sheets during `sheet_index` based extraction.
+
+### Improvements
+
+- Upgraded marker-pdf to v1.2.3.
+- Improved OCR functionality, now capable of intelligently determining when reapplying OCR is necessary.
+
+
 ## v0.7.5 (2025-01-02)
 
-### Features
+### Feat
 
 - Integrated images into the extracted results of Excel files, such as in HTML and Markdown formats.
-- Removed the `sheet_index_type` parameter to make the sheet indexing more intuitive.
+- Removed the sheet_index_type parameter to make the sheet indexing more intuitive.
 - Introduced a fallback mechanism for reading sheet indexes when specified as a number and improved handling of incorrect sheet names.
-- Added a plain_text (bool) parameter to extract text only from PDF files.
+- Added a plain_text (boolean) parameter to extract text only from PDF files.
 
 ### Fixes
 
 - Resolved an issue where images were missing when extracting from Excel files.
 
-
-## v0.7.4 (2024-12-23)
+## v0.7.4 (2024-12-24)
 
 ### Feat
 
@@ -27,12 +74,16 @@
 
 ### Feat
 
-- Integrated sheet indexing into checksum calculations for Excel files to ensure unique hashes based on sheet selection.
+- added sheet indexing docs to ReadMe file
+- checksum checking account for sheet indexing, fix: sheet_index_type key inconsistency and changed to request's body
+- increase request body's size
+- force_ocr option added for parsing PDF and images
 
 ### Fix
 
-- Resolve request hanging issue during authentication errors with multipart form data uploads in middleware
-
+- add subtitle to ReadMe
+- put back to the previous processing order for pdf parsing
+- clean unnecessary files
 
 ## v0.7.2 (2024-12-13)
 
@@ -41,6 +92,11 @@
 - Added sheet indexing support for Excel file extraction, including .xlsx and .xls.
 - Enabled extraction from Excel files based on either sheet names or sheet indexes.
 
+
+### Fix
+
+- clean code and files
+
 ## v0.7.1 (2024-12-12)
 
 ### Feat
@@ -48,15 +104,21 @@
 - Added endpoints to generate, list, and delete API keys.
 - Added endpoint to rename an API key.
 
+
+### Fix
+
+- remove sayHello route and model caching to app state
+- clean code and fix testing files
+
 ## v0.7.0 (2024-12-09)
 
 ### Features
- 
+
 - Replaced the old marker version with the newly released version 1.0.2
 - Set caching flag from environment variable.
-- Added a link section for each page in json result.
+- Added a link section for each page in JSON result.
 - Added caching for marker models during server setup.
-- Added data type validation for JSON results to ensure compatibility with LLamaparse.
+- Added data type validation for JSON results to ensure compatibility with LlamaParse.
 
 ### Improvements
 
@@ -64,10 +126,10 @@
 - Doubled the speed of layout and text detection.
 - Improved the output of text items in the JSON result
 
-## Fix
+### Fix
 
 - Fixed the text regular expression to properly capture text, excluding images and links, in the JSON result.
-- Fixed JSON result syntax to ensure compatibility with LLamaparse.
+- Fixed JSON result syntax to ensure compatibility with LlamaParse.
 
 
 ## v0.6.3 (2024-11-26)
