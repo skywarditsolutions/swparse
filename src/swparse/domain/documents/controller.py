@@ -144,16 +144,9 @@ class DocumentController(Controller):
         if not document:
             raise HTTPException(detail=f"Document {id} is not found", status_code=404)
 
-        s3 = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
         s3_url = document.file_path
         try:
-            with s3.open(s3_url, "rb") as f:
-                content: bytes = f.read()
+            content: bytes = await read_file(s3_url)
             mime_type, _ = mimetypes.guess_type(s3_url)
             extension = s3_url.split(".")[-1]
 
@@ -241,7 +234,7 @@ class DocumentController(Controller):
             if not image_key:
                 raise HTTPException(detail="image_key is required", status_code=400)
          
-            image_json_str = await html_content(extracted_file_path)
+            image_json_str = await read_file(extracted_file_path)
 
             images = json.loads(image_json_str)
             image_path = images.get(image_key.lower())
