@@ -1,3 +1,41 @@
+## v0.7.6 (2025-01-18)
+
+### Feat
+
+- analysis and test results of docling and markitdown as compare with Swparse
+- asynchronous implementation's improvement benchmark comparison
+- remove s3fs from pdm, replace aioboto in extraction, document controllers
+- refactor all file types tasks with aioboto, fix: save and get job metatdata to compatible with old cache
+- job metadata handling with aioboto
+- refactor medata save/retrive utils with boto async
+- refactor file IO utils with boto async
+- added scalability section to docs
+- Set up swparse with multiple workers
+- replace s3fs with boto3 fs and refactor parse_pdf and parse_xlsx
+- worker count added to docker compose production file
+- make adjustment to run parse_pdf on threading mode
+- **wip**: workers implementation to run on threading mode
+- **wip**: workers implementation to run on threading mode
+- cleanup test code and logging
+- JWT omit on testing routes
+- benchmark testing atomatic statistics generation in md, GPU VRAM log
+- added concurrent stress testing and memory usage statistics
+- pdm lock file resolve
+- pdm lock for psutil dependency
+- added memory usage log using psutil
+
+### Fix
+
+- image retrieve failed, remove leftover s3fs usages
+- asynchronous processes missing await
+- pdm lock file for aioboto
+- remove botocore aioboto3 dependencies
+- docker compose production file to run on GPU
+- **wip**: s3fs file reading deadlock issues
+- resolve file reading blocking when two processes try to access share resources simultaneously
+- memory usage log position adjust
+- pdm lock to resolve uuid_utils dependency issue
+
 ## v0.7.6 (2025-01-09)
 
 ### Features
