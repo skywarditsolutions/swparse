@@ -14,7 +14,6 @@ dependencies = [
     "pip>=24.1.2",
     "premailer>=3.10.0",
     "openpyxl>=3.1.5",
-    "s3fs>=2024.9.0",
     "filetype>=1.2.0",
     "transformers==4.45.2",
     "streamlit>=1.36.0",
@@ -43,6 +42,8 @@ dependencies = [
     "pymupdf>=1.25.1",
     "psutil>=6.1.1",
     "uuid-utils>=0.10.0",
+    "botocore>=1.35.81",
+    "aioboto3>=13.3.0",
 ]
 description = "SWParse: SkyWard's smart multidocument parser for RAG"
 keywords = ["litestar", "sqlalchemy", "alembic", "fullstack", "api", "asgi", "litestar", "vite", "spa"]
@@ -50,7 +51,7 @@ license = { text = "BUSINESS" }
 name = "swparse"
 readme = "README.md"
 requires-python = "==3.12.*"
-version = "0.7.7"
+version = "0.7.6"
 
 # [project.urls]
 # Discord = "https://discord.gg/litestar"

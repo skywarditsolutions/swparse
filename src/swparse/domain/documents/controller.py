@@ -15,7 +15,7 @@ from litestar.exceptions import HTTPException
 from litestar.pagination import OffsetPagination
 from litestar.repository.filters import CollectionFilter, LimitOffset
 from litestar.response import File
-from s3fs import S3FileSystem
+
 from saq import Job, Queue
 
 from swparse.config.app import settings
@@ -32,7 +32,8 @@ from swparse.domain.swparse.utils import (
     extract_tables_from_html,
     get_file_name,
     parse_table_query,
-    save_file_s3,
+    save_file,
+    read_file
 )
 
 from . import urls
@@ -143,16 +144,9 @@ class DocumentController(Controller):
         if not document:
             raise HTTPException(detail=f"Document {id} is not found", status_code=404)
 
-        s3 = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
         s3_url = document.file_path
         try:
-            with s3.open(s3_url, "rb") as f:
-                content: bytes = f.read()
+            content: bytes = await read_file(s3_url)
             mime_type, _ = mimetypes.guess_type(s3_url)
             extension = s3_url.split(".")[-1]
 
@@ -194,12 +188,7 @@ class DocumentController(Controller):
 
         extracted_file_paths = document.extracted_file_paths
 
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
-        )
+ 
         if result_type not in extracted_file_paths:
 
             if result_type not in (ContentType.TABLE.value, ContentType.MARKDOWN_TABLE.value):
@@ -211,30 +200,30 @@ class DocumentController(Controller):
                 if html_file_path is None:
                     raise HTTPException("HTML file hasn't extracted", status_code=404)
 
-                html_tables = extract_tables_from_html(s3fs, html_file_path)
+                html_tables = await extract_tables_from_html(html_file_path)
                 if html_tables is None:
                     # the file doesn't has any tables
                     return ""
                 result_html = "<br><br>".join(html_tables)
-                file_name = get_file_name(html_file_path)
-                html_file_name = change_file_ext(file_name, "html")
-                tbl_file_path = save_file_s3(s3fs, html_file_name, result_html)
+                file_name = await get_file_name(html_file_path)
+                html_file_name = await change_file_ext(file_name, "html")
+                tbl_file_path = await save_file(html_file_name, result_html)
                 extracted_file_paths[ContentType.TABLE.value] = tbl_file_path
 
             if result_type == ContentType.MARKDOWN_TABLE.value:
-                with s3fs.open(table_file_path, "r") as f:
-                    html_content = f.read()
-
+                
+                html_content = await read_file(table_file_path)
                 dfs = pd.read_html(html_content)
+                
                 markdown_tbls = ""
                 for i, df in enumerate(dfs):
                     markdown_tbls += f"## Table {i + 1}\n\n"
                     markdown_tbls += df.to_markdown()
                     markdown_tbls += "\n\n"
 
-                file_name = get_file_name(table_file_path)
-                md_tbl_file_name = change_file_ext(file_name, "html")
-                md_tbl_file_path = save_file_s3(s3fs, md_tbl_file_name, markdown_tbls)
+                file_name = await get_file_name(table_file_path)
+                md_tbl_file_name = await change_file_ext(file_name, "html")
+                md_tbl_file_path = await save_file(md_tbl_file_name, markdown_tbls)
                 extracted_file_paths[ContentType.MARKDOWN_TABLE.value] = md_tbl_file_path
 
             await doc_service.update(item_id=document.id, data={"extracted_file_paths": extracted_file_paths})
@@ -244,20 +233,19 @@ class DocumentController(Controller):
         if result_type == ContentType.IMAGES.value:
             if not image_key:
                 raise HTTPException(detail="image_key is required", status_code=400)
-            with s3fs.open(extracted_file_path, "rb") as f:
-                image_json_str = f.read()
+         
+            image_json_str = await read_file(extracted_file_path)
 
             images = json.loads(image_json_str)
             image_path = images.get(image_key.lower())
             if image_path:
-                with s3fs.open(image_path, "rb") as f:
-                    b64_bytes = base64.b64encode(f.read())
-                    return b64_bytes.decode("ascii")
+                content = await read_file(image_path)
+                b64_bytes = base64.b64encode(content)
+                return b64_bytes.decode("ascii")
             else:
                 raise HTTPException("Image not found", status_code=404)
-
-        with s3fs.open(extracted_file_path, "rb") as f:
-            content: bytes = f.read()
+       
+        content: bytes =  await read_file(extracted_file_path)
 
         return content.decode(encoding="utf-8", errors="ignore")
 
@@ -286,29 +274,22 @@ class DocumentController(Controller):
             result = parse_table_query(data.query)
         except:
             raise HTTPException(detail="Invalid query", status_code=400)
+        
+        md_path = document.extracted_file_paths["markdown"]
+        markdown_content = await read_file(md_path)
 
-        s3fs = S3FileSystem(
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            key=MINIO_ROOT_USER,
-            secret=MINIO_ROOT_PASSWORD,
-            use_ssl=False,
+        job = await queue.enqueue(
+            Job(
+                "extract_advanced_tables",
+                kwargs={
+                    "table_query": result["tables"],
+                    "markdown": markdown_content,
+                },
+                timeout=0,
+            )
         )
 
-        with s3fs.open(document.extracted_file_paths["markdown"], "r") as f:
-            markdown_content = f.read()
-
-            job = await queue.enqueue(
-                Job(
-                    "extract_advanced_tables",
-                    kwargs={
-                        "table_query": result["tables"],
-                        "markdown": markdown_content,
-                    },
-                    timeout=0,
-                )
-            )
-
-            return JobStatus(id=job.id, status=Status[job.status])
+        return JobStatus(id=job.id, status=Status[job.status])
 
     @get(path=urls.CHECK_ADVANCED_TABLES)
     async def check_advanced_table_extraction(
