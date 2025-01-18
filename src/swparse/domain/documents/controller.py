@@ -212,9 +212,9 @@ class DocumentController(Controller):
                     # the file doesn't has any tables
                     return ""
                 result_html = "<br><br>".join(html_tables)
-                file_name = get_file_name(html_file_path)
-                html_file_name = change_file_ext(file_name, "html")
-                tbl_file_path = save_file(html_file_name, result_html)
+                file_name = await get_file_name(html_file_path)
+                html_file_name = await change_file_ext(file_name, "html")
+                tbl_file_path = await save_file(html_file_name, result_html)
                 extracted_file_paths[ContentType.TABLE.value] = tbl_file_path
 
             if result_type == ContentType.MARKDOWN_TABLE.value:
@@ -228,9 +228,9 @@ class DocumentController(Controller):
                     markdown_tbls += df.to_markdown()
                     markdown_tbls += "\n\n"
 
-                file_name = get_file_name(table_file_path)
-                md_tbl_file_name = change_file_ext(file_name, "html")
-                md_tbl_file_path = save_file(md_tbl_file_name, markdown_tbls)
+                file_name = await get_file_name(table_file_path)
+                md_tbl_file_name = await change_file_ext(file_name, "html")
+                md_tbl_file_path = await save_file(md_tbl_file_name, markdown_tbls)
                 extracted_file_paths[ContentType.MARKDOWN_TABLE.value] = md_tbl_file_path
 
             await doc_service.update(item_id=document.id, data={"extracted_file_paths": extracted_file_paths})

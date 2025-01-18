@@ -69,7 +69,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         if ext == "application/vnd.ms-excel":
             content = convert_xls_to_xlsx_bytes(content)
 
-        file_name = get_file_name(s3_url)
+        file_name = await get_file_name(s3_url)
         str_buffer = io.BytesIO(content)
 
         if sheet_index is None:
@@ -118,18 +118,18 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
                 html_content += f'<br><img src=\"{image_key}" alt=\"{image_key}\" /><br><br>'
 
-        csv_file_name = change_file_ext(file_name, "csv")
+        csv_file_name = await change_file_ext(file_name, "csv")
         csv_file_path = await save_file(csv_file_name, csv_content)
 
-        html_file_name = change_file_ext(file_name, "html")
+        html_file_name = await change_file_ext(file_name, "html")
         html_file_path = await save_file(html_file_name, html_content)
 
-        md_file_name = change_file_ext(file_name, "md")
+        md_file_name = await change_file_ext(file_name, "md")
         md_file_path = await save_file(md_file_name, md_content)
 
         # Parsing to Text
         text_content = html_text.extract_text(html_content)
-        text_file_name = change_file_ext(file_name, "txt")
+        text_file_name = await change_file_ext(file_name, "txt")
         txt_file_path = await save_file(text_file_name, text_content)
 
         results = {
@@ -140,13 +140,13 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         }
 
         if all_images:
-            img_file_name = change_file_ext(file_name, "json")
+            img_file_name = await change_file_ext(file_name, "json")
             img_file_path = await save_file(img_file_name, json.dumps(all_images))
             results[ContentType.IMAGES.value] = img_file_path
 
         if table_query:
             tables_content = extract_tables_gliner(table_query["tables"], md_content, table_query["output"])
-            tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+            tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
             tables_file_path = await save_file(tables_file_name, tables_content)
             results[table_query["raw"]] = tables_file_path
 
@@ -165,8 +165,8 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: di
 
 
     logger.info("Started extract_string")
-    file_name = get_file_name(s3_url)
-    txt_file_name = change_file_ext(file_name, "txt")
+    file_name = await get_file_name(s3_url)
+    txt_file_name = await change_file_ext(file_name, "txt")
 
     byte_string = await read_file(s3_url)
        
@@ -185,7 +185,7 @@ async def extract_string(ctx: Context, *, s3_url: str, ext: str, table_query: di
 
 async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, force_ocr:bool = False) -> dict[str, str]:
 
-    file_name = get_file_name(s3_url)
+    file_name = await get_file_name(s3_url)
     logger.info("Reading content with thread")
     content =  await read_file(s3_url)
 
@@ -195,20 +195,20 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
     logger.info("Finished parsing")
     data:dict[str, str] = {}
 
-    md_file_name = change_file_ext(file_name, "md")
+    md_file_name = await change_file_ext(file_name, "md")
 
     data[ContentType.MARKDOWN.value] = await save_file(md_file_name, results.markdown)
     # HTML results
-    html_file_name = change_file_ext(file_name, "html")
+    html_file_name = await change_file_ext(file_name, "html")
     data[ContentType.HTML.value] = await save_file(html_file_name, results.html)
     # Text Parsing
-    txt_file_name = change_file_ext(file_name, "txt")
+    txt_file_name = await change_file_ext(file_name, "txt")
     data[ContentType.TEXT.value] = await save_file(txt_file_name, results.text)
 
     try:
         page_adapter = TypeAdapter(list[Page])
         page_adapter.validate_python(results.pages)
-        json_file_name = change_file_ext(file_name, "json")
+        json_file_name = await change_file_ext(file_name, "json")
         data[ContentType.JSON.value]  = await save_file(json_file_name, json.dumps(results.pages))
 
         logger.info("Validation successful!\n")
@@ -218,7 +218,7 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
         logger.error(e.json())
 
     # Saving image metadata
-    img_file_name = change_file_ext(file_name, "json")
+    img_file_name = await change_file_ext(file_name, "json")
     data[ContentType.IMAGES.value] = await save_file(img_file_name, json.dumps(results.images))
 
     return data
@@ -229,7 +229,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
  
     logger.info("Started parse_docx_s3")
-    file_name = get_file_name(s3_url)
+    file_name = await get_file_name(s3_url)
 
     # HTML parsing
     byte_content = await read_file(s3_url)
@@ -254,22 +254,22 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         images[image_key] = image_file_path
 
 
-    html_file_name = change_file_ext(file_name, "html")
+    html_file_name = await change_file_ext(file_name, "html")
     html_file_path = await save_file(html_file_name, htmlData)
 
     # Markdown parsing
     markdown = md(htmlData)  # type: ignore
-    md_file_name = change_file_ext(file_name, "md")
+    md_file_name = await change_file_ext(file_name, "md")
     md_file_path = await save_file(md_file_name, markdown)
 
     # Parsing to Text
     text_content = html_text.extract_text(htmlData, guess_layout=True)
-    text_file_name = change_file_ext(file_name, "txt")
+    text_file_name = await change_file_ext(file_name, "txt")
     txt_file_path = await save_file(text_file_name, text_content)
 
     # Saving image metadata
     file_name = file_name + "_image_metadata"
-    img_file_name = change_file_ext(file_name, "json")
+    img_file_name = await change_file_ext(file_name, "json")
     img_file_path = await save_file(img_file_name, json.dumps(images))
 
 
@@ -282,7 +282,7 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     if table_query:
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-        tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+        tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
  
@@ -293,14 +293,14 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None, force_ocr: bool = False, plain_text: bool = False) -> dict[str, str]:
     logger.info("Started parse_pdf_s3")
 
-    file_name = get_file_name(s3_url)
+    file_name = await get_file_name(s3_url)
     if plain_text:
         content = await read_file(s3_url)
 
         with pymupdf.open(stream=io.BytesIO(content), filetype="pdf") as doc:
             text = chr(12).join([page.get_text("text") for page in doc])
 
-        text_file_name = change_file_ext(file_name, "txt")
+        text_file_name = await change_file_ext(file_name, "txt")
         txt_file_path = await save_file(text_file_name, text)
 
         return { ContentType.TEXT.value: txt_file_path}
@@ -310,7 +310,7 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
     if table_query:
         markdown = await get_file_content(results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-        tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+        tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
  
@@ -346,17 +346,17 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     pdf.save(pdf_buffer)
     pdf_buffer.seek(0) 
     
-    pdf_s3_url = change_file_ext(s3_url, "pdf")
+    pdf_s3_url = await change_file_ext(s3_url, "pdf")
     pdf_content = pdf_buffer.read()
  
     await save_file(pdf_s3_url, pdf_content)
     results = await _pdf_exchange(pdf_s3_url, force_ocr)
 
     if table_query:
-        file_name = get_file_name(pdf_s3_url)
+        file_name = await get_file_name(pdf_s3_url)
         markdown = await get_file_content(results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-        tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+        tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
 
@@ -372,13 +372,13 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
     results = {}
     try:
     
-        file_name = get_file_name(s3_url)
+        file_name = await get_file_name(s3_url)
        
         content = await read_file(s3_url)
         if isinstance(content, bytes):
             content = content.decode("utf-8")
 
-        text_file_name = change_file_ext(file_name, "txt")
+        text_file_name = await change_file_ext(file_name, "txt")
         text_file_path = await save_file(text_file_name, content)
 
         if ext == "text/xml":
@@ -389,18 +389,18 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
             csv_buffer = io.StringIO(content)
             df = pd.read_csv(csv_buffer, index_col=False)
             txt_content = df.to_string(index=False)
-            text_file_name = change_file_ext(file_name, "txt")
+            text_file_name = await change_file_ext(file_name, "txt")
             text_file_path = await save_file(text_file_name, txt_content)
             html_content = df.to_html(index=False)
 
         else:
             html_content = markdown_converter.markdown(content)
-        html_file_name = change_file_ext(file_name, "html")
+        html_file_name = await change_file_ext(file_name, "html")
         html_file_path = await save_file(html_file_name, html_content)
 
         # Markdown Parsing
         markdown = html2text(html_content)
-        md_file_name = change_file_ext(file_name, "md")
+        md_file_name = await change_file_ext(file_name, "md")
         md_file_path = await save_file(md_file_name, markdown)
 
         results = {
@@ -410,7 +410,7 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
         }
         if table_query:
             tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-            tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+            tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
             tables_file_path = await save_file(tables_file_name, tables_content)
             results[table_query["raw"]] = tables_file_path
 
@@ -426,7 +426,7 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
 async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
  
-    file_name = get_file_name(s3_url)
+    file_name = await get_file_name(s3_url)
     content_byte = await read_file(s3_url)
  
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -439,14 +439,14 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         conv = client.UnoClient(server="libreoffice", port="2003", host_location="remote")
         results = {}
 
-        txt_name = change_file_ext(file_name, "txt")
+        txt_name = await change_file_ext(file_name, "txt")
         temp_txt_path = os.path.join(temp_dir, txt_name)
         conv.convert(inpath=temp_input_path, outpath=temp_txt_path)
         with open(temp_txt_path, "rb") as converted_file:
             txt_s3_path = await save_file(txt_name, converted_file.read())
         results[ContentType.TEXT.value] = txt_s3_path
 
-        html_name = change_file_ext(file_name, "html")
+        html_name = await change_file_ext(file_name, "html")
         temp_html_path = os.path.join(temp_dir, html_name)
         conv.convert(inpath=temp_input_path, outpath=temp_html_path)
         with open(temp_html_path, "rb") as converted_file:
@@ -455,13 +455,13 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
         with open(temp_html_path) as html_file:
             markdown = md(html_file.read())
-            md_file_name = change_file_ext(file_name, "md")
+            md_file_name = await change_file_ext(file_name, "md")
             md_file_path = await save_file(md_file_name, markdown)
         results[ContentType.MARKDOWN.value] = md_file_path
 
         if table_query:
             tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-            tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+            tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
             tables_file_path = await save_file(tables_file_name, tables_content)
             results[table_query["raw"]] = tables_file_path
 
@@ -474,7 +474,7 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
  
-    file_name = get_file_name(s3_url)
+    file_name = await get_file_name(s3_url)
     byte_content = await read_file(s3_url)
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -487,13 +487,13 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
         results = {}
 
-        pptx_name = change_file_ext(file_name, "pptx")
+        pptx_name = await change_file_ext(file_name, "pptx")
         temp_pptx_path = os.path.join(temp_dir, pptx_name)
         conv.convert(inpath=temp_input_path, outpath=temp_pptx_path)
         with open(temp_pptx_path, "rb") as converted_file:
             pptx_s3_path = await save_file(pptx_name, converted_file.read())
         results[ContentType.TEXT.value] = pptx_s3_path
-        md_file_name = change_file_ext(file_name, "md")
+        md_file_name = await change_file_ext(file_name, "md")
         new_uuid = uuid4()
         md_file_path = f"{BUCKET}/{new_uuid}_{md_file_name}"
         
@@ -504,10 +504,10 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         html_results = mistletoe.markdown(markdown)
         text_results = html_text.extract_text(html_results, guess_layout=True)
 
-        html_file_name = change_file_ext(file_name, "html")
+        html_file_name = await change_file_ext(file_name, "html")
         html_file_path = await save_file(html_file_name, html_results)
 
-        txt_file_name = change_file_ext(file_name, "txt")
+        txt_file_name = await change_file_ext(file_name, "txt")
         txt_file_path = await save_file(txt_file_name, text_results)
 
         results = {
@@ -523,8 +523,8 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
 async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
 
-    file_name = get_file_name(s3_url)
-    md_file_name = change_file_ext(file_name, "md")
+    file_name = await get_file_name(s3_url)
+    md_file_name = await change_file_ext(file_name, "md")
     
     pptx_content = await read_file(s3_url)
     pptx_file_like = io.BytesIO(pptx_content)  
@@ -536,10 +536,10 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     text_content = html_text.extract_text(html_content, guess_layout=True)
 
-    html_file_name = change_file_ext(file_name, "html")
+    html_file_name = await change_file_ext(file_name, "html")
     html_file_path = await save_file(html_file_name, html_content)
 
-    txt_file_name = change_file_ext(file_name, "txt")
+    txt_file_name = await change_file_ext(file_name, "txt")
     txt_file_path = await save_file(txt_file_name, text_content)
 
     results = {
@@ -550,7 +550,7 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     if table_query:
         tables_content = extract_tables_gliner(table_query["tables"], markdown_content, table_query["output"])
-        tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+        tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
  
@@ -569,8 +569,8 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
     if image_file_path:
         try:
             image_metadata = json.loads(image_file_path)
-            file_name = get_file_name(s3_url)
-            img_file_name = change_file_ext(file_name, "json")
+            file_name = await get_file_name(s3_url)
+            img_file_name = await change_file_ext(file_name, "json")
             img_file_path = await save_file(img_file_name, json.dumps(image_metadata))
             metadata["images"]=img_file_path
             await save_metadata(s3_url,  metadata)
@@ -580,10 +580,10 @@ async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | No
 
 
     if table_query:
-        file_name = get_file_name(s3_url)
+        file_name = await get_file_name(s3_url)
         markdown = await get_file_content(metadata["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
-        tables_file_name = change_file_ext("extracted_tables_" + file_name, table_query["output"])
+        tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
         metadata[table_query["raw"]] = tables_file_path
 

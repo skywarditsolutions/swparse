@@ -67,7 +67,7 @@ def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
         return buffer.read()
 
 
-def change_file_ext(file_name: str, extension: str) -> str:
+async def change_file_ext(file_name: str, extension: str) -> str:
     file_path = file_name.split(".")
     file_path[-1] = extension
     return ".".join(file_path)
