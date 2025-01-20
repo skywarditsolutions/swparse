@@ -6,9 +6,6 @@ from swparse.__about__ import __version__ as current_version
 from swparse.config.base import get_settings
 from pydantic import BaseModel
 
-if TYPE_CHECKING:
-    from PIL.Image import Image
-
 
 __all__ = ("SystemHealth",)
 

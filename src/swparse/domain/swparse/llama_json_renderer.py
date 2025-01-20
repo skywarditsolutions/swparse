@@ -5,8 +5,9 @@ from typing import Any
 import re
 import regex
 import boto3
-from botocore.config import Config
+import structlog
 import html_text
+from botocore.config import Config
 from markdownify import MarkdownConverter
 from bs4 import MarkupResemblesLocatorWarning
 
@@ -17,7 +18,6 @@ from .html_renderer import LLAMAHTMLRenderer
 from .utils import save_image_sync
 from .schemas import LLAMAJSONOutput
 from swparse.config.app import settings
-import structlog
 from swparse.domain.swparse.utils import extract_md_components
 
 # Ignore beautifulsoup warnings
@@ -35,7 +35,6 @@ def cleanup_text(full_text:str):
     full_text = re.sub(r'\n{3,}', '\n\n', full_text)
     full_text = re.sub(r'(\n\s){3,}', '\n\n', full_text)
     return full_text
-
  
 
 class Markdownify(MarkdownConverter):

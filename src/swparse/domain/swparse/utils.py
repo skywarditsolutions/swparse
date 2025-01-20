@@ -10,7 +10,7 @@ from uuid import uuid4
 from itertools import islice
 from operator import attrgetter
 from datetime import UTC, datetime
-from typing import Any, TYPE_CHECKING, List
+from typing import Any, List
 
  
 import torch
@@ -44,10 +44,6 @@ from swparse.config.app import settings
 from swparse.db.models.content_type import ContentType
 from swparse.domain.swparse.schemas import JobMetadata
 
-
-if TYPE_CHECKING:
-    from PIL.Image import Image
-
 logger = structlog.get_logger()
 BUCKET = settings.storage.BUCKET
 JOB_FOLDER = settings.storage.JOB_FOLDER
@@ -55,7 +51,7 @@ MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
 
-def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
+async def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
     x2x = XLS2XLSX(io.BytesIO(content))
     workbook = x2x.to_xlsx()
@@ -689,23 +685,12 @@ async def get_file_name(s3_url: str) -> str:
     return os.path.basename(s3_url).split("/")[-1]
 
 
-
 def parse_minio_url(s3_url: str):
     """Parse MinIO-style S3 URL into bucket name and key i.e compatible with aws s3."""
     parts = s3_url.split("/", 1)
     if len(parts) != 2:
         raise ValueError("Invalid MinIO URL format. Expected 'BUCKET/KEY'.")
     return parts[0], parts[1]
-
- 
-
-# def parse_s3_url(s3_url: str):
-#     """Parse Minio S3 URL into bucket name and key."""
-#     if not s3_url.startswith("s3://"):
-#         raise ValueError("Invalid S3 URL")
-#     parts = s3_url[5:].split("/", 1)
-#     return parts[0], parts[1]
-
 
 
 async def read_file(s3_url: str) -> bytes | str:
@@ -787,7 +772,6 @@ async def save_image(image_name: str, image: "PILImage") -> str:
 
 
 # Meta data utils
-
 async def save_metadata(s3_url: str, metadata: dict) -> None:
     """Asynchronously save metadata to a separate S3 object."""
    
@@ -819,7 +803,6 @@ async def save_metadata(s3_url: str, metadata: dict) -> None:
         logger.info("error when working with")
         # logger.info(metadata)
         logger.info(type(metadata))
-
 
  
 
