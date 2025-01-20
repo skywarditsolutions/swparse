@@ -352,12 +352,11 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     
     pdf_s3_url = await change_file_ext(s3_url, "pdf")
     pdf_content = pdf_buffer.read()
- 
-    await save_file(pdf_s3_url, pdf_content)
+    pdf_s3_url = await save_file(pdf_s3_url, pdf_content, randomize=False)
     results = await _pdf_exchange(pdf_s3_url, force_ocr)
 
     if table_query:
-        file_name = await get_file_name(pdf_s3_url)
+        file_name = await get_file_name(s3_url)
         markdown = await get_file_content(results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
@@ -365,8 +364,6 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
         results[table_query["raw"]] = tables_file_path
 
     await save_metadata(s3_url, results)
-
-    return results
 
 
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
