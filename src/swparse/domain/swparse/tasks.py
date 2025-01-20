@@ -19,7 +19,7 @@ import mistletoe
 import pandas as pd
 import pypdfium2 as pdfium
 import structlog
-from PIL import Image
+from PIL import Image as PILImage
 from unoserver import client
 from html2text import html2text
 from markdownify import markdownify as md
@@ -98,10 +98,8 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
                     logger.error(f"sheet: {sheet_name} is not found in the provided file!")
                     continue
 
-            logger.info("Extracting images")
             images = await extract_excel_images(str_buffer, sheet_name)
-            logger.info("Finished Extracting images")
-
+   
             all_images.update(images)
             csv_content += df.to_csv(index=False, na_rep="")
             csv_content += "\n"
@@ -226,6 +224,10 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
 
 
 async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
+async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
+
+ 
+async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]: 
 
  
     logger.info("Started parse_docx_s3")
@@ -233,7 +235,9 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     # HTML parsing
     byte_content = await read_file(s3_url)
-    html_data = mammoth.convert_to_html(byte_content)  # type: ignore
+    with io.BytesIO(byte_content) as byte_stream:
+        html_data = mammoth.convert_to_html(byte_stream)  # type: ignore
+ 
     htmlData: str = html_data.value  # type: ignore
     # TODO: refactor using a html tree
 
@@ -328,7 +332,7 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     logger.info("Started parse_image_s3")
     content_byte = await read_file(s3_url)
 
-    pil_image = Image.open(io.BytesIO(content_byte)).convert("RGB")
+    pil_image = PILImage.open(io.BytesIO(content_byte)).convert("RGB")
     pdf = pdfium.PdfDocument.new()
 
     image = pdfium.PdfImage.new(pdf)

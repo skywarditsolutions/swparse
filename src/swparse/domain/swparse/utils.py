@@ -54,7 +54,6 @@ JOB_FOLDER = settings.storage.JOB_FOLDER
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
-SAQ_PROCESSES = settings.saq.PROCESSES
 
 def convert_xls_to_xlsx_bytes(content: bytes) -> bytes:
 
@@ -210,8 +209,6 @@ def convert_pptx_to_md(pptx_content: io.BytesIO, pptx_filename: str) -> str:
         return str(md_file)
     except Exception as e:
         raise Exception
-
-
 
 
 
