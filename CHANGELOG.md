@@ -1,3 +1,18 @@
+## v0.7.9 (2025-01-30)
+
+### Feat
+
+- refactor HTML and llama JSON renderer to accomodate the new marker version
+- upgrade marker-pdf to 1.3.3 and surya to 0.10.0; fix: remove unnecessary files and clean code
+- added logging, remove unnecessary imports
+- release note for v0.7.8
+
+### Fix
+
+- image parsing; file-read not awaiting file write out operation
+- docx file parsing type error and clean codes
+- typo in release note
+
 ## v0.7.8 (2025-01-18)
 
 ### Feat
