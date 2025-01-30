@@ -10,21 +10,19 @@ from bs4 import NavigableString
 from markdownify import MarkdownConverter
 
  
-import boto3
+import os
 import structlog
 import html_text
-from botocore.config import Config
 from bs4 import MarkupResemblesLocatorWarning
 
 from marker.schema import BlockTypes
 from marker.schema.document import Document
 
-from swparse.domain.swparse.html_renderer import LLAMAHTMLRenderer
+from html_renderer import LLAMAHTMLRenderer
  
 from swparse.domain.swparse.schemas import LLAMAJSONOutput
 from swparse.config.app import settings
-from swparse.domain.swparse.utils import extract_md_components, save_image_sync
-
+from swparse.domain.swparse.utils import extract_md_components
 # Ignore beautifulsoup warnings
 import warnings
 
@@ -35,6 +33,13 @@ BUCKET = settings.storage.BUCKET
 MINIO_ROOT_USER = settings.storage.ROOT_USER
 MINIO_ROOT_PASSWORD = settings.storage.ROOT_PASSWORD
 
+ 
+def local_save_image(folder_path:str, image_name:str, image: Any) -> str:
+    if not os.path.exists(folder_path):  
+        os.makedirs(folder_path)   
+    image_path = os.path.join(folder_path, image_name)   
+    image.save(image_path)
+    return image_path
 
 def escape_dollars(text:str):
     return text.replace("$", r"\$")
@@ -257,13 +262,13 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
         full_text = ""
  
         all_images = {}
-        s3_client = boto3.client(
-            "s3",
-            endpoint_url=settings.storage.ENDPOINT_URL,
-            aws_access_key_id=MINIO_ROOT_USER,
-            aws_secret_access_key=MINIO_ROOT_PASSWORD,
-            config=Config(signature_version="s3v4"),
-        )
+        # s3_client = boto3.client(
+        #     "s3",
+        #     endpoint_url=settings.storage.ENDPOINT_URL,
+        #     aws_access_key_id=MINIO_ROOT_USER,
+        #     aws_secret_access_key=MINIO_ROOT_PASSWORD,
+        #     config=Config(signature_version="s3v4"),
+        # )
         for pageIdx in pageKeys:
             saved_image_list:list[dict[str, str]] = []
 
@@ -271,7 +276,9 @@ class LLAMAJSONRenderer(LLAMAHTMLRenderer):
             image_dict =  paginated_images.get(pageIdx, {})
             for image_name, image in image_dict.items():
        
-                saved_img_file_path = save_image_sync(s3_client, image_name, image)      
+                # saved_img_file_path = save_image_sync(s3_client, image_name, image)
+                saved_img_file_path = local_save_image("temp", image_name, image)
+                
        
                 # collecting images per page
                 saved_image_list.append({image_name:saved_img_file_path})

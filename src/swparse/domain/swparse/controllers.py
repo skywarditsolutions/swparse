@@ -101,6 +101,7 @@ class ParserController(Controller):
             logger.info("It's already exist")
             if CACHING_ON:
                 metadata_json = await get_metadata(s3_url)
+                # if metadata_json.get("html"):
                 if metadata_json:
                     del kwargs["ext"]
                     job = await queue.enqueue(

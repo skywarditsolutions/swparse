@@ -1,21 +1,27 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, Tuple, Annotated
+
+import textwrap
+from PIL import Image
 
 from pydantic import BaseModel
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
 
 from marker.renderers import BaseRenderer
 from marker.schema import BlockTypes
 from marker.schema.blocks import BlockId
 from marker.schema.document import Document, DocumentOutput
-from marker.renderers.html import HTMLRenderer
 
-
-from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+from marker.settings import settings
  
 # Ignore beautifulsoup warnings
 import warnings
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+
+
+# Suppress DecompressionBombError
+Image.MAX_IMAGE_PIXELS = None
 
 
 class HTMLOutput(BaseModel):
@@ -27,17 +33,16 @@ class HTMLOutput(BaseModel):
 
 class LLAMAHTMLRenderer(BaseRenderer):
     image_blocks: list = [BlockTypes.Picture, BlockTypes.Figure]
-    page_blocks: list = [BlockTypes.Page]
-    paginate_output: bool = True
     image_extraction_mode: Literal["lowres", "highres"] = "highres"
 
+    page_blocks: Annotated[Tuple[BlockTypes],
+        "The block types to consider as pages.",
+    ] = (BlockTypes.Page,)
+    paginate_output: Annotated[bool, "Whether to paginate the output.",] = True
 
     def extract_image(self, document:Document, image_id:BlockId):
         image_block = document.get_block(image_id)
-        page = document.get_page(image_block.page_id)
-        page_img = page.lowres_image if self.image_extraction_mode == "lowres" else page.highres_image
-        image_box = image_block.polygon.rescale(page.polygon.size, page_img.size)
-        cropped = page_img.crop(image_box.bbox)
+        cropped = image_block.get_image(document, highres=self.image_extraction_mode == "highres")
         return cropped
 
 
@@ -50,6 +55,7 @@ class LLAMAHTMLRenderer(BaseRenderer):
         for ref in content_refs:
             src = ref.get('src')
             sub_images = {}
+            content = ""
             for item in document_output.children:
                 if item.id == src:
                     content, sub_images_, paginated_html, paginated_images = self.extract_html(document, item, paginated_html, paginated_images, level + 1)
@@ -57,24 +63,25 @@ class LLAMAHTMLRenderer(BaseRenderer):
                     ref_block_id: BlockId = item.id
                     break
 
-            if ref_block_id.block_type in self.remove_blocks:
-                ref.replace_with('')
-            elif ref_block_id.block_type in self.image_blocks:
+            if ref_block_id.block_type in self.image_blocks:
                 if self.extract_images:
                     image = self.extract_image(document, ref_block_id)
-                    image_name = f"{ref_block_id.to_path()}.png"
+                    image_name = f"{ref_block_id.to_path()}.{settings.OUTPUT_IMAGE_FORMAT.lower()}"
                     image_name = image_name.lower()
                     images[image_name] = image
                     
-                    # paginated images collection
-                    if self.paginate_output and f"{ref_block_id.page_id}" in paginated_images:
-                        paginated_images[f"{ref_block_id.page_id}"][image_name] = image
+                    ref.replace_with(BeautifulSoup(f"<p>{content}<img alt='{image_name}' src='{image_name}'></p>", 'html.parser'))
+                    
+                    if self.paginate_output and str(ref_block_id.page_id) in paginated_images:
+                        paginated_images[str(ref_block_id.page_id)][image_name] = image
                     else:
-                        paginated_images[f"{ref_block_id.page_id}"] = {image_name: image}
-
-                    ref.replace_with(BeautifulSoup(f"<p><img alt='{image_name}' src='{image_name}'></p>", 'html.parser'))
+                        paginated_images[str(ref_block_id.page_id)] = {image_name: image}
                 else:
-                    ref.replace_with('')
+                    # This will be the image description if using llm mode, or empty if not
+                    ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
+                    # paginated images collection
+              
+ 
             elif ref_block_id.block_type in self.page_blocks:
                 images.update(sub_images)
 
@@ -82,8 +89,6 @@ class LLAMAHTMLRenderer(BaseRenderer):
                 if self.paginate_output:
                     paginated_html[f"{ref_block_id.page_id}"] = content
                     content = f"<div class='page' data-page-id='{ref_block_id.page_id}'>{content}</div>"
-
-
                 ref.replace_with(BeautifulSoup(f"{content}", 'html.parser'))
             else:
                 images.update(sub_images)
@@ -93,6 +98,17 @@ class LLAMAHTMLRenderer(BaseRenderer):
         if level == 0:
             output = self.merge_consecutive_tags(output, 'b')
             output = self.merge_consecutive_tags(output, 'i')
+            output = textwrap.dedent(f"""
+            <!DOCTYPE html>
+            <html>
+                <head>
+                    <meta charset="utf-8" />
+                </head>
+                <body>
+                    {output}
+                </body>
+            </html>
+            """)
 
         return output, images, paginated_html, paginated_images
 
