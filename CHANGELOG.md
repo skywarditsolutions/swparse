@@ -2,16 +2,18 @@
 
 ### Feat
 
-- refactor HTML and llama JSON renderer to accomodate the new marker version
-- upgrade marker-pdf to 1.3.3 and surya to 0.10.0; fix: remove unnecessary files and clean code
-- added logging, remove unnecessary imports
-- release note for v0.7.8
+- Refactor HTML and Llama JSON renderer to accommodate the new marker version.
+- Upgrade marker-pdf to 1.3.3 and Surya to 0.10.
 
 ### Fix
 
-- image parsing; file-read not awaiting file write out operation
-- docx file parsing type error and clean codes
-- typo in release note
+- Fixed image file saving issue; boto3 async file-read was not awaiting the file.
+- Fixed docx file parsing type error in asynchronous environment.
+
+### Improvements
+
+- Swparse now preserves multiple lines within a single table cell instead of splitting them into separate rows.
+
 
 ## v0.7.8 (2025-01-18)
 
