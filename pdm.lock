@@ -5,7 +5,7 @@
 groups = ["default", "dev", "docs", "linting", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:bb907ab08e1b79ac5a4d9a6eeb5f9a097c9d8b107c4c15709665fe7a0f8e0f83"
+content_hash = "sha256:2cf12a31730edf9f618d0ac19f0f401f5578b402e03b13131fe23191ea750eac"
 
 [[metadata.targets]]
 requires_python = "==3.12.*"
@@ -1982,8 +1982,8 @@ files = [
 
 [[package]]
 name = "litestar-saq"
-version = "0.5.0"
-requires_python = ">=3.9"
+version = "0.3.0"
+requires_python = ">=3.8"
 summary = "Litestar integration for SAQ"
 groups = ["default"]
 dependencies = [
@@ -1991,8 +1991,8 @@ dependencies = [
     "saq>=0.14.1",
 ]
 files = [
-    {file = "litestar_saq-0.5.0-py3-none-any.whl", hash = "sha256:40f4b6e9fe34c41f1c7f799d74746be9c0a48d835cdd068cf7bcbc9dde104662"},
-    {file = "litestar_saq-0.5.0.tar.gz", hash = "sha256:ec1d245d71a5f434235c19442af580ef4afa88cdc52551135379949cdfa21d74"},
+    {file = "litestar_saq-0.3.0-py3-none-any.whl", hash = "sha256:7c58c60203b76b66b482bde98b5686f3541e3c36f1e5dbbc2d9d572b91011dcb"},
+    {file = "litestar_saq-0.3.0.tar.gz", hash = "sha256:4a885edc6fc90e2aaad239b566c7e0f09e13ebf42b7ac7fbc75a547e5b36745d"},
 ]
 
 [[package]]
@@ -4015,15 +4015,15 @@ files = [
 
 [[package]]
 name = "saq"
-version = "0.20.1"
+version = "0.19.0"
 summary = "Distributed Python job queue with asyncio and redis"
 groups = ["default"]
 dependencies = [
     "croniter>=0.3.18",
 ]
 files = [
-    {file = "saq-0.20.1-py3-none-any.whl", hash = "sha256:69cbc99ce19f7b84e6c57e8226cf985455c9797ba3fbca6e5a60d9b6010fa33b"},
-    {file = "saq-0.20.1.tar.gz", hash = "sha256:35a1f72d7e2124d3f9337bb28e09204473eb52c890f8a2122ed3c8a4fb251ea6"},
+    {file = "saq-0.19.0-py3-none-any.whl", hash = "sha256:e6636c4995b102ddec8308ebf839a84a6fbe4b2142485b6e53f16e61bf31f8f5"},
+    {file = "saq-0.19.0.tar.gz", hash = "sha256:b52ed5c58699ddd2153658aaa0fe9bd7304fd3b65e198bdccab9c8af9f3b999d"},
 ]
 
 [[package]]
