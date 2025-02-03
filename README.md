@@ -524,3 +524,139 @@ Loading environment configuration from .env
 ╰──────────────────────────────────────────────────────────────────────────────╯
 
 ```
+
+## Benchmark 
+
+### Benchmark For Swparse parsing
+
+- `File name`: My-Agreements-in-4i-Tip-Sheet_508-1.pdf
+- `File size`: 432.5 KiB
+- `Pages`: 11
+- `Description`: the file mostly contains text.
+
+
+| Metric      | Markdown Extraction   |     Force OCR        |    Plain Text       |
+|-------------|-----------------------|----------------------|---------------------|
+| 1st Attempt |  0 min 8 sec 471 ms   |  0 min 25 sec 350 ms |  0 min 3 sec 977 ms |
+| 2st Attempt |  0 min 10 sec 136 ms  |  0 min 24 sec 922 ms |  0 min 4 sec 710 ms |
+| 3st Attempt |  0 min 10 sec 445 ms  |  0 min 26 sec 167 ms |  0 min 4 sec 711 ms |
+| 4st Attempt |  0 min 8 sec 602 ms   |  0 min 23 sec 969 ms |  0 min 3 sec 928 ms |
+| 5st Attempt |  0 min 10 sec 692 ms  |  0 min 26 sec 127 ms |  0 min 3 sec 854 ms |
+| Avg Time Taken |`0 min 9 sec 669 ms`| `0 min 25 sec 307 ms`| `0 min 4 sec 236 ms`|
+
+<br>
+ 
+---
+
+
+
+- `File name`: 2024 Sales Presentation C6501-PPOs.pdf  
+- `File size`: 3.6 MiB
+- `Pages`: 31
+- `Description`: all the page are images except the last page which is text.
+
+ 
+| Metric         | Markdown Extraction   |     Force OCR       |    Plain Text       |
+|----------------|-----------------------|---------------------|---------------------|
+| 1st Attempt |  0 min 53 sec 127 ms |  0 min 52 sec 491 ms |  0 min 11 sec 125 ms |
+| 2st Attempt |  0 min 49 sec 99 ms  |  0 min 54 sec 478 ms |  0 min 7 sec 988 ms  |
+| 3st Attempt |  0 min 50 sec 752 ms |  0 min 54 sec 68 ms  |  0 min 8 sec 533 ms  |
+| 4st Attempt |  0 min 53 sec 390 ms |  0 min 54 sec 331 ms |  0 min 7 sec 849 ms  |
+| 5st Attempt |  0 min 51 sec 199 ms |  0 min 49 sec 843 ms |  0 min 10 sec 649 ms |
+| Avg Time Taken |`0 min 51 sec 514 ms`| `0 min 53 sec 42 ms`| `0 min 9 sec 229 ms`|
+
+<br>
+
+---
+
+- `File name`: CMS_AI_Playbook_3_Final.pdf 
+- `File size`: 4.1 MiB
+- `Pages`: 108
+- `Description`: the file contains both images and text with more than 100 pages.
+
+| Metric         | Markdown Extraction   |     Force OCR       |    Plain Text       |
+|----------------|-----------------------|---------------------|---------------------|
+| 1st Attempt | 0 min 55 sec 769 ms  |  4 min 0 sec 401 ms |  0 min 12 sec 77 ms   |
+| 2st Attempt | 0 min 59 sec 741 ms  |  4 min 2 sec 578 ms |  0 min 15 sec 911 ms  |
+| 3st Attempt |  0 min 55 sec 857 ms |  4 min 1 sec 461 ms |  0 min 12 sec 46 ms  |
+| 4st Attempt |  0 min 53 sec 974 ms |  4 min 2 sec 916 ms |  0 min 15 sec 893 ms |
+| 5st Attempt |  0 min 56 sec 815 ms |  4 min 3 sec 304 ms |  0 min 14 sec 724 ms |
+| Avg Time Taken | `0 min 56 sec 431 ms`| `4 min 2 sec 172 ms`| `0 min 14 sec 130 ms`|
+
+---
+
+### Benchmark For Docling parsing
+
+| **Attempt**          | **My-Agreements-in-4i-Tip-Sheet_508-1.pdf** | **2024 Sales Presentation C6501-PPOs-1.pdf** | **CMS_AI_Playbook_3_Final.pdf** |
+|-----------------------|--------------------------------------------|---------------------------------------------|---------------------------------|
+| **1st**              | 0 min 14 sec 85 ms                         | 1 min 27 sec 548 ms                         | 1 min 3 sec 775 ms             |
+| **2nd**              | 0 min 13 sec 858 ms                        | 1 min 13 sec 652 ms                         | 1 min 0 sec 839 ms             |
+| **3rd**              | 0 min 13 sec 91 ms                         | 1 min 26 sec 656 ms                         | 1 min 0 sec 658 ms             |
+| **4th**              | 0 min 13 sec 842 ms                        | 1 min 12 sec 919 ms                         | 0 min 59 sec 648 ms            |
+| **5th**              | 0 min 12 sec 524 ms                        | 1 min 14 sec 204 ms                         | 1 min 2 sec 614 ms             |
+| **Average**          | `0 min 13 sec 480 ms`                      |`1 min 18 sec 996 ms`                        |`1 min 1 sec 507 ms`            |
+
+---
+
+### Average Time taken for Markdown Extraction of Docling and Swparse
+
+| **Parser**  | **My-Agreements-in-4i-Tip-Sheet_508-1.pdf** | **2024 Sales Presentation C6501-PPOs-1.pdf** | **CMS_AI_Playbook_3_Final.pdf** |
+|-------------|---------------------------------------------|----------------------------------------------|---------------------------------|
+| **Docling** | 0 min 13 sec 480 ms                         | 1 min 18 sec 996 ms                          | 1 min 1 sec 507 ms              |
+| **Swparse** | 0 min  9 sec 669 ms                         | 0 min 51 sec 514 ms                          | 0 min 56 sec 431 ms             |
+
+
+### Performance Benchmark: Single Worker vs. Multiple Workers
+
+#### Test: Markdown Extraction 
+
+| Case             | File Name                                | Total Time Taken                |
+|------------------|------------------------------------------|---------------------------------|
+| Single Worker    | CMS_AI_Playbook_3_Final.pdf              | Time Taken: 0 min 48 sec 552 ms |
+| Single Worker    | 2024 Sales Presentation C6501-PPOs-1.pdf | Time Taken: 0 min 46 sec 384 ms |
+| Total Time Taken | **-**                                    | Time Taken: 1 min 34 sec 936 ms |
+| Multiple Workers |  All Files Processed Concurrently        | Time Taken: 1 min 28 sec 211 ms |
+
+
+#### Test: Force OCR Extraction
+
+| Case         | File Name                         | Total Time Taken          |
+|--------------|-----------------------------------|---------------------------|
+| Single Worker    | CMS_AI_Playbook_3_Final.pdf  | Time Taken: 0 min 51 sec 552 ms |
+| Single Worker    | 2024 Sales Presentation C6501-PPOs-1.pdf  | Time Taken: 0 min 47 sec 384 ms |
+| Total Time Taken | **-**                         | Time Taken: 1 min 39 sec 936 ms |
+| Multiple Workers    | All Files Processed Concurrently  | Time Taken: 2 min 16 sec 879 ms |
+ 
+
+#### Test: Plain text Extraction 
+
+| Case              | File Name                                | Total Time Taken               |
+|-------------------|------------------------------------------|--------------------------------|
+| Single Worker     | CMS_AI_Playbook_3_Final.pdf              | Time Taken: 0 min 5 sec 265 ms |
+| Single Worker     | 2024 Sales Presentation C6501-PPOs-1.pdf | Time Taken: 0 min 3 sec 119 ms |
+| Total Time Taken  | **-**                                    | Time Taken: 0 min 8 sec 385 ms |
+| Multiple Workers  | All Files Processed Concurrently         | Time Taken: 0 min 5 sec  88 ms |
+
+
+
+## Stress Testing
+
+Bombarding with 10000 requests using 100 connections:
+
+| **Statistics** | **Avg**    | **Stdev**    | **Max**     |
+|----------------|------------|--------------|-------------|
+| Reqs/sec       | 396.28     | 187.71       | 1972.47     |
+| Latency        | 251.54ms   | 76.41ms      | 1.30s       |
+
+| **HTTP Codes** | **Count** |
+|----------------|-----------|
+| 1xx            | 0         |
+| 2xx            | 10000     |
+| 3xx            | 0         |
+| 4xx            | 0         |
+| 5xx            | 0         |
+| others         | 0         |
+
+| **Throughput** | **Value** |
+|----------------|-----------|
+| Throughput     | 89.97KB/s |
