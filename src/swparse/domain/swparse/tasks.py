@@ -363,6 +363,8 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     logger.info("Extracted results")
     logger.info(results)
     await save_metadata(s3_url, results)
+    
+    return results
 
 
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
