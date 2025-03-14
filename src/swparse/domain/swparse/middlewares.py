@@ -37,8 +37,11 @@ class ApiKeyAuthMiddleware(AbstractMiddleware):
         api_key = headers.get("authorization")
         if not api_key:
             raise NotAuthorizedException(status_code=403, detail="Forbidden missing API key")
-  
-        prefix, token = api_key.split(" ")
+
+        if not api_key.startswith("Bearer "):
+            raise NotAuthorizedException(status_code=403, detail="Forbidden: API key must start with 'Bearer '")
+
+        token = api_key[7:]  
 
         if token != DEFAULT_API_KEY:
             connection: ASGIConnection = ASGIConnection(scope=scope, receive=receive, send=send)
