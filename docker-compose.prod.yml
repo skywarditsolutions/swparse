@@ -116,7 +116,7 @@ services:
   #             capabilities: [gpu]
   migrator:
     image: swparse:latest
-    restart: "no"
+    restart: unless-stopped
     command: litestar database upgrade --no-prompt
     env_file:
       - .env
