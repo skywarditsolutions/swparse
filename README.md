@@ -118,7 +118,6 @@ curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
 
 This will extract the plain text from the PDF file, skipping any layout or reading order detection.
 
-<hr>
 
 To quickly get a development environment running, run the following:
 
