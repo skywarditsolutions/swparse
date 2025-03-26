@@ -2,19 +2,23 @@
 
 ### Feat
 
-- added 'force_ocr' and 'cached_on' parameter usage in ReadMe file
-- add optional 'cached_on' parameter to control caching during file upload, updated surya and marker version to latest
-- changed restart for migrator to unless-stopped.
-- disable worker 2 to limit GPU usage
-- change bearer token checking method
-- Add benchmark and stress testing statistics to ReadMe
-- release note for v0.7.9
+- Added usage examples for the force_ocr and cached_on parameters in the README.
+- Introduced optional cached_on parameter to control caching behavior during file uploads.
+- Updated Surya and Marker to their latest versions.
+- Setup Swparse to automatically run on startup for server deployment.
+- Updated bearer token validation method.
+- Added benchmark and stress test statistics to the README.
 
 ### Fix
 
-- dependencies lock file
-- image parsing metadata not returning to JOB
-- saq dependency issues
+- Fixed issue where image parsing metadata was not returned to the job queue.
+- Resolved SAQ dependency conflicts.
+- Fixed force_ocr behavior — it will now always re-OCR the entire document as expected.
+
+### Improvements
+
+- Improved layout detection for complex table structures.
+
 
 ## v0.7.9 (2025-01-30)
 
