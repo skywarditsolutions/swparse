@@ -45,6 +45,7 @@ class UploadBody(BaseStruct):
     file: list[UploadFile]
     force_ocr: Optional[list[bool]] = None 
     sheet_index: Optional[list[str | int]] = None 
+    cached_on: Optional[bool] = None
 
 class ExtractionController(Controller):
     tags = ["Extractions"]
@@ -98,9 +99,8 @@ class ExtractionController(Controller):
             content = await file.read()
             uploaded_file = UploadFile(content_type=file.content_type, filename=file.filename, file_data=content)
             
-            
             force_ocr = data.force_ocr[index] if index < len(data.force_ocr) else False
-            job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = force_ocr)
+            job = await extraction_service.create_job(uploaded_file, data.sheet_index, force_ocr = force_ocr, cached_on = data.cached_on)
      
             extraction = ExtractionModel(
                 file_name=file.filename,

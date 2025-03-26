@@ -44,6 +44,7 @@ class UploadBody(BaseStruct):
     sheet_index: Optional[list[str | int]] = None 
     force_ocr: bool = False
     plain_text: bool = False
+    cached_on: Optional[bool] = None
 
 
 class ParserController(Controller):
@@ -72,6 +73,7 @@ class ParserController(Controller):
         hashed_input ={
             "content": content
         }
+        
         if data.force_ocr:
             hashed_input["force_ocr"] = True
             
@@ -96,12 +98,11 @@ class ParserController(Controller):
                 except:
                     raise HTTPException(detail="Invalid result type", status_code=400)
             metadata["result_type"] = data.parsing_instruction
-
+        use_cache = data.cached_on if data.cached_on is not None else CACHING_ON
         if await is_file_exist(s3_url):
-            logger.info("It's already exist")
-            if CACHING_ON:
+            if use_cache:
+                logger.info("Using Cached File!")
                 metadata_json = await get_metadata(s3_url)
-                # if metadata_json.get("html"):
                 if metadata_json:
                     del kwargs["ext"]
                     job = await queue.enqueue(
