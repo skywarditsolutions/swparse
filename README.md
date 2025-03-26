@@ -117,7 +117,44 @@ curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
 ```
 
 This will extract the plain text from the PDF file, skipping any layout or reading order detection.
+<hr>
 
+### PDF File Extraction in Force OCR Mode
+
+
+The `force_ocr` parameter allows users to remove any existing OCR text in the PDF and re-run OCR using Surya, the internal OCR engine. This is useful when the existing text layer is incorrect or missing, and you want to force a clean OCR pass while still preserving the layout and reading order of the original document.
+
+To enable this mode, include the `force_ocr` parameter in the request body:
+
+```bash
+curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
+-H "Authorization: Bearer <API-KEY>" \
+-H "Content-Type: multipart/form-data" \
+-F "file=@<file-path>" \
+-F "plain_text=true"
+```
+
+<hr>
+
+### File Extraction Result Caching
+
+The cached_on parameter controls whether the extracted result should be cached for future requests.
+
+- If cached_on=true, the result will be saved and reused.
+
+- If cached_on=false, the system will always reprocess the file, even if it's already cached.
+
+You can also configure default caching behavior using the environment variable CACHING_ON, but the cached_on parameter in the request takes priority.
+
+```bash
+curl -X POST "http://0.0.0.0:8000/api/parsing/upload" \
+  -H "Authorization: Bearer <API-KEY>" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@<file-path>" \
+  -F "cached_on=false"
+
+```
+<hr>
 
 To quickly get a development environment running, run the following:
 
