@@ -1,3 +1,21 @@
+## v0.7.10 (2025-03-26)
+
+### Feat
+
+- added 'force_ocr' and 'cached_on' parameter usage in ReadMe file
+- add optional 'cached_on' parameter to control caching during file upload, updated surya and marker version to latest
+- changed restart for migrator to unless-stopped.
+- disable worker 2 to limit GPU usage
+- change bearer token checking method
+- Add benchmark and stress testing statistics to ReadMe
+- release note for v0.7.9
+
+### Fix
+
+- dependencies lock file
+- image parsing metadata not returning to JOB
+- saq dependency issues
+
 ## v0.7.9 (2025-01-30)
 
 ### Feat
