@@ -1,3 +1,51 @@
+## v0.7.11 (2025-04-07)
+
+### Feat
+- Migrated dependency installation from PDM to UV; updated Docker setup.
+
+### Fix
+- Resolved image OCR issue causing a `cv2.error: bad argument` in `fillPoly` function.
+
+
+## v0.7.10 (2025-03-26)
+
+### Feat
+
+- Added usage examples for the force_ocr and cached_on parameters in the README.
+- Introduced optional cached_on parameter to control caching behavior during file uploads.
+- Updated Surya and Marker to their latest versions.
+- Setup Swparse to automatically run on startup for server deployment.
+- Updated bearer token validation method.
+- Added benchmark and stress test statistics to the README.
+
+### Fix
+
+- Fixed issue where image parsing metadata was not returned to the job queue.
+- Resolved SAQ dependency conflicts.
+- Fixed force_ocr behavior — it will now always re-OCR the entire document as expected.
+
+### Improvements
+
+- Improved layout detection for complex table structures.
+
+
+## v0.7.9 (2025-01-30)
+
+### Feat
+
+- Refactor HTML and Llama JSON renderer to accommodate the new marker version.
+- Upgrade marker-pdf to 1.3.3 and Surya to 0.10.
+
+### Fix
+
+- Fixed image file saving issue; boto3 async file-read was not awaiting the file.
+- Fixed docx file parsing type error in asynchronous environment.
+
+### Improvements
+
+- Swparse now preserves multiple lines within a single table cell instead of splitting them into separate rows.
+
+
 ## v0.7.8 (2025-01-18)
 
 ### Feat

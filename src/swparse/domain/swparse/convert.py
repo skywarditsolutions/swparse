@@ -68,10 +68,10 @@ async def pdf_markdown(
     logger.info(list(models_dict.keys()))
     
     if MEMORY_USAGE_LOG:
-        logger.info(f"(After model loaded) VRAM ")
         allocated, cached = get_vram_usage()
+        logger.info(f"(After model loaded) VRAM ")
         logger.info(f"GPU Memory - Allocated: {allocated:.2f} MB, Cached: {cached:.2f} MB")
-    pass
+    
     processors = [
         "marker.processors.blockquote.BlockquoteProcessor",
         # "marker.processors.code.CodeProcessor",
@@ -87,9 +87,8 @@ async def pdf_markdown(
         "marker.processors.text.TextProcessor",
         "marker.processors.debug.DebugProcessor",
     ]
- 
+        
     async with create_temp_file_async(in_file, ".pdf") as filename:
- 
 
         config = {
             "paginate_output": True,

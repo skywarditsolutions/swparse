@@ -3,29 +3,28 @@ from __future__ import annotations
 import os
 import io
 import re
-import base64
 import json
+import base64
 import tempfile
+from uuid import uuid4
 from typing import TYPE_CHECKING, Optional
 from pydantic import TypeAdapter, ValidationError
 
-from uuid import uuid4
 
 import pymupdf
 import html_text
 import mammoth
-import markdown as markdown_converter
 import mistletoe
+import structlog
 import pandas as pd
 import pypdfium2 as pdfium
-import structlog
-from PIL import Image
 from unoserver import client
 from html2text import html2text
+from PIL import Image as PILImage
+from openpyxl import load_workbook
+import markdown as markdown_converter
 from markdownify import markdownify as md
 
-from openpyxl.drawing.image import Image
-from openpyxl import load_workbook
 
 from swparse.config.app import settings
 from swparse.db.models import ContentType
@@ -43,7 +42,7 @@ from swparse.domain.swparse.utils import (
     save_metadata,
     get_metadata
 )
-from .schemas import Page, LLAMAJSONOutput
+from  swparse.domain.swparse.schemas import Page, LLAMAJSONOutput
 
 if TYPE_CHECKING:
     from saq.types import Context
@@ -67,7 +66,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
             content = content.encode()
 
         if ext == "application/vnd.ms-excel":
-            content = convert_xls_to_xlsx_bytes(content)
+            content = await convert_xls_to_xlsx_bytes(content)
 
         file_name = await get_file_name(s3_url)
         str_buffer = io.BytesIO(content)
@@ -98,10 +97,8 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
                     logger.error(f"sheet: {sheet_name} is not found in the provided file!")
                     continue
 
-            logger.info("Extracting images")
             images = await extract_excel_images(str_buffer, sheet_name)
-            logger.info("Finished Extracting images")
-
+   
             all_images.update(images)
             csv_content += df.to_csv(index=False, na_rep="")
             csv_content += "\n"
@@ -156,7 +153,7 @@ async def parse_xlsx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         logger.error(f"Error parsing XLSX file from S3: {e}")
         raise
 
-    logger.info("result")
+    logger.info("Extracted results")
     logger.info(results)
     return results
 
@@ -223,9 +220,8 @@ async def _pdf_exchange(s3_url: str, start_page: int = 0, end_page: int = 40, fo
 
     return data
 
-
-
-async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
+ 
+async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]: 
 
  
     logger.info("Started parse_docx_s3")
@@ -233,7 +229,9 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
 
     # HTML parsing
     byte_content = await read_file(s3_url)
-    html_data = mammoth.convert_to_html(byte_content)  # type: ignore
+    with io.BytesIO(byte_content) as byte_stream:
+        html_data = mammoth.convert_to_html(byte_stream)  # type: ignore
+ 
     htmlData: str = html_data.value  # type: ignore
     # TODO: refactor using a html tree
 
@@ -287,6 +285,8 @@ async def parse_docx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         results[table_query["raw"]] = tables_file_path
  
     await save_metadata(s3_url, metadata=results)
+    logger.info("Extracted results")
+    logger.info(results)
     return results
 
 
@@ -315,7 +315,8 @@ async def parse_pdf_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         results[table_query["raw"]] = tables_file_path
  
     await save_metadata(s3_url, metadata=results)
-
+    logger.info("Extracted results")
+    logger.info(results)
     return results
 
 
@@ -328,7 +329,7 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     logger.info("Started parse_image_s3")
     content_byte = await read_file(s3_url)
 
-    pil_image = Image.open(io.BytesIO(content_byte)).convert("RGB")
+    pil_image = PILImage.open(io.BytesIO(content_byte)).convert("RGB")
     pdf = pdfium.PdfDocument.new()
 
     image = pdfium.PdfImage.new(pdf)
@@ -348,25 +349,25 @@ async def parse_image_s3(ctx: Context, *, s3_url: str, ext: str, table_query: di
     
     pdf_s3_url = await change_file_ext(s3_url, "pdf")
     pdf_content = pdf_buffer.read()
- 
-    await save_file(pdf_s3_url, pdf_content)
+    pdf_s3_url = await save_file(pdf_s3_url, pdf_content, randomize=False)
     results = await _pdf_exchange(pdf_s3_url, force_ocr)
 
     if table_query:
-        file_name = await get_file_name(pdf_s3_url)
+        file_name = await get_file_name(s3_url)
         markdown = await get_file_content(results["markdown"])
         tables_content = extract_tables_gliner(table_query["tables"], markdown, table_query["output"])
         tables_file_name = await change_file_ext("extracted_tables_" + file_name, table_query["output"])
         tables_file_path = await save_file(tables_file_name, tables_content)
         results[table_query["raw"]] = tables_file_path
 
+    logger.info("Extracted results")
+    logger.info(results)
     await save_metadata(s3_url, results)
-
+    
     return results
 
 
 async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-
    
     logger.info("Started extract_text_files")
     results = {}
@@ -416,6 +417,8 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
 
 
         await save_metadata(s3_url, metadata=results)
+        logger.info("Extracted results")
+        logger.info(results)
 
     except Exception as e:
         logger.exception(f"Error while parsing document: {e}")
@@ -424,8 +427,8 @@ async def extract_text_files(ctx: Context, *, s3_url: str, ext: str, table_query
 
 
 async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
+    logger.info("Started parse_doc_s3")
 
- 
     file_name = await get_file_name(s3_url)
     content_byte = await read_file(s3_url)
  
@@ -467,12 +470,13 @@ async def parse_doc_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
 
   
         await save_metadata(s3_url, metadata=results)
-
+        logger.info("Extracted results")
+        logger.info(results)
     return results
 
 
 async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-
+    logger.info("Started parse_ppt_s3")
  
     file_name = await get_file_name(s3_url)
     byte_content = await read_file(s3_url)
@@ -517,12 +521,14 @@ async def parse_ppt_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict
         }
      
         await save_metadata(s3_url, metadata=results)
-
+        logger.info("Extracted results")
+        logger.info(results)
         return results
 
 
 async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dict | None) -> dict[str, str]:
-
+    logger.info("Started parse_pptx_s3")
+    
     file_name = await get_file_name(s3_url)
     md_file_name = await change_file_ext(file_name, "md")
     
@@ -555,13 +561,14 @@ async def parse_pptx_s3(ctx: Context, *, s3_url: str, ext: str, table_query: dic
         results[table_query["raw"]] = tables_file_path
  
     await save_metadata(s3_url, metadata=results)
-
+    logger.info("Extracted results")
+    logger.info(results)
     return results
 
 
 async def get_extracted_url(ctx: Context, *, s3_url: str, table_query: dict | None) -> dict[str, str]:
-
     logger.info("working get_extracted_url")
+
     metadata = await get_metadata(s3_url=s3_url)
   
     image_file_path = metadata.get("images")

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import os
-from typing import Any, Optional, Literal
+from typing import Any, Optional
 import httpx
 
 from advanced_alchemy.service import (
@@ -31,11 +31,15 @@ class ExtractionService(SQLAlchemyAsyncRepositoryService[Extraction]):
         self.repository: ExtractionRepository = self.repository_type(**repo_kwargs)
         self.model_type = self.repository.model_type
 
-    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None, force_ocr:bool = False) -> JobStatus:
+    async def create_job(self, data: UploadFile, sheet_index: Optional[list[str|int]] = None, force_ocr:bool = False, cached_on:Optional[bool] = None) -> JobStatus:
         form_data = {}
         if force_ocr:
             form_data = {
                 "force_ocr": force_ocr
+            }
+        if cached_on:
+            form_data = {
+                "cached_on": cached_on
             }
         if sheet_index and len(sheet_index) > 0 :            
             form_data = {

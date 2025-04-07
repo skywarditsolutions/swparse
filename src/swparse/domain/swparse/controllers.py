@@ -44,6 +44,7 @@ class UploadBody(BaseStruct):
     sheet_index: Optional[list[str | int]] = None 
     force_ocr: bool = False
     plain_text: bool = False
+    cached_on: Optional[bool] = None
 
 
 class ParserController(Controller):
@@ -72,6 +73,7 @@ class ParserController(Controller):
         hashed_input ={
             "content": content
         }
+        
         if data.force_ocr:
             hashed_input["force_ocr"] = True
             
@@ -96,10 +98,10 @@ class ParserController(Controller):
                 except:
                     raise HTTPException(detail="Invalid result type", status_code=400)
             metadata["result_type"] = data.parsing_instruction
-
+        use_cache = data.cached_on if data.cached_on is not None else CACHING_ON
         if await is_file_exist(s3_url):
-            logger.info("it's already exist")
-            if CACHING_ON:
+            if use_cache:
+                logger.info("Using Cached File!")
                 metadata_json = await get_metadata(s3_url)
                 if metadata_json:
                     del kwargs["ext"]
@@ -114,7 +116,6 @@ class ParserController(Controller):
                     await save_job_metadata(job.id, metadata_json)
                     return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
         else:
-           
             await save_file(hashed_filename, content, randomize=False)
 
         if file.content_type in ["application/pdf"]:
@@ -210,10 +211,7 @@ class ParserController(Controller):
 
         if job.status == "failed":
             raise HTTPException(detail="JOB ERROR", status_code=400)
-        
-        memory_info =  get_memory_usage()
-        logger.info(f"Memory usage of upload controller end: {memory_info.rss / 1024**2:.2f} MB")
-
+ 
         return JobStatus(id=job.id, status=Status[job.status], s3_url=s3_url)
  
     @post(
