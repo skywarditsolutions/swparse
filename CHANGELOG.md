@@ -1,3 +1,15 @@
+## v0.7.11 (2025-04-07)
+
+### Feat
+
+- Migrate dependency installation from PDM to uv
+- added v0.7.10 release note
+
+### Fix
+
+- docker venv installation path issue
+- OCR issue; cv2 error bad argument in 'fillPoly' function
+
 ## v0.7.10 (2025-03-26)
 
 ### Feat
