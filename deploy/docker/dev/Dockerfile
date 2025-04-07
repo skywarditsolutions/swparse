@@ -46,7 +46,7 @@ ARG SAQ_USE_SERVER_LIFESPAN="false"
 
 
 
-ENV PATH="/workspace/app/.venv/bin:/usr/local/bin:$PATH" \
+ENV PATH="/workspace/swparse/.venv/bin:$PATH" \
     VIRTUAL_ENV="/workspace/app/.venv" \
     ENV_SECRETS="${ENV_SECRETS}" \
     SAQ_USE_SERVER_LIFESPAN="${SAQ_USE_SERVER_LIFESPAN}" \
@@ -81,7 +81,7 @@ COPY pyproject.toml uv.lock README.md LICENSE Makefile  ./
 RUN uv sync ${UV_INSTALL_ARGS} --no-install-project
 
 COPY src/ src/
-
+COPY deploy deploy/
 RUN uv sync ${UV_INSTALL_ARGS}
 
 STOPSIGNAL SIGINT
